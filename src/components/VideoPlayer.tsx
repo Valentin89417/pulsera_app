@@ -176,6 +176,7 @@ function NativeVideoPlayer({ uri, title }: VideoPlayerProps) {
   const [duration, setDuration] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showControls, setShowControls] = useState(true);
 
   const player = useVideoPlayer(uri, (p) => {
     p.loop = false;
@@ -201,10 +202,18 @@ function NativeVideoPlayer({ uri, title }: VideoPlayerProps) {
       }
     });
 
+    // Видео закончилось — сброс позиции на 0
+    const playToEndSub = player.addListener('playToEnd', () => {
+      setIsPlaying(false);
+      setPosition(0);
+      player.currentTime = 0;
+    });
+
     return () => {
       playingSub.remove();
       timeSub.remove();
       statusSub.remove();
+      playToEndSub.remove();
     };
   }, [player]);
 
@@ -212,6 +221,10 @@ function NativeVideoPlayer({ uri, title }: VideoPlayerProps) {
     if (player.playing) {
       player.pause();
     } else {
+      // Если видео закончилось — перемотка на начало
+      if (player.currentTime >= (player.duration || 0) - 0.5) {
+        player.currentTime = 0;
+      }
       player.play();
     }
   };
@@ -247,7 +260,11 @@ function NativeVideoPlayer({ uri, title }: VideoPlayerProps) {
 
   return (
     <View style={styles.container}>
-      <View style={styles.videoWrapper}>
+      <TouchableOpacity
+        activeOpacity={1}
+        onPress={() => setShowControls((prev) => !prev)}
+        style={styles.videoWrapper}
+      >
         {isLoading && (
           <View style={[styles.overlay, { zIndex: 2 }]}>
             <ActivityIndicator size="large" color="#fff" />
@@ -258,44 +275,47 @@ function NativeVideoPlayer({ uri, title }: VideoPlayerProps) {
           player={player}
           style={styles.video}
           contentFit="contain"
-          allowsFullscreen
         />
-        {!isPlaying && !isLoading && (
+        {/* Кастомная кнопка Play поверх видео */}
+        {!isPlaying && !isLoading && showControls && (
           <TouchableOpacity style={[styles.overlay, { zIndex: 3 }]} onPress={togglePlayPause} activeOpacity={0.8}>
             <View style={styles.bigPlayButton}>
               <Text style={styles.bigPlayIcon}>▶️</Text>
             </View>
           </TouchableOpacity>
         )}
-      </View>
+      </TouchableOpacity>
 
-      <View style={styles.controlsContainer}>
-        {title && <Text style={styles.title} numberOfLines={1}>{title}</Text>}
+      {/* Кастомные контролы внизу */}
+      {showControls && (
+        <View style={styles.controlsContainer}>
+          {title && <Text style={styles.title} numberOfLines={1}>{title}</Text>}
 
-        <View style={styles.progressContainer}>
-          <View style={styles.progressBar}>
-            <View style={[styles.progressFill, { width: `${progress}%` }]} />
+          <View style={styles.progressContainer}>
+            <View style={styles.progressBar}>
+              <View style={[styles.progressFill, { width: `${progress}%` }]} />
+            </View>
+            <View style={styles.timeRow}>
+              <Text style={styles.timeText}>{formatTime(position)}</Text>
+              <Text style={styles.timeText}>{formatTime(duration)}</Text>
+            </View>
           </View>
-          <View style={styles.timeRow}>
-            <Text style={styles.timeText}>{formatTime(position)}</Text>
-            <Text style={styles.timeText}>{formatTime(duration)}</Text>
+
+          <View style={styles.controls}>
+            <TouchableOpacity style={styles.controlButton} onPress={seekBackward}>
+              <Text style={styles.controlIcon}>⏪</Text>
+              <Text style={styles.controlLabel}>15</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.playButton} onPress={togglePlayPause} activeOpacity={0.7}>
+              <Text style={styles.playIcon}>{isPlaying ? '⏸' : '▶️'}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.controlButton} onPress={seekForward}>
+              <Text style={styles.controlIcon}>⏩</Text>
+              <Text style={styles.controlLabel}>15</Text>
+            </TouchableOpacity>
           </View>
         </View>
-
-        <View style={styles.controls}>
-          <TouchableOpacity style={styles.controlButton} onPress={seekBackward}>
-            <Text style={styles.controlIcon}>⏪</Text>
-            <Text style={styles.controlLabel}>15</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.playButton} onPress={togglePlayPause} activeOpacity={0.7}>
-            <Text style={styles.playIcon}>{isPlaying ? '⏸' : '▶️'}</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.controlButton} onPress={seekForward}>
-            <Text style={styles.controlIcon}>⏩</Text>
-            <Text style={styles.controlLabel}>15</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
+      )}
     </View>
   );
 }
