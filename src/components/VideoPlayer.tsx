@@ -202,11 +202,9 @@ function NativeVideoPlayer({ uri, title }: VideoPlayerProps) {
       }
     });
 
-    // Видео закончилось — сброс позиции на 0
+    // Видео закончилось — просто отмечаем, НЕ трогаем currentTime
     const playToEndSub = player.addListener('playToEnd', () => {
       setIsPlaying(false);
-      setPosition(0);
-      player.currentTime = 0;
     });
 
     return () => {
@@ -221,8 +219,9 @@ function NativeVideoPlayer({ uri, title }: VideoPlayerProps) {
     if (player.playing) {
       player.pause();
     } else {
-      // Если видео закончилось — перемотка на начало
-      if (player.currentTime >= (player.duration || 0) - 0.5) {
+      // Если видео закончилось — перемотка на начало перед воспроизведением
+      const isFinished = player.currentTime >= (player.duration || 0) - 0.5;
+      if (isFinished) {
         player.currentTime = 0;
       }
       player.play();
