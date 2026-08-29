@@ -225,6 +225,7 @@ function NativeVideoPlayer({ uri, title }: VideoPlayerProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showControls, setShowControls] = useState(true);
+  const [replayKey, setReplayKey] = useState(0);
 
   // Инициализация аудио-сессии для Android
   useEffect(() => {
@@ -242,14 +243,6 @@ function NativeVideoPlayer({ uri, title }: VideoPlayerProps) {
       setPosition(newStatus.positionMillis as number);
       setDuration((newStatus.durationMillis as number) || 0);
       setIsPlaying(newStatus.isPlaying as boolean);
-      // Видео закончилось — сбрасываем позицию для повтора
-      if (newStatus.didJustFinish) {
-        setPosition(0);
-        const ref = videoRef.current as Record<string, ((ms: number) => Promise<void>) | undefined> | null;
-        if (ref?.setPositionAsync) {
-          ref.setPositionAsync(0);
-        }
-      }
     }
   }, []);
 
@@ -262,10 +255,15 @@ function NativeVideoPlayer({ uri, title }: VideoPlayerProps) {
       if (isPlaying) {
         await (ref.pauseAsync as () => Promise<void>)();
       } else {
-        // Если видео закончилось — сначала перемотка на начало
         const isFinished = statusLoaded.didJustFinish as boolean;
         if (isFinished) {
-          await (ref.setPositionAsync as (ms: number) => Promise<void>)(0);
+          // Пересоздаём Video-компонент для надёжного повтора на Android
+          setStatus(null);
+          setIsPlaying(false);
+          setPosition(0);
+          setReplayKey((k) => k + 1);
+          setIsLoading(true);
+          return;
         }
         // Запрашиваем аудио-фокус перед воспроизведением (Android)
         await AudioNative?.setAudioModeAsync({
@@ -343,6 +341,7 @@ function NativeVideoPlayer({ uri, title }: VideoPlayerProps) {
       >
         {ExpoVideo && (
           <ExpoVideo
+            key={`video-${replayKey}`}
             ref={videoRef}
             source={{ uri }}
             style={styles.video}
