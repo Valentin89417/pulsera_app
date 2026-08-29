@@ -11,6 +11,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { getContentById } from '../../services/api';
 import { ContentItem } from '../../types';
 import { AudioPlayer } from '../../components/AudioPlayer';
+import { VideoPlayer } from '../../components/VideoPlayer';
 
 // Экран детального просмотра контента
 export default function ContentDetailScreen() {
@@ -97,9 +98,11 @@ export default function ContentDetailScreen() {
   // Извлекаем данные из content_data
   const body = (content.content_data as { body?: string })?.body || '';
   const audioUrl = (content.content_data as { audio_url?: string })?.audio_url;
+  const videoUrl = (content.content_data as { video_url?: string })?.video_url;
 
-  // Проверяем, является ли контент аудио
+  // Проверяем тип контента
   const isAudioContent = content.type === 'audio' && audioUrl;
+  const isVideoContent = content.type === 'video' && videoUrl;
 
   return (
     <View style={styles.container}>
@@ -140,8 +143,10 @@ export default function ContentDetailScreen() {
         {/* Разделитель */}
         <View style={styles.divider} />
 
-        {/* Аудио-плеер (для аудио контента) */}
-        {isAudioContent ? (
+        {/* Медиа-плеер (видео / аудио) или текст */}
+        {isVideoContent ? (
+          <VideoPlayer uri={videoUrl!} title={content.title} />
+        ) : isAudioContent ? (
           <AudioPlayer uri={audioUrl!} title={content.title} />
         ) : body ? (
           <Text style={styles.body}>{body}</Text>
