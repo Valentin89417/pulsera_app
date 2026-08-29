@@ -13,6 +13,7 @@ import {
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { getContentById, createContent, updateContent } from '../../services/api';
 import { ContentItem, ContentType } from '../../types';
+import { pickFile, uploadFile, UploadFileType } from '../../utils/upload';
 
 // Типы контента
 const CONTENT_TYPES: { key: ContentType; label: string }[] = [
@@ -39,7 +40,11 @@ export default function ArticleEditScreen() {
   const [description, setDescription] = useState('');
   const [body, setBody] = useState('');
   const [audioUrl, setAudioUrl] = useState('');
+  const [audioFilename, setAudioFilename] = useState('');
   const [videoUrl, setVideoUrl] = useState('');
+  const [videoFilename, setVideoFilename] = useState('');
+  const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [type, setType] = useState<ContentType>('article');
   const [category, setCategory] = useState('');
   const [isPremium, setIsPremium] = useState(false);
@@ -63,7 +68,9 @@ export default function ArticleEditScreen() {
         setDescription(article.description || '');
         setBody((article.content_data as { body?: string })?.body || '');
         setAudioUrl((article.content_data as { audio_url?: string })?.audio_url || '');
+        setAudioFilename((article.content_data as { audio_filename?: string })?.audio_filename || '');
         setVideoUrl((article.content_data as { video_url?: string })?.video_url || '');
+        setVideoFilename((article.content_data as { video_filename?: string })?.video_filename || '');
         setType(article.type);
         setCategory(article.category);
         setIsPremium(article.is_premium);
@@ -73,6 +80,46 @@ export default function ArticleEditScreen() {
       console.error('Ошибка загрузки статьи:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Загрузка файла
+  const handleUploadFile = async (fileType: UploadFileType) => {
+    try {
+      const file = await pickFile(fileType);
+      if (!file) return;
+
+      setUploading(true);
+      setUploadProgress(0);
+
+      const result = await uploadFile(file, fileType, setUploadProgress);
+
+      if (fileType === 'audio') {
+        setAudioUrl(result.url);
+        setAudioFilename(result.filename);
+      } else if (fileType === 'video') {
+        setVideoUrl(result.url);
+        setVideoFilename(result.filename);
+      }
+
+      Alert.alert('Готово', 'Файл загружен');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Не удалось загрузить файл';
+      Alert.alert('Ошибка', message);
+    } finally {
+      setUploading(false);
+      setUploadProgress(0);
+    }
+  };
+
+  // Удалить загруженный файл
+  const handleRemoveFile = (fileType: UploadFileType) => {
+    if (fileType === 'audio') {
+      setAudioUrl('');
+      setAudioFilename('');
+    } else if (fileType === 'video') {
+      setVideoUrl('');
+      setVideoFilename('');
     }
   };
 
@@ -96,8 +143,10 @@ export default function ArticleEditScreen() {
         contentData.body = body.trim();
       } else if (type === 'audio') {
         contentData.audio_url = audioUrl.trim();
+        contentData.audio_filename = audioFilename;
       } else if (type === 'video') {
         contentData.video_url = videoUrl.trim();
+        contentData.video_filename = videoFilename;
       }
 
       if (isEditing) {
@@ -216,41 +265,87 @@ export default function ArticleEditScreen() {
           </View>
         </View>
 
-        {/* Поле для URL аудио (только для типа audio) */}
+        {/* Поле для загрузки аудио (только для типа audio) */}
         {type === 'audio' && (
           <View style={styles.field}>
-            <Text style={styles.label}>URL аудио файла *</Text>
-            <TextInput
-              style={styles.input}
-              value={audioUrl}
-              onChangeText={setAudioUrl}
-              placeholder="https://...supabase.co/storage/v1/object/public/content/audio/file.mp3"
-              placeholderTextColor="#666"
-              autoCapitalize="none"
-              autoCorrect={false}
-            />
-            <Text style={styles.hint}>
-              Загрузите MP3 в Supabase Storage и вставьте URL
-            </Text>
+            <Text style={styles.label}>Аудио файл *</Text>
+            {audioUrl ? (
+              <View style={styles.filePreview}>
+                <View style={styles.fileInfo}>
+                  <Text style={styles.fileIcon}>🎵</Text>
+                  <Text style={styles.fileName} numberOfLines={1}>
+                    {audioFilename || 'audio.mp3'}
+                  </Text>
+                </View>
+                <TouchableOpacity
+                  style={styles.removeFileButton}
+                  onPress={() => handleRemoveFile('audio')}
+                >
+                  <Text style={styles.removeFileText}>Удалить</Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <TouchableOpacity
+                style={[styles.uploadButton, uploading && styles.uploadButtonDisabled]}
+                onPress={() => handleUploadFile('audio')}
+                disabled={uploading}
+              >
+                {uploading ? (
+                  <View style={styles.uploadingContainer}>
+                    <ActivityIndicator color="#6c63ff" size="small" />
+                    <Text style={styles.uploadingText}>{uploadProgress}%</Text>
+                  </View>
+                ) : (
+                  <>
+                    <Text style={styles.uploadIcon}>🎵</Text>
+                    <Text style={styles.uploadText}>Выбрать аудио файл</Text>
+                    <Text style={styles.uploadHint}>MP3, WAV, OGG (до 50 МБ)</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            )}
           </View>
         )}
 
-        {/* Поле для URL видео (только для типа video) */}
+        {/* Поле для загрузки видео (только для типа video) */}
         {type === 'video' && (
           <View style={styles.field}>
-            <Text style={styles.label}>URL видео файла *</Text>
-            <TextInput
-              style={styles.input}
-              value={videoUrl}
-              onChangeText={setVideoUrl}
-              placeholder="https://...supabase.co/storage/v1/object/public/content/video/file.mp4"
-              placeholderTextColor="#666"
-              autoCapitalize="none"
-              autoCorrect={false}
-            />
-            <Text style={styles.hint}>
-              Загрузите MP4 в Supabase Storage и вставьте URL
-            </Text>
+            <Text style={styles.label}>Видео файл *</Text>
+            {videoUrl ? (
+              <View style={styles.filePreview}>
+                <View style={styles.fileInfo}>
+                  <Text style={styles.fileIcon}>🎬</Text>
+                  <Text style={styles.fileName} numberOfLines={1}>
+                    {videoFilename || 'video.mp4'}
+                  </Text>
+                </View>
+                <TouchableOpacity
+                  style={styles.removeFileButton}
+                  onPress={() => handleRemoveFile('video')}
+                >
+                  <Text style={styles.removeFileText}>Удалить</Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <TouchableOpacity
+                style={[styles.uploadButton, uploading && styles.uploadButtonDisabled]}
+                onPress={() => handleUploadFile('video')}
+                disabled={uploading}
+              >
+                {uploading ? (
+                  <View style={styles.uploadingContainer}>
+                    <ActivityIndicator color="#6c63ff" size="small" />
+                    <Text style={styles.uploadingText}>{uploadProgress}%</Text>
+                  </View>
+                ) : (
+                  <>
+                    <Text style={styles.uploadIcon}>🎬</Text>
+                    <Text style={styles.uploadText}>Выбрать видео файл</Text>
+                    <Text style={styles.uploadHint}>MP4, MOV, WebM (до 50 МБ)</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            )}
           </View>
         )}
 
@@ -421,6 +516,77 @@ const styles = StyleSheet.create({
   saveButtonText: {
     color: '#fff',
     fontSize: 18,
+    fontWeight: '600',
+  },
+  uploadButton: {
+    backgroundColor: '#16213e',
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: '#333',
+    borderStyle: 'dashed',
+    padding: 24,
+    alignItems: 'center',
+  },
+  uploadButtonDisabled: {
+    opacity: 0.6,
+  },
+  uploadIcon: {
+    fontSize: 32,
+    marginBottom: 8,
+  },
+  uploadText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#fff',
+    marginBottom: 4,
+  },
+  uploadHint: {
+    fontSize: 12,
+    color: '#666',
+  },
+  uploadingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  uploadingText: {
+    fontSize: 14,
+    color: '#6c63ff',
+    fontWeight: '600',
+  },
+  filePreview: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#16213e',
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#6c63ff',
+  },
+  fileInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    gap: 12,
+  },
+  fileIcon: {
+    fontSize: 24,
+  },
+  fileName: {
+    fontSize: 14,
+    color: '#fff',
+    flex: 1,
+  },
+  removeFileButton: {
+    backgroundColor: '#ff444422',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  removeFileText: {
+    color: '#ff4444',
+    fontSize: 12,
     fontWeight: '600',
   },
 });
