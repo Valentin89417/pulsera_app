@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -6,8 +6,21 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Dimensions,
+  Platform,
 } from 'react-native';
-import { Video, AVPlaybackStatus, ResizeMode } from 'expo-av';
+
+// Web-специфичный импорт видео
+let VideoNative: React.ComponentType<Record<string, unknown>> | null = null;
+let ResizeModeNative: Record<string, string> | null = null;
+let AVPlaybackStatusType: unknown = null;
+
+if (Platform.OS !== 'web') {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const expoAv = require('expo-av');
+  VideoNative = expoAv.Video;
+  ResizeModeNative = expoAv.ResizeMode;
+  AVPlaybackStatusType = expoAv.AVPlaybackStatus;
+}
 
 // Компонент видео-плеера
 interface VideoPlayerProps {
@@ -17,55 +30,85 @@ interface VideoPlayerProps {
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-export function VideoPlayer({ uri, title }: VideoPlayerProps) {
-  const videoRef = useRef<Video>(null);
-  const [status, setStatus] = useState<AVPlaybackStatus | null>(null);
+// ========================
+// Web-плеер (HTML5 <video>)
+// ========================
+function WebVideoPlayer({ uri, title }: VideoPlayerProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [position, setPosition] = useState(0);
   const [duration, setDuration] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [showControls, setShowControls] = useState(true);
 
-  // Обновление статуса воспроизведения
-  const onPlaybackStatusUpdate = useCallback((newStatus: AVPlaybackStatus) => {
-    setStatus(newStatus);
-    if (newStatus.isLoaded) {
-      setPosition(newStatus.positionMillis);
-      setDuration(newStatus.durationMillis || 0);
-      setIsPlaying(newStatus.isPlaying);
+  // Создаём HTML5 video элемент
+  useEffect(() => {
+    if (!containerRef.current) return;
+
+    const video = document.createElement('video');
+    video.src = uri;
+    video.style.width = '100%';
+    video.style.height = '100%';
+    video.style.objectFit = 'contain';
+    video.style.backgroundColor = '#000';
+    video.preload = 'metadata';
+
+    video.addEventListener('loadedmetadata', () => {
+      console.log('[WebVideo] loaded metadata, duration:', video.duration);
+      setDuration(video.duration * 1000);
+      setIsLoading(false);
+    });
+
+    video.addEventListener('timeupdate', () => {
+      setPosition(video.currentTime * 1000);
+    });
+
+    video.addEventListener('play', () => setIsPlaying(true));
+    video.addEventListener('pause', () => setIsPlaying(false));
+
+    video.addEventListener('error', (e) => {
+      console.error('[WebVideo] error:', e);
+      setError('Не удалось загрузить видео');
+      setIsLoading(false);
+    });
+
+    video.addEventListener('waiting', () => setIsLoading(true));
+    video.addEventListener('canplay', () => setIsLoading(false));
+
+    containerRef.current.innerHTML = '';
+    containerRef.current.appendChild(video);
+    videoRef.current = video;
+
+    return () => {
+      video.pause();
+      video.src = '';
+      videoRef.current = null;
+    };
+  }, [uri]);
+
+  const togglePlayPause = () => {
+    const video = videoRef.current;
+    if (!video) return;
+    if (video.paused) {
+      video.play().catch(console.error);
+    } else {
+      video.pause();
     }
-  }, []);
-
-  // Воспроизведение / пауза
-  const togglePlayPause = async () => {
-    if (!videoRef.current || !status?.isLoaded) return;
-    try {
-      if (isPlaying) {
-        await videoRef.current.pauseAsync();
-      } else {
-        await videoRef.current.playAsync();
-      }
-    } catch (err) {
-      console.error('Ошибка воспроизведения видео:', err);
-    }
   };
 
-  // Перемотка назад (15 сек)
-  const seekBackward = async () => {
-    if (!videoRef.current || !status?.isLoaded) return;
-    const newPosition = Math.max(0, position - 15000);
-    await videoRef.current.setPositionAsync(newPosition);
+  const seekBackward = () => {
+    const video = videoRef.current;
+    if (!video) return;
+    video.currentTime = Math.max(0, video.currentTime - 15);
   };
 
-  // Перемотка вперёд (15 сек)
-  const seekForward = async () => {
-    if (!videoRef.current || !status?.isLoaded) return;
-    const newPosition = Math.min(duration, position + 15000);
-    await videoRef.current.setPositionAsync(newPosition);
+  const seekForward = () => {
+    const video = videoRef.current;
+    if (!video) return;
+    video.currentTime = Math.min(video.duration || 0, video.currentTime + 15);
   };
 
-  // Форматирование времени
   const formatTime = (ms: number) => {
     const totalSeconds = Math.floor(ms / 1000);
     const minutes = Math.floor(totalSeconds / 60);
@@ -73,17 +116,7 @@ export function VideoPlayer({ uri, title }: VideoPlayerProps) {
     return `${minutes}:${seconds.toString().padStart(2, '0')}`;
   };
 
-  // Прогресс-бар
   const progress = duration > 0 ? (position / duration) * 100 : 0;
-
-  if (isLoading) {
-    return (
-      <View style={styles.container}>
-        <ActivityIndicator size="large" color="#6c63ff" />
-        <Text style={styles.loadingText}>Загрузка видео...</Text>
-      </View>
-    );
-  }
 
   if (error) {
     return (
@@ -105,55 +138,43 @@ export function VideoPlayer({ uri, title }: VideoPlayerProps) {
 
   return (
     <View style={styles.container}>
-      {/* Видео */}
-      <TouchableOpacity
-        activeOpacity={1}
-        onPress={() => setShowControls((prev) => !prev)}
-        style={styles.videoWrapper}
-      >
-        <Video
-          ref={videoRef}
-          source={{ uri }}
-          style={styles.video}
-          resizeMode={ResizeMode.CONTAIN}
-          onPlaybackStatusUpdate={onPlaybackStatusUpdate}
-          onLoadStart={() => setIsLoading(true)}
-          onLoad={() => setIsLoading(false)}
-          onError={(err) => {
-            console.error('Ошибка видео:', err);
-            setError('Не удалось загрузить видео');
-            setIsLoading(false);
-          }}
-          shouldPlay={false}
-          useNativeControls={false}
-        />
-
-        {/* Оверлей с кнопкой Play (когда пауза) */}
-        {!isPlaying && showControls && (
-          <View style={styles.overlay}>
-            <TouchableOpacity style={styles.bigPlayButton} onPress={togglePlayPause}>
-              <Text style={styles.bigPlayIcon}>▶️</Text>
-            </TouchableOpacity>
-          </View>
-        )}
-
-        {/* Индикатор загрузки поверх видео */}
+      {/* HTML5 video */}
+      <View style={styles.videoWrapper}>
         {isLoading && (
-          <View style={styles.overlay}>
+          <View style={[styles.overlay, { zIndex: 2 }]}>
             <ActivityIndicator size="large" color="#fff" />
+            <Text style={styles.loadingText}>Загрузка видео...</Text>
           </View>
         )}
-      </TouchableOpacity>
+        {/* div-контейнер для HTML5 video */}
+        <div
+          ref={containerRef}
+          style={{
+            width: '100%',
+            height: '100%',
+            backgroundColor: '#000',
+          }}
+        />
+        {/* Кнопка Play поверх видео */}
+        {!isPlaying && !isLoading && (
+          <TouchableOpacity
+            style={[styles.overlay, { zIndex: 3 }]}
+            onPress={togglePlayPause}
+            activeOpacity={0.8}
+          >
+            <View style={styles.bigPlayButton}>
+              <Text style={styles.bigPlayIcon}>▶️</Text>
+            </View>
+          </TouchableOpacity>
+        )}
+      </View>
 
-      {/* Управления внизу */}
-      {showControls && (
+      {/* Управления */}
+      {title && (
         <View style={styles.controlsContainer}>
-          {/* Название */}
-          {title && (
-            <Text style={styles.title} numberOfLines={1}>
-              {title}
-            </Text>
-          )}
+          <Text style={styles.title} numberOfLines={1}>
+            {title}
+          </Text>
 
           {/* Прогресс-бар */}
           <View style={styles.progressContainer}>
@@ -192,6 +213,194 @@ export function VideoPlayer({ uri, title }: VideoPlayerProps) {
   );
 }
 
+// ========================
+// Native-плеер (expo-av)
+// ========================
+function NativeVideoPlayer({ uri, title }: VideoPlayerProps) {
+  const videoRef = useRef<unknown>(null);
+  const [status, setStatus] = useState<unknown>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [position, setPosition] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [showControls, setShowControls] = useState(true);
+
+  const onPlaybackStatusUpdate = useCallback((newStatus: Record<string, unknown>) => {
+    setStatus(newStatus);
+    if (newStatus.isLoaded) {
+      setPosition(newStatus.positionMillis as number);
+      setDuration((newStatus.durationMillis as number) || 0);
+      setIsPlaying(newStatus.isPlaying as boolean);
+    }
+  }, []);
+
+  const togglePlayPause = async () => {
+    const ref = videoRef.current as Record<string, unknown> | null;
+    if (!ref) return;
+    const statusLoaded = status as Record<string, unknown> | null;
+    if (!statusLoaded?.isLoaded) return;
+    try {
+      if (isPlaying) {
+        await (ref.pauseAsync as () => Promise<void>)();
+      } else {
+        await (ref.playAsync as () => Promise<void>)();
+      }
+    } catch (err) {
+      console.error('Ошибка воспроизведения видео:', err);
+    }
+  };
+
+  const seekBackward = async () => {
+    const ref = videoRef.current as Record<string, unknown> | null;
+    if (!ref) return;
+    const newPosition = Math.max(0, position - 15000);
+    await (ref.setPositionAsync as (ms: number) => Promise<void>)(newPosition);
+  };
+
+  const seekForward = async () => {
+    const ref = videoRef.current as Record<string, unknown> | null;
+    if (!ref) return;
+    const newPosition = Math.min(duration, position + 15000);
+    await (ref.setPositionAsync as (ms: number) => Promise<void>)(newPosition);
+  };
+
+  const formatTime = (ms: number) => {
+    const totalSeconds = Math.floor(ms / 1000);
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  };
+
+  const progress = duration > 0 ? (position / duration) * 100 : 0;
+
+  // expo-av Video загружается динамически
+  const ExpoVideo = VideoNative;
+
+  if (isLoading && !ExpoVideo) {
+    return (
+      <View style={styles.container}>
+        <ActivityIndicator size="large" color="#6c63ff" />
+        <Text style={styles.loadingText}>Загрузка видео...</Text>
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.errorIcon}>⚠️</Text>
+        <Text style={styles.errorText}>{error}</Text>
+        <TouchableOpacity
+          style={styles.retryButton}
+          onPress={() => {
+            setError(null);
+            setIsLoading(true);
+          }}
+        >
+          <Text style={styles.retryText}>Повторить</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
+  return (
+    <View style={styles.container}>
+      <TouchableOpacity
+        activeOpacity={1}
+        onPress={() => setShowControls((prev) => !prev)}
+        style={styles.videoWrapper}
+      >
+        {ExpoVideo && (
+          <ExpoVideo
+            ref={videoRef}
+            source={{ uri }}
+            style={styles.video}
+            resizeMode={ResizeModeNative?.CONTAIN || 'contain'}
+            onPlaybackStatusUpdate={onPlaybackStatusUpdate}
+            onLoadStart={() => setIsLoading(true)}
+            onLoad={(s: Record<string, unknown>) => {
+              setDuration((s.durationMillis as number) || 0);
+              setIsLoading(false);
+            }}
+            onError={(err: unknown) => {
+              console.error('[NativeVideo] error:', err);
+              setError('Не удалось загрузить видео');
+              setIsLoading(false);
+            }}
+            shouldPlay={false}
+            useNativeControls={false}
+          />
+        )}
+
+        {!isPlaying && showControls && (
+          <View style={styles.overlay}>
+            <TouchableOpacity style={styles.bigPlayButton} onPress={togglePlayPause}>
+              <Text style={styles.bigPlayIcon}>▶️</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {isLoading && (
+          <View style={styles.overlay}>
+            <ActivityIndicator size="large" color="#fff" />
+          </View>
+        )}
+      </TouchableOpacity>
+
+      {showControls && (
+        <View style={styles.controlsContainer}>
+          {title && (
+            <Text style={styles.title} numberOfLines={1}>
+              {title}
+            </Text>
+          )}
+
+          <View style={styles.progressContainer}>
+            <View style={styles.progressBar}>
+              <View style={[styles.progressFill, { width: `${progress}%` }]} />
+            </View>
+            <View style={styles.timeRow}>
+              <Text style={styles.timeText}>{formatTime(position)}</Text>
+              <Text style={styles.timeText}>{formatTime(duration)}</Text>
+            </View>
+          </View>
+
+          <View style={styles.controls}>
+            <TouchableOpacity style={styles.controlButton} onPress={seekBackward}>
+              <Text style={styles.controlIcon}>⏪</Text>
+              <Text style={styles.controlLabel}>15</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.playButton}
+              onPress={togglePlayPause}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.playIcon}>{isPlaying ? '⏸' : '▶️'}</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.controlButton} onPress={seekForward}>
+              <Text style={styles.controlIcon}>⏩</Text>
+              <Text style={styles.controlLabel}>15</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
+    </View>
+  );
+}
+
+// ========================
+// Экспорт: web vs native
+// ========================
+export function VideoPlayer(props: VideoPlayerProps) {
+  if (Platform.OS === 'web') {
+    return <WebVideoPlayer {...props} />;
+  }
+  return <NativeVideoPlayer {...props} />;
+}
+
 const styles = StyleSheet.create({
   container: {
     backgroundColor: '#000',
@@ -204,6 +413,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#000',
     justifyContent: 'center',
     alignItems: 'center',
+    position: 'relative',
   },
   video: {
     width: '100%',
