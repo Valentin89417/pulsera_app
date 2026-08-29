@@ -70,3 +70,10 @@ export const useSubscription = () => {
     hasAccess,
   };
 };
+
+// Хук для проверки роли админа
+export const useAdmin = () => {
+  const { profile } = useAuth();
+  const isAdmin = profile?.role === 'admin';
+  return { isAdmin };
+};

@@ -11,9 +11,6 @@ export type UserProfileInsert = Database['public']['Tables']['profiles']['Insert
 // Профиль пользователя для обновления
 export type UserProfileUpdate = Database['public']['Tables']['profiles']['Update'];
 
-// Тарифы подписки
-export type SubscriptionTier = 'free' | 'path' | 'awakening';
-
 // Подписка пользователя
 export type UserSubscription = Database['public']['Tables']['subscriptions']['Row'];
 

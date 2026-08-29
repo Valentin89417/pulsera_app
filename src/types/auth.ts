@@ -1,6 +1,7 @@
 // Типы для аутентификации
 
 import { User, Session } from '@supabase/supabase-js';
+import { UserProfile } from './user';
 
 // Состояние аутентификации
 export interface AuthState {
@@ -26,15 +27,6 @@ export interface AuthState {
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ error: string | null }>;
   updateProfile: (updates: Partial<UserProfile>) => Promise<{ error: string | null }>;
-}
-
-// Профиль пользователя из БД
-export interface UserProfile {
-  id: string;
-  display_name: string | null;
-  avatar_url: string | null;
-  subscription_tier: 'free' | 'path' | 'awakening';
-  created_at: string;
 }
 
 // Данные для регистрации

@@ -1,7 +1,7 @@
 import 'react-native-url-polyfill/auto';
 import 'react-native-get-random-values';
 import { createClient } from '@supabase/supabase-js';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import storage from '../utils/storage';
 
 // Конфигурация Supabase
 const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL || '';
@@ -12,10 +12,10 @@ if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
   console.warn('⚠️ Supabase URL или Anon Key не заданы. Проверьте .env файл.');
 }
 
-// Инициализация Supabase клиента с поддержкой AsyncStorage для хранения сессий
+// Инициализация Supabase клиента с платформенным storage
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: {
-    storage: AsyncStorage,
+    storage,
     autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: false,
@@ -32,6 +32,7 @@ export type Database = {
           display_name: string | null;
           avatar_url: string | null;
           subscription_tier: 'free' | 'path' | 'awakening';
+          role: 'user' | 'admin';
           created_at: string;
         };
         Insert: {
@@ -39,6 +40,7 @@ export type Database = {
           display_name?: string | null;
           avatar_url?: string | null;
           subscription_tier?: 'free' | 'path' | 'awakening';
+          role?: 'user' | 'admin';
           created_at?: string;
         };
         Update: {
@@ -46,6 +48,7 @@ export type Database = {
           display_name?: string | null;
           avatar_url?: string | null;
           subscription_tier?: 'free' | 'path' | 'awakening';
+          role?: 'user' | 'admin';
           created_at?: string;
         };
       };

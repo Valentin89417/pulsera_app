@@ -16,18 +16,36 @@ type Subscription = Database['public']['Tables']['subscriptions']['Row'];
 // Получить профиль пользователя
 export const getProfile = async (userId: string): Promise<Profile | null> => {
   try {
+    // Сначала пытаемся получить профиль
     const { data, error } = await supabase
       .from('profiles')
       .select('*')
       .eq('id', userId)
-      .single();
+      .maybeSingle();
 
     if (error) {
       console.error('Ошибка получения профиля:', error.message);
       return null;
     }
 
-    return data;
+    // Если профиль есть — возвращаем
+    if (data) {
+      return data;
+    }
+
+    // Если профиля нет — создаём (на случай если триггер не сработал)
+    const { data: newProfile, error: insertError } = await supabase
+      .from('profiles')
+      .insert({ id: userId })
+      .select()
+      .single();
+
+    if (insertError) {
+      console.error('Ошибка создания профиля:', insertError.message);
+      return null;
+    }
+
+    return newProfile;
   } catch (error) {
     console.error('Неожиданная ошибка при получении профиля:', error);
     return null;
@@ -122,6 +140,80 @@ export const getContentById = async (contentId: string): Promise<Content | null>
   } catch (error) {
     console.error('Неожиданная ошибка при получении контента:', error);
     return null;
+  }
+};
+
+// Создать контент
+export const createContent = async (data: {
+  title: string;
+  description?: string;
+  type: Content['type'];
+  category: string;
+  content_data?: Record<string, unknown>;
+  is_premium?: boolean;
+  subscription_tier?: Content['subscription_tier'];
+}): Promise<Content | null> => {
+  try {
+    const { data: newContent, error } = await supabase
+      .from('content')
+      .insert(data)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Ошибка создания контента:', error.message);
+      return null;
+    }
+
+    return newContent;
+  } catch (error) {
+    console.error('Неожиданная ошибка при создании контента:', error);
+    return null;
+  }
+};
+
+// Обновить контент
+export const updateContent = async (
+  contentId: string,
+  updates: Partial<Pick<Content, 'title' | 'description' | 'type' | 'category' | 'content_data' | 'is_premium' | 'subscription_tier'>>
+): Promise<Content | null> => {
+  try {
+    const { data, error } = await supabase
+      .from('content')
+      .update(updates)
+      .eq('id', contentId)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Ошибка обновления контента:', error.message);
+      return null;
+    }
+
+    return data;
+  } catch (error) {
+    console.error('Неожиданная ошибка при обновлении контента:', error);
+    return null;
+  }
+};
+
+// Удалить контент
+export const deleteContent = async (contentId: string): Promise<boolean> => {
+  try {
+    const { error } = await supabase
+      .from('content')
+      .delete()
+      .eq('id', contentId);
+
+    if (error) {
+      console.error('Ошибка удаления контента:', error.message);
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Неожиданная ошибка при удалении контента:', error);
+    return false;
   }
 };
 
