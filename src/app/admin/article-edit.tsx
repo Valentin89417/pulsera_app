@@ -38,6 +38,8 @@ export default function ArticleEditScreen() {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [body, setBody] = useState('');
+  const [audioUrl, setAudioUrl] = useState('');
+  const [videoUrl, setVideoUrl] = useState('');
   const [type, setType] = useState<ContentType>('article');
   const [category, setCategory] = useState('');
   const [isPremium, setIsPremium] = useState(false);
@@ -60,6 +62,8 @@ export default function ArticleEditScreen() {
         setTitle(article.title);
         setDescription(article.description || '');
         setBody((article.content_data as { body?: string })?.body || '');
+        setAudioUrl((article.content_data as { audio_url?: string })?.audio_url || '');
+        setVideoUrl((article.content_data as { video_url?: string })?.video_url || '');
         setType(article.type);
         setCategory(article.category);
         setIsPremium(article.is_premium);
@@ -86,7 +90,15 @@ export default function ArticleEditScreen() {
     try {
       setSaving(true);
 
-      const contentData = { body: body.trim() };
+      // Формируем content_data в зависимости от типа
+      const contentData: Record<string, unknown> = {};
+      if (type === 'article') {
+        contentData.body = body.trim();
+      } else if (type === 'audio') {
+        contentData.audio_url = audioUrl.trim();
+      } else if (type === 'video') {
+        contentData.video_url = videoUrl.trim();
+      }
 
       if (isEditing) {
         const result = await updateContent(id!, {
@@ -174,20 +186,6 @@ export default function ArticleEditScreen() {
           />
         </View>
 
-        {/* Текст статьи */}
-        <View style={styles.field}>
-          <Text style={styles.label}>Текст статьи</Text>
-          <TextInput
-            style={[styles.input, styles.textArea]}
-            value={body}
-            onChangeText={setBody}
-            placeholder="Полный текст статьи..."
-            placeholderTextColor="#666"
-            multiline
-            textAlignVertical="top"
-          />
-        </View>
-
         {/* Категория */}
         <View style={styles.field}>
           <Text style={styles.label}>Категория *</Text>
@@ -217,6 +215,60 @@ export default function ArticleEditScreen() {
             ))}
           </View>
         </View>
+
+        {/* Поле для URL аудио (только для типа audio) */}
+        {type === 'audio' && (
+          <View style={styles.field}>
+            <Text style={styles.label}>URL аудио файла *</Text>
+            <TextInput
+              style={styles.input}
+              value={audioUrl}
+              onChangeText={setAudioUrl}
+              placeholder="https://...supabase.co/storage/v1/object/public/content/audio/file.mp3"
+              placeholderTextColor="#666"
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+            <Text style={styles.hint}>
+              Загрузите MP3 в Supabase Storage и вставьте URL
+            </Text>
+          </View>
+        )}
+
+        {/* Поле для URL видео (только для типа video) */}
+        {type === 'video' && (
+          <View style={styles.field}>
+            <Text style={styles.label}>URL видео файла *</Text>
+            <TextInput
+              style={styles.input}
+              value={videoUrl}
+              onChangeText={setVideoUrl}
+              placeholder="https://...supabase.co/storage/v1/object/public/content/video/file.mp4"
+              placeholderTextColor="#666"
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+            <Text style={styles.hint}>
+              Загрузите MP4 в Supabase Storage и вставьте URL
+            </Text>
+          </View>
+        )}
+
+        {/* Поле для текста статьи (только для типа article) */}
+        {type === 'article' && (
+          <View style={styles.field}>
+            <Text style={styles.label}>Текст статьи</Text>
+            <TextInput
+              style={[styles.input, styles.textArea]}
+              value={body}
+              onChangeText={setBody}
+              placeholder="Полный текст статьи..."
+              placeholderTextColor="#666"
+              multiline
+              textAlignVertical="top"
+            />
+          </View>
+        )}
 
         {/* Платный контент */}
         <View style={styles.switchRow}>
@@ -321,6 +373,11 @@ const styles = StyleSheet.create({
   textArea: {
     height: 200,
     textAlignVertical: 'top',
+  },
+  hint: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 4,
   },
   chipRow: {
     flexDirection: 'row',
