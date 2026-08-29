@@ -1,0 +1,28 @@
+{
+  "expo": {
+    "name": "pulsera-app",
+    "slug": "pulsera-app",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "pulsera",
+    "userInterfaceStyle": "dark",
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#1a1a2e"
+      }
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "static"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-asset",
+      "expo-font",
+      "expo-web-browser"
+    ]
+  }
+}
