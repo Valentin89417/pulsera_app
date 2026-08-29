@@ -100,6 +100,9 @@ export default function ContentDetailScreen() {
   const audioUrl = (content.content_data as { audio_url?: string })?.audio_url;
   const videoUrl = (content.content_data as { video_url?: string })?.video_url;
 
+  console.log('[ContentDetail] type:', content.type, 'content_data:', content.content_data);
+  console.log('[ContentDetail] videoUrl:', videoUrl, 'isVideoContent:', content.type === 'video' && !!videoUrl);
+
   // Проверяем тип контента
   const isAudioContent = content.type === 'audio' && audioUrl;
   const isVideoContent = content.type === 'video' && videoUrl;

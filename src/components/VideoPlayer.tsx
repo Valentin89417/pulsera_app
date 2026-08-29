@@ -182,6 +182,9 @@ function NativeVideoPlayer({ uri, title }: VideoPlayerProps) {
     p.loop = false;
   });
 
+  // Статус завершения видео (для replay без перезагрузки)
+  const isFinishedRef = useRef(false);
+
   // Подписка на события плеера
   useEffect(() => {
     const playingSub = player.addListener('playingChange', (event) => {
@@ -190,6 +193,10 @@ function NativeVideoPlayer({ uri, title }: VideoPlayerProps) {
 
     const timeSub = player.addListener('timeUpdate', (event) => {
       setPosition(event.currentTime * 1000);
+      // Отслеживаем окончание видео
+      if (event.currentTime >= (player.duration || 0) - 0.3) {
+        isFinishedRef.current = true;
+      }
     });
 
     const statusSub = player.addListener('statusChange', (event) => {
@@ -202,9 +209,9 @@ function NativeVideoPlayer({ uri, title }: VideoPlayerProps) {
       }
     });
 
-    // Видео закончилось — просто отмечаем, НЕ трогаем currentTime
     const playToEndSub = player.addListener('playToEnd', () => {
       setIsPlaying(false);
+      isFinishedRef.current = true;
     });
 
     return () => {
@@ -219,10 +226,10 @@ function NativeVideoPlayer({ uri, title }: VideoPlayerProps) {
     if (player.playing) {
       player.pause();
     } else {
-      // Если видео закончилось — перемотка на начало перед воспроизведением
-      const isFinished = player.currentTime >= (player.duration || 0) - 0.5;
-      if (isFinished) {
-        player.currentTime = 0;
+      if (isFinishedRef.current) {
+        // Видео завершилось — replay через seekBy на полную длительность
+        isFinishedRef.current = false;
+        player.seekBy(-player.duration);
       }
       player.play();
     }

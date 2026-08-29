@@ -149,6 +149,8 @@ export default function ArticleEditScreen() {
         contentData.video_filename = videoFilename;
       }
 
+      console.log('[SAVE] type:', type, 'contentData:', contentData);
+
       if (isEditing) {
         const result = await updateContent(id!, {
           title: title.trim(),
@@ -161,6 +163,7 @@ export default function ArticleEditScreen() {
         });
 
         if (result) {
+          console.log('[SAVE] saved content_data:', result.content_data);
           Alert.alert('Готово', 'Статья обновлена', [
             { text: 'OK', onPress: () => router.back() },
           ]);
@@ -177,6 +180,7 @@ export default function ArticleEditScreen() {
         });
 
         if (result) {
+          console.log('[SAVE] created content_data:', result.content_data);
           Alert.alert('Готово', 'Статья создана', [
             { text: 'OK', onPress: () => router.back() },
           ]);
