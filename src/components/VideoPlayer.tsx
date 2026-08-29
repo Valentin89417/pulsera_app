@@ -12,14 +12,14 @@ import {
 // Web-специфичный импорт видео
 let VideoNative: React.ComponentType<Record<string, unknown>> | null = null;
 let ResizeModeNative: Record<string, string> | null = null;
-let AVPlaybackStatusType: unknown = null;
+let AudioNative: { setAudioModeAsync: (mode: Record<string, unknown>) => Promise<void> } | null = null;
 
 if (Platform.OS !== 'web') {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const expoAv = require('expo-av');
   VideoNative = expoAv.Video;
   ResizeModeNative = expoAv.ResizeMode;
-  AVPlaybackStatusType = expoAv.AVPlaybackStatus;
+  AudioNative = expoAv.Audio;
 }
 
 // Компонент видео-плеера
@@ -226,6 +226,16 @@ function NativeVideoPlayer({ uri, title }: VideoPlayerProps) {
   const [error, setError] = useState<string | null>(null);
   const [showControls, setShowControls] = useState(true);
 
+  // Инициализация аудио-сессии для Android
+  useEffect(() => {
+    AudioNative?.setAudioModeAsync({
+      allowsRecordingIOS: false,
+      staysActiveInBackground: false,
+      shouldDuckAndroid: true,
+      playThroughEarpieceAndroid: false,
+    }).catch(console.error);
+  }, []);
+
   const onPlaybackStatusUpdate = useCallback((newStatus: Record<string, unknown>) => {
     setStatus(newStatus);
     if (newStatus.isLoaded) {
@@ -244,6 +254,13 @@ function NativeVideoPlayer({ uri, title }: VideoPlayerProps) {
       if (isPlaying) {
         await (ref.pauseAsync as () => Promise<void>)();
       } else {
+        // Запрашиваем аудио-фокус перед воспроизведением (Android)
+        await AudioNative?.setAudioModeAsync({
+          allowsRecordingIOS: false,
+          staysActiveInBackground: false,
+          shouldDuckAndroid: true,
+          playThroughEarpieceAndroid: false,
+        });
         await (ref.playAsync as () => Promise<void>)();
       }
     } catch (err) {
