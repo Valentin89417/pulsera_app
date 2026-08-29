@@ -54,7 +54,7 @@ function NativeVideoPlayer({ uri, title }: VideoPlayerProps) {
   const { VideoView, useVideoPlayer } = require('expo-video') as typeof import('expo-video');
 
   const player = useVideoPlayer(uri, (p) => {
-    p.loop = false;
+    p.loop = true;
     p.bufferOptions = {
       preferredForwardBufferDuration: 60,
       minBufferForPlayback: 1,
