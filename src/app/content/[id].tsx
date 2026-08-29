@@ -10,6 +10,7 @@ import {
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { getContentById } from '../../services/api';
 import { ContentItem } from '../../types';
+import { AudioPlayer } from '../../components/AudioPlayer';
 
 // Экран детального просмотра контента
 export default function ContentDetailScreen() {
@@ -93,8 +94,12 @@ export default function ContentDetailScreen() {
     );
   }
 
-  // Извлекаем текст статьи из content_data
+  // Извлекаем данные из content_data
   const body = (content.content_data as { body?: string })?.body || '';
+  const audioUrl = (content.content_data as { audio_url?: string })?.audio_url;
+
+  // Проверяем, является ли контент аудио
+  const isAudioContent = content.type === 'audio' && audioUrl;
 
   return (
     <View style={styles.container}>
@@ -135,8 +140,10 @@ export default function ContentDetailScreen() {
         {/* Разделитель */}
         <View style={styles.divider} />
 
-        {/* Текст статьи */}
-        {body ? (
+        {/* Аудио-плеер (для аудио контента) */}
+        {isAudioContent ? (
+          <AudioPlayer uri={audioUrl!} title={content.title} />
+        ) : body ? (
           <Text style={styles.body}>{body}</Text>
         ) : (
           <View style={styles.noContent}>
