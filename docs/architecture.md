@@ -1,62 +1,169 @@
-# Архитектура приложения
+# Архитектура приложения Pulsera App
 
-pulsera-app/
-│
-├── AGENTS.md                          # Инструкции для AI (OpenCode/Claude)
-├── .env.example                       # Пример переменных окружения
+Мобильное приложение блога духовного целителя Дины Кануниковой (pulsera.ru).
+Контент: духовные практики, арт-терапия, медитации. Бесплатный + премиум-контент.
+
+## Стек технологий
+
+- **React Native + Expo SDK 54** (Expo Go для разработки)
+- **Expo Router** (файловая маршрутизация)
+- **TypeScript** (строгий режим)
+- **Zustand** (управление состоянием)
+- **Supabase** (аутентификация, база данных, хранилище, realtime)
+- **expo-video** (видеоплеер на нативе)
+- **expo-file-system** (офлайн-кэширование)
+- **react-native-keyboard-aware-scroll-view** (обработка клавиатуры)
+- **FontAwesome** (@expo/vector-icons) — все UI-иконки
+
+## Структура проекта
+
+```
+D:\pulsera_app\
+├── AGENTS.md                          # Инструкции для AI
+├── .env                               # Переменные окружения (Supabase)
 ├── app.json                           # Конфигурация Expo
-├── package.json                       # Зависимости проекта
-├── tsconfig.json                      # TypeScript конфигурация
+├── package.json                       # Зависимости
 │
 ├── docs/
-│   ├── architecture.md                # Архитектура приложения
-│   ├── database-schema.md             # Схема БД
-│   ├── api-spec.md                    # Спецификация API
-│   └── progress.md                    # Прогресс разработки
+│   ├── architecture.md                # ← ЭТОТ ФАЙЛ
+│   ├── progress.md                    # Прогресс разработки
+│   └── ...
 │
 ├── src/
 │   ├── app/                           # Expo Router (файлы-роуты)
-│   │   ├── _layout.tsx                # Корневой layout
+│   │   ├── _layout.tsx                # Корневой layout (авторизация, тема, статус-бар, downloads)
+│   │   ├── settings.tsx               # Экран настроек (переключатель темы)
+│   │   ├── downloads.tsx              # Экран скачанного контента
+│   │   ├── subscription.tsx           # Экран подписки
+│   │   ├── +not-found.tsx             # 404 экран
 │   │   │
 │   │   ├── (auth)/                    # Группа авторизации
-│   │   │   ├── _layout.tsx            # Layout авторизации
-│   │   │   ├── login.tsx              # Экран входа
-│   │   │   ├── register.tsx           # Экран регистрации
-│   │   │   └── forgot-password.tsx    # Восстановление пароля
+│   │   │   ├── _layout.tsx
+│   │   │   ├── login.tsx
+│   │   │   ├── register.tsx
+│   │   │   └── forgot-password.tsx
 │   │   │
-│   │   └── (tabs)/                    # Группа основных табов
-│   │       ├── _layout.tsx            # Layout табов
-│   │       ├── index.tsx              # Главная
-│   │       ├── catalog.tsx            # Каталог
-│   │       ├── community.tsx          # Сообщество
-│   │       └── profile.tsx            # Профиль
+│   │   ├── (tabs)/                    # Основные табы
+│   │   │   ├── _layout.tsx            # Нижняя навигация (FontAwesome иконки)
+│   │   │   ├── index.tsx              # Главная (лента контента)
+│   │   │   ├── catalog.tsx            # Каталог (фильтры по типу)
+│   │   │   ├── community.tsx          # Сообщество (заглушка)
+│   │   │   └── profile.tsx            # Профиль (данные, меню)
+│   │   │
+│   │   ├── admin/                     # Админ-панель
+│   │   │   ├── articles.tsx           # Управление статьями
+│   │   │   ├── article-edit.tsx       # Редактор статей (CRUD)
+│   │   │   └── comments.tsx           # Управление комментариями
+│   │   │
+│   │   ├── content/
+│   │   │   └── [id].tsx               # Детальный экран контента
+│   │   │
+│   │   └── admin.tsx                  # Главный экран админки
 │   │
-│   ├── components/                    # UI компоненты
+│   ├── components/                    # Переиспользуемые UI компоненты
+│   │   ├── AudioPlayer.tsx            # Аудиоплеер (expo-av)
+│   │   ├── VideoPlayer.tsx            # Видеоплеер (expo-video / HTML5)
+│   │   ├── BookmarkButton.tsx         # Кнопка закладки (❤️)
+│   │   ├── DownloadButton.tsx         # Кнопка скачивания (cloud-download)
+│   │   ├── CommentItem.tsx            # Комментарий (ответ, редактирование, удаление)
+│   │   ├── CommentInput.tsx           # Поле ввода комментария
+│   │   ├── CommentsSection.tsx        # Секция комментариев (модалка, реалтайм)
+│   │   └── PremiumGate.tsx            # Закрытый контент (Modal)
 │   │
 │   ├── hooks/
-│   │   └── useAuth.ts                 # Хук аутентификации
+│   │   ├── useAuth.ts                 # useAuth, useProtectedRoute, useSubscription, useAdmin
+│   │   └── useTheme.ts                # Хук темы (mode, colors, toggleTheme)
 │   │
 │   ├── services/
-│   │   ├── supabase.ts                # Supabase клиент
-│   │   └── api.ts                     # API функции
+│   │   ├── supabase.ts                # Клиент Supabase + типы Database
+│   │   └── api.ts                     # Функции API (CRUD для всех таблиц)
 │   │
 │   ├── store/
-│   │   └── authStore.ts               # Zustand store
+│   │   ├── authStore.ts               # Состояние аутентификации + профиль
+│   │   ├── themeStore.ts              # Состояние темы (Zustand + AsyncStorage)
+│   │   └── downloadStore.ts           # Состояние скачанного (Set, downloads)
 │   │
 │   ├── types/
-│   │   ├── auth.ts                    # Типы аутентификации
-│   │   ├── content.ts                 # Типы контента
-│   │   ├── user.ts                    # Типы пользователя
-│   │   └── index.ts                   # Экспорт типов
+│   │   ├── content.ts                 # ContentItem, CommentWithAuthor, Bookmark
+│   │   └── user.ts                    # UserSubscription, ExtendedUserProfile, SubscriptionTier
 │   │
-│   ├── utils/
-│   │   ├── constants.ts               # Константы
-│   │   ├── helpers.ts                 # Утилиты
-│   │   └── index.ts                   # Экспорт утилит
-│   │
-│   └── constants/
-│       └── Colors.ts                  # Цвета (из шаблона Expo)
+│   └── utils/
+│       ├── themeColors.ts             # Палитры тем (ThemeColors, darkColors, lightColors)
+│       ├── constants.ts               # Константы (SIZES, CONTENT_TYPES)
+│       ├── storage.ts                 # Платформенный адаптер (localStorage / AsyncStorage)
+│       └── offlineCache.ts            # Скачивание/чтение контента (expo-file-system)
 │
 └── supabase/
-└── migrations/
-└── 001_initial_schema.sql     # Начальная схема БД
+    └── migrations/
+        ├── 001_initial_schema.sql     # Начальная схема (profiles, content, comments, etc.)
+        ├── 002_add_roles.sql          # Роли (admin/user)
+        ├── 003_setup_storage.sql      # Storage bucket
+        ├── 004_enable_comments_realtime.sql  # Realtime для комментариев
+        └── 005_add_comment_delete_policy.sql # RLS для удаления/редактирования
+```
+
+## Ключевые решения
+
+### Система тем
+- Двойная тема: светлая (#fffee0 фон, #014960 тийл, #a5593b медь) и тёмная (#1a1a2e фон, #6c63ff акцент)
+- Zustand store + AsyncStorage persistence
+- Хук `useTheme()` возвращает `{ mode, colors, toggleTheme }`
+- Тип `ThemeColors` содержит ~35 токенов
+- Медь (#a5593b) — только в светлой теме (границы карточек, иконки каталога, textMuted)
+- Тёмная тема: серые границы (#333333), серые иконки
+
+### Офлайн-кэширование
+- Текст статей → .txt файлы
+- Аудио → .mp3 файлы
+- Видео → .mp4 файлы
+- Хранение: `{documentDirectory}downloads/`
+- Метаданные: AsyncStorage key `@pulsera_downloads`
+- **Приоритет**: локальный файл → сетевой URL
+
+### Видеоплеер (платформенный сплит)
+- **Натив**: expo-video (`VideoView` + `useVideoPlayer`)
+- **Веб**: HTML5 `<video>` через DOM ref
+- Экспорт: `Platform.OS === 'web'` → WebVideoPlayer, иначе NativeVideoPlayer
+
+### Подписка (кастомная система)
+- Не RevenueCat, а своя через ЮKassa + Stripe
+- WebView оплата → deep link `pulsera://payment/success`
+- Тарифы: Free / Путь / Пробуждение
+- Тестирование: toggle-кнопки в админ-панели
+
+### Роли и RLS
+- `profiles.role`: `'user'` | `'admin'`
+- SELECT — публичный
+- UPDATE — только свой профиль
+- INSERT — только свой профиль (auth.uid() = id)
+- DELETE комментариев/закладок — автор + админ
+- Контент — только INSERT/UPDATE/DELETE для admin
+
+### Комментарии
+- Комментарии ссылаются на `auth.users`, НЕ на `profiles`
+- Двухзапросной подход: comments + profiles раздельно
+- Реалтайм через Supabase channels (postgres_changes)
+- Модалка ввода (KeyboardAvoidingView)
+
+## Навигация
+
+```
+RootLayout
+├── Onboarding (state-based)
+├── Auth Flow (login, register, forgot-password)
+└── Tabs
+    ├── Home (лента контента)
+    ├── Catalog (каталог + фильтры)
+    ├── Community (заглушка)
+    └── Profile
+        ├── Настройки → /settings
+        ├── Скачанное → /downloads
+        ├── Закладки → /bookmarks
+        ├── Улучшить подписку → /subscription
+        └── Админ-панель → /admin
+```
+
+## Расположение архитектуры
+
+**Файл:** `D:\pulsera_app\docs\architecture.md`
+**Обновляется:** при изменении архитектуры (новые фичи, изменения структуры)
