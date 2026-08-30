@@ -12,6 +12,7 @@ import { getContentById } from '../../services/api';
 import { ContentItem } from '../../types';
 import { AudioPlayer } from '../../components/AudioPlayer';
 import { VideoPlayer } from '../../components/VideoPlayer';
+import { BookmarkButton } from '../../components/BookmarkButton';
 
 // Экран детального просмотра контента
 export default function ContentDetailScreen() {
@@ -120,6 +121,7 @@ export default function ContentDetailScreen() {
               <Text style={styles.premiumText}>Премиум</Text>
             </View>
           )}
+          <BookmarkButton contentId={content.id} />
         </View>
       </View>
 

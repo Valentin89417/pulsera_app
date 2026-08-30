@@ -4,6 +4,9 @@
 .env.local
 .env.production
 
+# IDE
+.idea
+
 # dependencies
 node_modules/
 

@@ -82,7 +82,10 @@ export default function ProfileScreen() {
 
       {/* Меню */}
       <View style={styles.menuSection}>
-        <TouchableOpacity style={styles.menuItem}>
+        <TouchableOpacity
+          style={styles.menuItem}
+          onPress={() => router.push('/bookmarks')}
+        >
           <Text style={styles.menuIcon}>❤️</Text>
           <Text style={styles.menuText}>Закладки</Text>
           <Text style={styles.menuArrow}>›</Text>
