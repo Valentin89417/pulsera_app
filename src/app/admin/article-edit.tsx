@@ -15,6 +15,7 @@ import { FontAwesome } from '@expo/vector-icons';
 import { getContentById, createContent, updateContent } from '../../services/api';
 import { ContentItem, ContentType } from '../../types';
 import { pickFile, uploadFile, UploadFileType } from '../../utils/upload';
+import { MarkdownEditor } from '../../components/MarkdownEditor';
 import { useTheme } from '../../hooks/useTheme';
 import { ThemeColors } from '../../utils/themeColors';
 
@@ -348,16 +349,15 @@ export default function ArticleEditScreen() {
 
         {type === 'article' && (
           <View style={styles.field}>
-            <Text style={styles.label}>Текст статьи</Text>
-            <TextInput
-              style={[styles.input, styles.textArea]}
+            <Text style={styles.label}>Текст статьи (Markdown)</Text>
+            <MarkdownEditor
               value={body}
               onChangeText={setBody}
-              placeholder="Полный текст статьи..."
-              placeholderTextColor={colors.placeholder}
-              multiline
-              textAlignVertical="top"
+              placeholder="Пишите текст в формате Markdown..."
             />
+            <Text style={styles.hint}>
+              **жирный** _курсив_ ~~зачёркивание~~ ## заголовки - списки {'>'} цитаты `код` [ссылки](url) ![картинки](url)
+            </Text>
           </View>
         )}
 
@@ -461,7 +461,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     fontSize: 16,
     color: colors.text,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.cardBorder,
   },
   textArea: {
     height: 200,
@@ -483,7 +483,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.cardBorder,
   },
   chipActive: {
     backgroundColor: colors.primary,
@@ -520,7 +520,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     backgroundColor: colors.surface,
     borderRadius: 12,
     borderWidth: 2,
-    borderColor: colors.border,
+    borderColor: colors.cardBorder,
     borderStyle: 'dashed',
     padding: 24,
     alignItems: 'center',
@@ -560,7 +560,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     borderRadius: 12,
     padding: 16,
     borderWidth: 1,
-    borderColor: colors.primary,
+    borderColor: colors.cardBorder,
   },
   fileInfo: {
     flexDirection: 'row',

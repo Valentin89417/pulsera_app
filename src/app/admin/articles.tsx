@@ -18,6 +18,7 @@ import { ThemeColors } from '../../utils/themeColors';
 export default function ArticlesScreen() {
   const router = useRouter();
   const { colors } = useTheme();
+  const styles = createStyles(colors);
 
   const [articles, setArticles] = useState<ContentItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -95,7 +96,7 @@ export default function ArticlesScreen() {
           style={styles.editButton}
           onPress={() => router.push({ pathname: '/admin/article-edit', params: { id: item.id } })}
         >
-          <FontAwesome name="pencil" size={18} color={colors.primary} />
+          <FontAwesome name="pencil" size={18} color={colors.cardIconColor} />
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.deleteButton}
@@ -117,7 +118,7 @@ export default function ArticlesScreen() {
           </View>
         </TouchableOpacity>
         <View style={styles.headerRow}>
-          <Text style={styles.headerTitle}>Статьи</Text>
+          <Text style={styles.headerTitle}>Управление статьями</Text>
           <TouchableOpacity
             style={styles.addButton}
             onPress={() => router.push('/admin/article-edit')}
@@ -180,7 +181,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     alignItems: 'center',
   },
   headerTitle: {
-    fontSize: 28,
+    fontSize: 22,
     fontWeight: 'bold',
     color: colors.text,
   },
@@ -206,6 +207,8 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     borderRadius: 12,
     padding: 16,
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.cardBorder,
   },
   articleInfo: {
     flex: 1,
@@ -233,7 +236,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 8,
-    backgroundColor: colors.background,
+    backgroundColor: colors.cardIconBg,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -244,7 +247,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 8,
-    backgroundColor: colors.background,
+    backgroundColor: colors.primaryAlpha13,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -271,36 +274,4 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     fontSize: 14,
     color: colors.textMuted,
   },
-});
-
-const styles = createStyles({
-  background: '#1a1a2e',
-  surface: '#16213e',
-  surfaceLight: '#1f2b47',
-  primary: '#6c63ff',
-  primaryLight: '#8b83ff',
-  onPrimary: '#ffffff',
-  gold: '#ffc107',
-  copper: '#a5593b',
-  cardBorder: '#333333',
-  cardIconBg: '#1a1a2e',
-  cardIconColor: '#6c63ff',
-  inputBg: '#16213e',
-  text: '#ffffff',
-  textSecondary: '#999999',
-  textMuted: '#666666',
-  border: '#333333',
-  borderLight: '#444444',
-  success: '#4caf50',
-  error: '#ff4444',
-  primaryAlpha10: 'rgba(108, 99, 255, 0.1)',
-  primaryAlpha13: 'rgba(108, 99, 255, 0.13)',
-  primaryAlpha20: 'rgba(108, 99, 255, 0.2)',
-  primaryAlpha27: 'rgba(108, 99, 255, 0.27)',
-  surfaceAlpha98: 'rgba(22, 33, 62, 0.98)',
-  overlay: 'rgba(0, 0, 0, 0.5)',
-  whiteAlpha60: 'rgba(255, 255, 255, 0.6)',
-  whiteAlpha70: 'rgba(255, 255, 255, 0.7)',
-  placeholder: '#666666',
-  statusBar: 'light',
 });

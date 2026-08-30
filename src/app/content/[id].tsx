@@ -10,6 +10,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { FontAwesome } from '@expo/vector-icons';
+import Markdown from 'react-native-markdown-display';
 import { getContentById } from '../../services/api';
 import { ContentItem } from '../../types';
 import { AudioPlayer } from '../../components/AudioPlayer';
@@ -22,6 +23,8 @@ import { useSubscription } from '../../hooks/useAuth';
 import { readDownloadedArticle, getDownloadedMediaUri } from '../../utils/offlineCache';
 import { useTheme } from '../../hooks/useTheme';
 import { ThemeColors } from '../../utils/themeColors';
+import { getMarkdownStyles } from '../../utils/markdownStyles';
+import { MarkdownImage } from '../../components/MarkdownImage';
 
 const createStyles = (colors: ThemeColors) => StyleSheet.create({
   safeArea: {
@@ -124,10 +127,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     backgroundColor: colors.border,
     marginBottom: 20,
   },
-  body: {
-    fontSize: 16,
-    color: colors.textSecondary,
-    lineHeight: 28,
+  bodyContainer: {
     marginBottom: 40,
   },
   noContent: {
@@ -168,6 +168,17 @@ export default function ContentDetailScreen() {
   const { hasAccess } = useSubscription();
   const { colors } = useTheme();
   const styles = createStyles(colors);
+  const markdownStyles = getMarkdownStyles(colors);
+
+  // Кастомное правило для images — используем MarkdownImage с определением пропорций
+  const markdownRules = {
+    image: (node: any) => {
+      const { src, alt } = node.attributes;
+      return (
+        <MarkdownImage key={node.key} uri={src} alt={alt} />
+      );
+    },
+  };
 
   useEffect(() => {
     loadContent();
@@ -336,7 +347,9 @@ export default function ContentDetailScreen() {
               ) : isAudioContent ? (
                 <AudioPlayer uri={audioUrl!} title={content.title} />
               ) : body ? (
-                <Text style={styles.body}>{body}</Text>
+                <View style={styles.bodyContainer}>
+                  <Markdown style={markdownStyles} rules={markdownRules}>{body}</Markdown>
+                </View>
               ) : (
                 <View style={styles.noContent}>
                   <FontAwesome name="envelope-o" size={48} color={colors.primary} />
@@ -352,7 +365,9 @@ export default function ContentDetailScreen() {
             ) : isAudioContent ? (
               <AudioPlayer uri={audioUrl!} title={content.title} />
             ) : body ? (
-              <Text style={styles.body}>{body}</Text>
+              <View style={styles.bodyContainer}>
+                <Markdown style={markdownStyles} rules={markdownRules}>{body}</Markdown>
+              </View>
             ) : (
             <View style={styles.noContent}>
               <FontAwesome name="envelope-o" size={48} color={colors.primary} />

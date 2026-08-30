@@ -246,6 +246,8 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
+    borderWidth: 1,
+    borderColor: colors.cardBorder,
   },
   cardHeader: {
     flexDirection: 'row',
@@ -261,7 +263,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: colors.primaryAlpha20,
+    backgroundColor: colors.cardIconBg,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 10,
@@ -269,7 +271,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   avatarText: {
     fontSize: 14,
     fontWeight: '600',
-    color: colors.primary,
+    color: colors.cardIconColor,
   },
   authorName: {
     fontSize: 14,
@@ -291,8 +293,10 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     alignItems: 'center',
     backgroundColor: colors.background,
     borderRadius: 8,
-    padding: 10,
+    padding: 12,
     marginBottom: 12,
+    borderWidth: 1,
+    borderColor: colors.cardBorder,
   },
   contentIcon: {
     fontSize: 16,
