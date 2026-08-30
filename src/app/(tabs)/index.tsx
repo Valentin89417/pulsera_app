@@ -13,6 +13,7 @@ import { FontAwesome } from '@expo/vector-icons';
 import { useAuthStore } from '../../store/authStore';
 import { getContent } from '../../services/api';
 import { ContentItem } from '../../types';
+import { DownloadButton } from '../../components/DownloadButton';
 import { useTheme } from '../../hooks/useTheme';
 import { ThemeColors } from '../../utils/themeColors';
 
@@ -86,10 +87,17 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   cardFooter: {
     marginTop: 4,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
   cardCategory: {
     fontSize: 12,
     color: colors.textMuted,
+  },
+  cardActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   loader: {
     marginTop: 60,
@@ -191,6 +199,9 @@ export default function HomeScreen() {
       )}
       <View style={styles.cardFooter}>
         <Text style={styles.cardCategory}>{item.category}</Text>
+        <View style={styles.cardActions}>
+          <DownloadButton item={item} size="small" />
+        </View>
       </View>
     </TouchableOpacity>
   );

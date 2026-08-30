@@ -12,6 +12,7 @@ import { useRouter } from 'expo-router';
 import { FontAwesome } from '@expo/vector-icons';
 import { getContent } from '../../services/api';
 import { ContentItem, ContentType } from '../../types';
+import { DownloadButton } from '../../components/DownloadButton';
 import { useTheme } from '../../hooks/useTheme';
 import { ThemeColors } from '../../utils/themeColors';
 
@@ -241,6 +242,7 @@ export default function CatalogScreen() {
               <Text style={styles.premiumText}>Премиум</Text>
             </View>
           )}
+          <DownloadButton item={item} size="small" />
         </View>
       </View>
     </TouchableOpacity>

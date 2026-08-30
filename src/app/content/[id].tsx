@@ -5,8 +5,8 @@ import {
   StyleSheet,
   TouchableOpacity,
   ActivityIndicator,
-  SafeAreaView,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { FontAwesome } from '@expo/vector-icons';
@@ -15,9 +15,11 @@ import { ContentItem } from '../../types';
 import { AudioPlayer } from '../../components/AudioPlayer';
 import { VideoPlayer } from '../../components/VideoPlayer';
 import { BookmarkButton } from '../../components/BookmarkButton';
+import { DownloadButton } from '../../components/DownloadButton';
 import { CommentsSection } from '../../components/CommentsSection';
 import { PremiumGate } from '../../components/PremiumGate';
 import { useSubscription } from '../../hooks/useAuth';
+import { readDownloadedArticle, getDownloadedMediaUri } from '../../utils/offlineCache';
 import { useTheme } from '../../hooks/useTheme';
 import { ThemeColors } from '../../utils/themeColors';
 
@@ -161,6 +163,8 @@ export default function ContentDetailScreen() {
   const [content, setContent] = useState<ContentItem | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [offlineBody, setOfflineBody] = useState<string | null>(null);
+  const [offlineMediaUri, setOfflineMediaUri] = useState<string | null>(null);
   const { hasAccess } = useSubscription();
   const { colors } = useTheme();
   const styles = createStyles(colors);
@@ -176,12 +180,46 @@ export default function ContentDetailScreen() {
       const data = await getContentById(id);
       if (data) {
         setContent(data);
+
+        // Проверяем офлайн-кэш для контента
+        const body = (data.content_data as { body?: string })?.body;
+        const audioUrl = (data.content_data as { audio_url?: string })?.audio_url;
+        const videoUrl = (data.content_data as { video_url?: string })?.video_url;
+
+        // Проверяем офлайн-кэш: если файл скачан — используем локальный
+        if (data.type === 'article') {
+          const cached = await readDownloadedArticle(data.id);
+          if (cached) setOfflineBody(cached);
+        }
+
+        if (data.type === 'audio') {
+          const localUri = await getDownloadedMediaUri(data.id, 'audio');
+          if (localUri) {
+            setOfflineMediaUri(localUri);
+          }
+        }
+
+        if (data.type === 'video') {
+          const localUri = await getDownloadedMediaUri(data.id, 'video');
+          if (localUri) {
+            setOfflineMediaUri(localUri);
+          }
+        }
       } else {
         setError('Контент не найден');
       }
     } catch (err) {
       console.error('Ошибка загрузки контента:', err);
-      setError('Не удалось загрузить контент');
+      // Пробуем загрузить из кэша
+      if (id) {
+        const cachedText = await readDownloadedArticle(id);
+        if (cachedText) {
+          setOfflineBody(cachedText);
+          setError(null);
+        } else {
+          setError('Не удалось загрузить контент');
+        }
+      }
     } finally {
       setLoading(false);
     }
@@ -236,9 +274,9 @@ export default function ContentDetailScreen() {
     );
   }
 
-  const body = (content.content_data as { body?: string })?.body || '';
-  const audioUrl = (content.content_data as { audio_url?: string })?.audio_url;
-  const videoUrl = (content.content_data as { video_url?: string })?.video_url;
+  const body = offlineBody || (content.content_data as { body?: string })?.body || '';
+  const audioUrl = offlineMediaUri || (content.content_data as { audio_url?: string })?.audio_url;
+  const videoUrl = offlineMediaUri || (content.content_data as { video_url?: string })?.video_url;
 
   const isAudioContent = content.type === 'audio' && audioUrl;
   const isVideoContent = content.type === 'video' && videoUrl;
@@ -257,6 +295,7 @@ export default function ContentDetailScreen() {
                 <Text style={styles.premiumText}>Премиум</Text>
               </View>
             )}
+            <DownloadButton item={content} />
             <BookmarkButton contentId={content.id} />
           </View>
         </View>

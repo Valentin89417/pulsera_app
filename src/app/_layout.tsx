@@ -5,6 +5,7 @@ import { StatusBar } from 'expo-status-bar';
 import storage from '../utils/storage';
 import { useAuthStore } from '../store/authStore';
 import { useThemeStore } from '../store/themeStore';
+import { useDownloadStore } from '../store/downloadStore';
 
 const ONBOARDING_KEY = '@pulsera_onboarding_done';
 
@@ -14,6 +15,7 @@ export default function RootLayout() {
   const segments = useSegments();
   const { initialize, user, isInitialized, isLoading } = useAuthStore();
   const { colors, loadTheme } = useThemeStore();
+  const { loadDownloads } = useDownloadStore();
   const [onboardingDone, setOnboardingDone] = useState<boolean | null>(null);
   const [routerReady, setRouterReady] = useState(false);
 
@@ -22,6 +24,7 @@ export default function RootLayout() {
     initialize();
     checkOnboarding();
     loadTheme();
+    loadDownloads();
   }, []);
 
   const checkOnboarding = async () => {
@@ -90,6 +93,7 @@ export default function RootLayout() {
           }}
         />
         <Stack.Screen name="settings" />
+        <Stack.Screen name="downloads" />
       </Stack>
     </>
   );
