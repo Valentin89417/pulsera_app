@@ -110,6 +110,8 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   card: {
     borderRadius: 16,
     overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: colors.cardBorder,
   },
   row: {
     flexDirection: 'row',

@@ -58,7 +58,7 @@ export function DownloadButton({ item, size = 'medium' }: DownloadButtonProps) {
     iconColor = colors.primary;
   } else {
     iconName = 'cloud-download';
-    iconColor = colors.textSecondary;
+    iconColor = colors.primary;
   }
 
   const styles = createStyles(colors);
@@ -89,7 +89,7 @@ const createStyles = (colors: ThemeColors) =>
     button: {
       padding: 10,
       borderRadius: 20,
-      backgroundColor: '#ffffff11',
+      backgroundColor: '#ffffff22',
     },
     buttonSmall: {
       padding: 6,

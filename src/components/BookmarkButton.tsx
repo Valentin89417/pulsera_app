@@ -66,7 +66,7 @@ export function BookmarkButton({ contentId, size = 'medium' }: BookmarkButtonPro
       <FontAwesome
         name={bookmarked ? 'heart' : 'heart-o'}
         size={size === 'small' ? 18 : 22}
-        color={bookmarked ? colors.error : colors.textSecondary}
+        color={colors.primary}
       />
     </TouchableOpacity>
   );
@@ -76,7 +76,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   button: {
     padding: 10,
     borderRadius: 20,
-    backgroundColor: '#ffffff11',
+    backgroundColor: '#ffffff22',
   },
   buttonSmall: {
     padding: 6,

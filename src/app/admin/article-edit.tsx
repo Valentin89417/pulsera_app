@@ -41,6 +41,8 @@ export default function ArticleEditScreen() {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [body, setBody] = useState('');
+  const [imageUrl, setImageUrl] = useState('');
+  const [imageFilename, setImageFilename] = useState('');
   const [audioUrl, setAudioUrl] = useState('');
   const [audioFilename, setAudioFilename] = useState('');
   const [videoUrl, setVideoUrl] = useState('');
@@ -68,6 +70,8 @@ export default function ArticleEditScreen() {
         setTitle(article.title);
         setDescription(article.description || '');
         setBody((article.content_data as { body?: string })?.body || '');
+        setImageUrl((article.content_data as { image_url?: string })?.image_url || '');
+        setImageFilename((article.content_data as { image_filename?: string })?.image_filename || '');
         setAudioUrl((article.content_data as { audio_url?: string })?.audio_url || '');
         setAudioFilename((article.content_data as { audio_filename?: string })?.audio_filename || '');
         setVideoUrl((article.content_data as { video_url?: string })?.video_url || '');
@@ -94,7 +98,10 @@ export default function ArticleEditScreen() {
 
       const result = await uploadFile(file, fileType, setUploadProgress);
 
-      if (fileType === 'audio') {
+      if (fileType === 'image') {
+        setImageUrl(result.url);
+        setImageFilename(result.filename);
+      } else if (fileType === 'audio') {
         setAudioUrl(result.url);
         setAudioFilename(result.filename);
       } else if (fileType === 'video') {
@@ -113,7 +120,10 @@ export default function ArticleEditScreen() {
   };
 
   const handleRemoveFile = (fileType: UploadFileType) => {
-    if (fileType === 'audio') {
+    if (fileType === 'image') {
+      setImageUrl('');
+      setImageFilename('');
+    } else if (fileType === 'audio') {
       setAudioUrl('');
       setAudioFilename('');
     } else if (fileType === 'video') {
@@ -136,6 +146,10 @@ export default function ArticleEditScreen() {
       setSaving(true);
 
       const contentData: Record<string, unknown> = {};
+      if (imageUrl.trim()) {
+        contentData.image_url = imageUrl.trim();
+        contentData.image_filename = imageFilename;
+      }
       if (type === 'article') {
         contentData.body = body.trim();
       } else if (type === 'audio') {
@@ -263,6 +277,45 @@ export default function ArticleEditScreen() {
               </TouchableOpacity>
             ))}
           </View>
+        </View>
+
+        <View style={styles.field}>
+          <Text style={styles.label}>Превью изображение</Text>
+          {imageUrl ? (
+            <View style={styles.filePreview}>
+              <View style={styles.fileInfo}>
+                <FontAwesome name="image" size={24} color={colors.primary} />
+                <Text style={styles.fileName} numberOfLines={1}>
+                  {imageFilename || 'preview.jpg'}
+                </Text>
+              </View>
+              <TouchableOpacity
+                style={styles.removeFileButton}
+                onPress={() => handleRemoveFile('image')}
+              >
+                <Text style={styles.removeFileText}>Удалить</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <TouchableOpacity
+              style={[styles.uploadButton, uploading && styles.uploadButtonDisabled]}
+              onPress={() => handleUploadFile('image')}
+              disabled={uploading}
+            >
+              {uploading ? (
+                <View style={styles.uploadingContainer}>
+                  <ActivityIndicator color={colors.primary} size="small" />
+                  <Text style={styles.uploadingText}>{uploadProgress}%</Text>
+                </View>
+              ) : (
+                <>
+                  <FontAwesome name="image" size={32} color={colors.primary} />
+                  <Text style={styles.uploadText}>Выбрать изображение</Text>
+                  <Text style={styles.uploadHint}>JPG, PNG, WebP (до 50 МБ)</Text>
+                </>
+              )}
+            </TouchableOpacity>
+          )}
         </View>
 
         {type === 'audio' && (

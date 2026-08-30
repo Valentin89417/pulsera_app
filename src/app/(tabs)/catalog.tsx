@@ -7,16 +7,17 @@ import {
   TouchableOpacity,
   RefreshControl,
   ActivityIndicator,
+  Image,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { FontAwesome } from '@expo/vector-icons';
 import { getContent } from '../../services/api';
 import { ContentItem, ContentType } from '../../types';
 import { DownloadButton } from '../../components/DownloadButton';
+import { BookmarkButton } from '../../components/BookmarkButton';
 import { useTheme } from '../../hooks/useTheme';
 import { ThemeColors } from '../../utils/themeColors';
 
-// Фильтры по типу контента
 const FILTERS: { key: ContentType | 'all'; label: string; icon: string }[] = [
   { key: 'all', label: 'Все', icon: 'magic' },
   { key: 'article', label: 'Статьи', icon: 'file-text-o' },
@@ -80,28 +81,43 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     paddingBottom: 20,
     gap: 12,
   },
-  card: {
-    flexDirection: 'row',
+  // Карточка с изображением
+  cardWithImage: {
     backgroundColor: colors.surface,
     borderRadius: 16,
-    padding: 16,
     borderWidth: 1,
     borderColor: colors.cardBorder,
+    overflow: 'hidden',
   },
-  cardType: {
-    width: 48,
-    height: 48,
-    borderRadius: 12,
+  cardImageContainer: {
+    width: '100%',
+    aspectRatio: 21 / 9,
+    backgroundColor: colors.border,
+  },
+  cardImage: {
+    width: '100%',
+    height: '100%',
+  },
+  cardTypeBadge: {
+    position: 'absolute',
+    top: 8,
+    left: 8,
+    width: 28,
+    height: 28,
+    borderRadius: 8,
     backgroundColor: colors.cardIconBg,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
   },
-  cardTypeIcon: {
-    fontSize: 24,
+  cardImageActions: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    flexDirection: 'row',
+    gap: 4,
   },
-  cardContent: {
-    flex: 1,
+  cardBody: {
+    padding: 14,
   },
   cardTitle: {
     fontSize: 16,
@@ -112,10 +128,20 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   cardDescription: {
     fontSize: 13,
     color: colors.textSecondary,
-    marginBottom: 8,
+    marginBottom: 10,
     lineHeight: 18,
   },
-  cardMeta: {
+  cardFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  cardFooterLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  cardFooterRight: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
@@ -131,6 +157,89 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     paddingVertical: 2,
   },
   premiumText: {
+    color: colors.primary,
+    fontSize: 10,
+    fontWeight: '600',
+  },
+  cardDate: {
+    fontSize: 11,
+    color: colors.textMuted,
+  },
+  // Карточка без изображения (текущий вид)
+  card: {
+    flexDirection: 'row',
+    backgroundColor: colors.surface,
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: colors.cardBorder,
+    minHeight: 100,
+  },
+  cardLeft: {
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginRight: 14,
+  },
+  cardType: {
+    width: 60,
+    height: 60,
+    borderRadius: 12,
+    backgroundColor: colors.cardIconBg,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  cardTypeIcon: {
+    fontSize: 24,
+  },
+  cardLeftButtons: {
+    flexDirection: 'row',
+    marginBottom: -7,
+    gap: 4,
+  },
+  cardContent: {
+    flex: 1,
+    justifyContent: 'space-between',
+  },
+  cardTextTop: {
+    marginBottom: 0,
+  },
+  cardTitleOld: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.text,
+    marginBottom: 4,
+  },
+  cardDescriptionOld: {
+    fontSize: 13,
+    color: colors.textSecondary,
+    lineHeight: 18,
+  },
+  cardMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  cardMetaLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  cardMetaRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  cardCategoryOld: {
+    fontSize: 12,
+    color: colors.textMuted,
+  },
+  premiumBadgeOld: {
+    backgroundColor: colors.primaryAlpha13,
+    borderRadius: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  premiumTextOld: {
     color: colors.primary,
     fontSize: 10,
     fontWeight: '600',
@@ -169,7 +278,6 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
 });
 
-// Экран каталога
 export default function CatalogScreen() {
   const router = useRouter();
   const { colors } = useTheme();
@@ -181,7 +289,6 @@ export default function CatalogScreen() {
   const [activeFilter, setActiveFilter] = useState<ContentType | 'all'>('all');
   const [error, setError] = useState<string | null>(null);
 
-  // Загрузка контента
   const loadContent = async (isRefresh = false) => {
     try {
       if (isRefresh) setRefreshing(true);
@@ -204,12 +311,10 @@ export default function CatalogScreen() {
     }
   };
 
-  // Загрузка при изменении фильтра
   useEffect(() => {
     loadContent();
   }, [activeFilter]);
 
-  // Иконка типа контента
   const getTypeIcon = (type: ContentItem['type']) => {
     switch (type) {
       case 'article': return 'file-text-o';
@@ -220,35 +325,99 @@ export default function CatalogScreen() {
     }
   };
 
-  // Рендер карточки контента
-  const renderContentCard = ({ item }: { item: ContentItem }) => (
-    <TouchableOpacity
-      style={styles.card}
-      onPress={() => router.push(`/content/${item.id}`)}
-      activeOpacity={0.7}
-    >
-      <View style={styles.cardType}>
-        <FontAwesome name={getTypeIcon(item.type) as any} size={24} color={colors.cardIconColor} />
-      </View>
-      <View style={styles.cardContent}>
-        <Text style={styles.cardTitle} numberOfLines={2}>{item.title}</Text>
-        {item.description && (
-          <Text style={styles.cardDescription} numberOfLines={2}>{item.description}</Text>
-        )}
-        <View style={styles.cardMeta}>
-          <Text style={styles.cardCategory}>{item.category}</Text>
-          {item.is_premium && (
-            <View style={styles.premiumBadge}>
-              <Text style={styles.premiumText}>Премиум</Text>
-            </View>
-          )}
-          <DownloadButton item={item} size="small" />
-        </View>
-      </View>
-    </TouchableOpacity>
-  );
+  const getImageUrl = (item: ContentItem): string | null => {
+    return (item.content_data as { image_url?: string })?.image_url || null;
+  };
 
-  // Пустой список
+  const renderContentCard = ({ item }: { item: ContentItem }) => {
+    const imageUrl = getImageUrl(item);
+
+    if (imageUrl) {
+      return (
+        <TouchableOpacity
+          style={styles.cardWithImage}
+          onPress={() => router.push(`/content/${item.id}`)}
+          activeOpacity={0.7}
+        >
+          <View style={styles.cardImageContainer}>
+            <Image source={{ uri: imageUrl }} style={styles.cardImage} resizeMode="cover" />
+            <View style={styles.cardTypeBadge}>
+              <FontAwesome name={getTypeIcon(item.type) as any} size={14} color={colors.cardIconColor} />
+            </View>
+            <View style={styles.cardImageActions}>
+              <DownloadButton item={item} size="small" />
+              <BookmarkButton contentId={item.id} size="small" />
+            </View>
+          </View>
+          <View style={styles.cardBody}>
+            <Text style={styles.cardTitle} numberOfLines={2}>{item.title}</Text>
+            {item.description && (
+              <Text style={styles.cardDescription} numberOfLines={2}>{item.description}</Text>
+            )}
+            <View style={styles.cardFooter}>
+              <View style={styles.cardFooterLeft}>
+                <Text style={styles.cardCategory}>{item.category}</Text>
+                {item.is_premium && (
+                  <View style={styles.premiumBadge}>
+                    <Text style={styles.premiumText}>Премиум</Text>
+                  </View>
+                )}
+              </View>
+              <View style={styles.cardFooterRight}>
+                <FontAwesome name="calendar" size={11} color={colors.textMuted} />
+                <Text style={styles.cardDate}>
+                  {new Date(item.created_at).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })}
+                </Text>
+              </View>
+            </View>
+          </View>
+        </TouchableOpacity>
+      );
+    }
+
+    return (
+      <TouchableOpacity
+        style={styles.card}
+        onPress={() => router.push(`/content/${item.id}`)}
+        activeOpacity={0.7}
+      >
+        <View style={styles.cardLeft}>
+          <View style={styles.cardType}>
+            <FontAwesome name={getTypeIcon(item.type) as any} size={34} color={colors.cardIconColor} />
+          </View>
+          <View style={styles.cardLeftButtons}>
+            <DownloadButton item={item} size="small" />
+            <BookmarkButton contentId={item.id} size="small" />
+          </View>
+        </View>
+        <View style={styles.cardContent}>
+          <View style={styles.cardTextTop}>
+            <Text style={styles.cardTitleOld} numberOfLines={2}>{item.title}</Text>
+            {item.description && (
+              <Text style={styles.cardDescriptionOld} numberOfLines={2}>{item.description}</Text>
+            )}
+          </View>
+          <View style={styles.cardMeta}>
+            <View style={styles.cardMetaLeft}>
+              <Text style={styles.cardCategoryOld}>{item.category}</Text>
+              {item.is_premium && (
+                <View style={styles.premiumBadgeOld}>
+                  <Text style={styles.premiumTextOld}>Премиум</Text>
+                </View>
+              )}
+            </View>
+            <View style={styles.cardMetaRight}>
+              <FontAwesome name="calendar" size={11} color={colors.textMuted} />
+              <Text style={styles.cardDate}>
+                {new Date(item.created_at).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })}
+              </Text>
+            </View>
+          </View>
+        </View>
+      </TouchableOpacity>
+    );
+  };
+
   const renderEmpty = () => {
     if (loading) {
       return <ActivityIndicator size="large" color={colors.primary} style={styles.loader} />;
@@ -256,7 +425,7 @@ export default function CatalogScreen() {
     if (error) {
       return (
         <View style={styles.emptyContainer}>
-          <Text style={styles.emptyIcon}>⚠️</Text>
+          <FontAwesome name="exclamation-triangle" size={48} color={colors.primary} />
           <Text style={styles.emptyText}>{error}</Text>
           <TouchableOpacity style={styles.retryButton} onPress={() => loadContent()}>
             <Text style={styles.retryText}>Повторить</Text>
@@ -266,7 +435,7 @@ export default function CatalogScreen() {
     }
     return (
       <View style={styles.emptyContainer}>
-        <Text style={styles.emptyIcon}>🔍</Text>
+        <FontAwesome name="search" size={48} color={colors.primary} />
         <Text style={styles.emptyText}>Ничего не найдено</Text>
         <Text style={styles.emptyHint}>Попробуйте изменить фильтр</Text>
       </View>
@@ -275,13 +444,11 @@ export default function CatalogScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Заголовок */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Каталог</Text>
         <Text style={styles.headerSubtitle}>Практики, медитации, курсы</Text>
       </View>
 
-      {/* Фильтры */}
       <View style={styles.filtersContainer}>
         <FlatList
           data={FILTERS}
@@ -311,7 +478,6 @@ export default function CatalogScreen() {
         />
       </View>
 
-      {/* Список контента */}
       <FlatList
         data={content}
         renderItem={renderContentCard}

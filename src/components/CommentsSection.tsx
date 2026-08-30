@@ -58,6 +58,10 @@ export function CommentsSection({ contentId, replyTo }: CommentsSectionProps) {
   useEffect(() => {
     loadComments();
 
+    if (channelRef.current) {
+      supabase.removeChannel(channelRef.current);
+    }
+
     channelRef.current = supabase
       .channel(`comments:${contentId}`)
       .on(
