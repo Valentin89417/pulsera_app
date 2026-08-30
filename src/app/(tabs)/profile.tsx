@@ -1,5 +1,6 @@
 import { View, Text, StyleSheet, TouchableOpacity, Alert, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
+import { FontAwesome } from '@expo/vector-icons';
 import { useAuthStore } from '../../store/authStore';
 import { useSubscription, useAdmin } from '../../hooks/useAuth';
 
@@ -89,31 +90,31 @@ export default function ProfileScreen() {
           style={styles.menuItem}
           onPress={() => router.push('/bookmarks')}
         >
-          <Text style={styles.menuIcon}>❤️</Text>
+          <FontAwesome name="heart" size={20} color="#6c63ff" style={styles.menuIcon} />
           <Text style={styles.menuText}>Закладки</Text>
           <Text style={styles.menuArrow}>›</Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.menuItem}>
-          <Text style={styles.menuIcon}>📥</Text>
+          <FontAwesome name="download" size={20} color="#6c63ff" style={styles.menuIcon} />
           <Text style={styles.menuText}>Скачанное</Text>
           <Text style={styles.menuArrow}>›</Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.menuItem}>
-          <Text style={styles.menuIcon}>⚙️</Text>
+          <FontAwesome name="cog" size={20} color="#6c63ff" style={styles.menuIcon} />
           <Text style={styles.menuText}>Настройки</Text>
           <Text style={styles.menuArrow}>›</Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.menuItem}>
-          <Text style={styles.menuIcon}>💬</Text>
+          <FontAwesome name="comment-o" size={20} color="#6c63ff" style={styles.menuIcon} />
           <Text style={styles.menuText}>Чат с автором</Text>
           <Text style={styles.menuArrow}>›</Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.menuItem}>
-          <Text style={styles.menuIcon}>❓</Text>
+          <FontAwesome name="question-circle" size={20} color="#6c63ff" style={styles.menuIcon} />
           <Text style={styles.menuText}>Помощь</Text>
           <Text style={styles.menuArrow}>›</Text>
         </TouchableOpacity>
@@ -126,7 +127,7 @@ export default function ProfileScreen() {
             style={styles.menuItem}
             onPress={() => router.push('/admin')}
           >
-            <Text style={styles.menuIcon}>🛡️</Text>
+          <FontAwesome name="shield" size={20} color="#6c63ff" style={styles.menuIcon} />
             <Text style={styles.menuText}>Админ панель</Text>
             <Text style={styles.menuArrow}>›</Text>
           </TouchableOpacity>

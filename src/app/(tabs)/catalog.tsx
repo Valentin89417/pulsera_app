@@ -9,16 +9,17 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import { FontAwesome } from '@expo/vector-icons';
 import { getContent } from '../../services/api';
 import { ContentItem, ContentType } from '../../types';
 
 // Фильтры по типу контента
 const FILTERS: { key: ContentType | 'all'; label: string; icon: string }[] = [
-  { key: 'all', label: 'Все', icon: '✨' },
-  { key: 'article', label: 'Статьи', icon: '📝' },
-  { key: 'video', label: 'Видео', icon: '🎬' },
-  { key: 'audio', label: 'Аудио', icon: '🎧' },
-  { key: 'course', label: 'Курсы', icon: '📚' },
+  { key: 'all', label: 'Все', icon: 'magic' },
+  { key: 'article', label: 'Статьи', icon: 'file-text-o' },
+  { key: 'video', label: 'Видео', icon: 'film' },
+  { key: 'audio', label: 'Аудио', icon: 'headphones' },
+  { key: 'course', label: 'Курсы', icon: 'book' },
 ];
 
 // Экран каталога
@@ -62,11 +63,11 @@ export default function CatalogScreen() {
   // Иконка типа контента
   const getTypeIcon = (type: ContentItem['type']) => {
     switch (type) {
-      case 'article': return '📝';
-      case 'video': return '🎬';
-      case 'audio': return '🎧';
-      case 'course': return '📚';
-      default: return '📄';
+      case 'article': return 'file-text-o';
+      case 'video': return 'film';
+      case 'audio': return 'headphones';
+      case 'course': return 'book';
+      default: return 'file-o';
     }
   };
 
@@ -78,7 +79,7 @@ export default function CatalogScreen() {
       activeOpacity={0.7}
     >
       <View style={styles.cardType}>
-        <Text style={styles.cardTypeIcon}>{getTypeIcon(item.type)}</Text>
+        <FontAwesome name={getTypeIcon(item.type) as any} size={24} color="#6c63ff" />
       </View>
       <View style={styles.cardContent}>
         <Text style={styles.cardTitle} numberOfLines={2}>{item.title}</Text>
@@ -146,7 +147,7 @@ export default function CatalogScreen() {
               ]}
               onPress={() => setActiveFilter(item.key)}
             >
-              <Text style={styles.filterIcon}>{item.icon}</Text>
+              <FontAwesome name={item.icon as any} size={14} color={activeFilter === item.key ? '#fff' : '#999'} />
               <Text
                 style={[
                   styles.filterText,

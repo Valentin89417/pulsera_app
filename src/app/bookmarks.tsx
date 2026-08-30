@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import { FontAwesome } from '@expo/vector-icons';
 import { useAuthStore } from '../store/authStore';
 import { getUserBookmarks, getContentById } from '../services/api';
 import { ContentItem } from '../types';
@@ -17,17 +18,17 @@ function BookmarkItem({ item, onPress }: { item: ContentItem; onPress: () => voi
   // Иконка типа контента
   const getTypeIcon = (type: ContentItem['type']) => {
     switch (type) {
-      case 'article': return '📝';
-      case 'video': return '🎬';
-      case 'audio': return '🎧';
-      case 'course': return '📚';
-      default: return '📄';
+      case 'article': return 'file-text-o';
+      case 'video': return 'film';
+      case 'audio': return 'headphones';
+      case 'course': return 'book';
+      default: return 'file-o';
     }
   };
 
   return (
     <TouchableOpacity style={styles.card} onPress={onPress}>
-      <Text style={styles.cardIcon}>{getTypeIcon(item.type)}</Text>
+      <FontAwesome name={getTypeIcon(item.type) as any} size={28} color="#6c63ff" style={styles.cardIcon} />
       <View style={styles.cardContent}>
         <Text style={styles.cardTitle} numberOfLines={2}>{item.title}</Text>
         <Text style={styles.cardCategory}>{item.category}</Text>
@@ -93,7 +94,8 @@ export default function BookmarksScreen() {
       {/* Шапка */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Text style={styles.backText}>← Назад</Text>
+          <FontAwesome name="arrow-left" size={16} color="#6c63ff" />
+          <Text style={styles.backText}>Назад</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Закладки</Text>
       </View>
@@ -101,10 +103,12 @@ export default function BookmarksScreen() {
       {/* Список закладок */}
       {bookmarks.length === 0 ? (
         <View style={styles.emptyContainer}>
-          <Text style={styles.emptyIcon}>💜</Text>
+          <FontAwesome name="heart" size={64} color="#6c63ff" />
           <Text style={styles.emptyTitle}>Нет закладок</Text>
           <Text style={styles.emptyText}>
-            Добавляйте контент в закладки нажимая ❤️ на странице статьи
+            Добавляйте контент в закладки нажимая
+            <FontAwesome name="heart" size={14} color="#ff4444" />
+            на странице статьи
           </Text>
         </View>
       ) : (
@@ -142,11 +146,14 @@ const styles = StyleSheet.create({
     paddingBottom: 16,
   },
   backButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
     marginBottom: 8,
   },
   backText: {
     color: '#6c63ff',
     fontSize: 16,
+    marginLeft: 6,
   },
   headerTitle: {
     fontSize: 28,

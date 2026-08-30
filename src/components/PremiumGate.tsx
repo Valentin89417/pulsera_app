@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Modal } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { FontAwesome } from '@expo/vector-icons';
 
 interface PremiumGateProps {
   children: React.ReactNode;
@@ -48,7 +48,7 @@ export function PremiumGate({ children, requiredTier, contentTitle }: PremiumGat
       >
         <View style={styles.modalOverlay}>
           <View style={styles.lockContainer}>
-            <Ionicons name="lock-closed" size={48} color="#6c63ff" />
+            <FontAwesome name="lock" size={48} color="#6c63ff" />
             <Text style={styles.title}>
               {contentTitle || 'Премиум-контент'}
             </Text>

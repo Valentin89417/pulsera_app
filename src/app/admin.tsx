@@ -1,5 +1,6 @@
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
+import { FontAwesome } from '@expo/vector-icons';
 import { useAdmin, useSubscription } from '../hooks/useAuth';
 import storage from '../utils/storage';
 
@@ -15,11 +16,14 @@ export default function AdminScreen() {
       <View style={styles.container}>
         <View style={styles.header}>
           <TouchableOpacity onPress={() => router.back()}>
-            <Text style={styles.backButton}>← Назад</Text>
+            <View style={styles.backButton}>
+              <FontAwesome name="arrow-left" size={16} color="#6c63ff" />
+              <Text style={styles.backButtonText}>Назад</Text>
+            </View>
           </TouchableOpacity>
         </View>
         <View style={styles.accessDenied}>
-          <Text style={styles.accessDeniedIcon}>🔒</Text>
+          <FontAwesome name="lock" size={48} color="#6c63ff" />
           <Text style={styles.accessDeniedText}>Доступ запрещён</Text>
           <Text style={styles.accessDeniedHint}>Только для администраторов</Text>
         </View>
@@ -32,7 +36,10 @@ export default function AdminScreen() {
       {/* Заголовок */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()}>
-          <Text style={styles.backButton}>← Назад</Text>
+          <View style={styles.backButton}>
+            <FontAwesome name="arrow-left" size={16} color="#6c63ff" />
+            <Text style={styles.backButtonText}>Назад</Text>
+          </View>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Админ панель</Text>
       </View>
@@ -43,7 +50,7 @@ export default function AdminScreen() {
           style={styles.menuItem}
           onPress={() => router.push('/admin/articles')}
         >
-          <Text style={styles.menuIcon}>📝</Text>
+          <FontAwesome name="file-text-o" size={22} color="#6c63ff" style={styles.menuIcon} />
           <View style={styles.menuContent}>
             <Text style={styles.menuText}>Управление статьями</Text>
             <Text style={styles.menuHint}>Создание, редактирование, удаление</Text>
@@ -55,7 +62,7 @@ export default function AdminScreen() {
           style={styles.menuItem}
           onPress={() => router.push('/admin/comments')}
         >
-          <Text style={styles.menuIcon}>💬</Text>
+          <FontAwesome name="comment-o" size={22} color="#6c63ff" style={styles.menuIcon} />
           <View style={styles.menuContent}>
             <Text style={styles.menuText}>Комментарии</Text>
             <Text style={styles.menuHint}>Просмотр и ответы на комментарии</Text>
@@ -83,7 +90,7 @@ export default function AdminScreen() {
             );
           }}
         >
-          <Text style={styles.menuIcon}>🔄</Text>
+          <FontAwesome name="refresh" size={22} color="#6c63ff" style={styles.menuIcon} />
           <View style={styles.menuContent}>
             <Text style={styles.menuText}>Сброс онбординга</Text>
             <Text style={styles.menuHint}>Показать экран онбординга снова</Text>
@@ -95,7 +102,7 @@ export default function AdminScreen() {
       {/* Тестирование подписки — только для админов */}
       <View style={styles.menuSection}>
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>🔧 Тестирование подписки</Text>
+          <Text style={styles.sectionTitle}>Тестирование подписки</Text>
         </View>
 
         {/* Текущий статус */}
@@ -119,7 +126,10 @@ export default function AdminScreen() {
               }
             }}
           >
-            <Text style={styles.toggleButtonText}>⭐ Путь</Text>
+            <View style={styles.toggleButtonContent}>
+              <FontAwesome name="star" size={14} color="#fff" />
+              <Text style={styles.toggleButtonText}>Путь</Text>
+            </View>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -133,7 +143,10 @@ export default function AdminScreen() {
               }
             }}
           >
-            <Text style={styles.toggleButtonText}>🌟 Пробуждение</Text>
+            <View style={styles.toggleButtonContent}>
+              <FontAwesome name="star" size={14} color="#fff" />
+              <Text style={styles.toggleButtonText}>Пробуждение</Text>
+            </View>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -147,7 +160,10 @@ export default function AdminScreen() {
               }
             }}
           >
-            <Text style={styles.toggleButtonText}>🚫 Выкл</Text>
+            <View style={styles.toggleButtonContent}>
+              <FontAwesome name="ban" size={14} color="#fff" />
+              <Text style={styles.toggleButtonText}>Выкл</Text>
+            </View>
           </TouchableOpacity>
         </View>
       </View>
@@ -158,7 +174,7 @@ export default function AdminScreen() {
           style={styles.menuItem}
           onPress={() => router.push('/subscription')}
         >
-          <Text style={styles.menuIcon}>💳</Text>
+          <FontAwesome name="credit-card" size={22} color="#6c63ff" style={styles.menuIcon} />
           <View style={styles.menuContent}>
             <Text style={styles.menuText}>Экран подписки</Text>
             <Text style={styles.menuHint}>Просмотреть экран выбора тарифа</Text>
@@ -184,9 +200,14 @@ const styles = StyleSheet.create({
     paddingBottom: 16,
   },
   backButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  backButtonText: {
     color: '#6c63ff',
     fontSize: 16,
-    marginBottom: 8,
+    marginLeft: 6,
   },
   headerTitle: {
     fontSize: 28,
@@ -280,6 +301,11 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 12,
     fontWeight: '600',
+  },
+  toggleButtonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
   },
   menuItemActive: {
     backgroundColor: 'rgba(108, 99, 255, 0.2)',

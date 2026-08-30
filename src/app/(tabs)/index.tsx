@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import { FontAwesome } from '@expo/vector-icons';
 import { useAuthStore } from '../../store/authStore';
 import { getContent } from '../../services/api';
 import { ContentItem } from '../../types';
@@ -48,11 +49,11 @@ export default function HomeScreen() {
   // Иконка типа контента
   const getTypeIcon = (type: ContentItem['type']) => {
     switch (type) {
-      case 'article': return '📝';
-      case 'video': return '🎬';
-      case 'audio': return '🎧';
-      case 'course': return '📚';
-      default: return '📄';
+      case 'article': return 'file-text-o';
+      case 'video': return 'film';
+      case 'audio': return 'headphones';
+      case 'course': return 'book';
+      default: return 'file-o';
     }
   };
 
@@ -64,7 +65,7 @@ export default function HomeScreen() {
       activeOpacity={0.7}
     >
       <View style={styles.cardHeader}>
-        <Text style={styles.cardType}>{getTypeIcon(item.type)}</Text>
+        <FontAwesome name={getTypeIcon(item.type) as any} size={24} color="#6c63ff" />
         {item.is_premium && (
           <View style={styles.premiumBadge}>
             <Text style={styles.premiumText}>Премиум</Text>
@@ -89,7 +90,7 @@ export default function HomeScreen() {
     if (error) {
       return (
         <View style={styles.emptyContainer}>
-          <Text style={styles.emptyIcon}>⚠️</Text>
+          <FontAwesome name="exclamation-triangle" size={48} color="#6c63ff" />
           <Text style={styles.emptyText}>{error}</Text>
           <TouchableOpacity style={styles.retryButton} onPress={() => loadContent()}>
             <Text style={styles.retryText}>Повторить</Text>
@@ -98,8 +99,8 @@ export default function HomeScreen() {
       );
     }
     return (
-      <View style={styles.emptyContainer}>
-        <Text style={styles.emptyIcon}>🧘</Text>
+        <View style={styles.emptyContainer}>
+          <FontAwesome name="leaf" size={48} color="#6c63ff" />
         <Text style={styles.emptyText}>Пока нет контента</Text>
         <Text style={styles.emptyHint}>Скоро здесь появятся практики и медитации</Text>
       </View>

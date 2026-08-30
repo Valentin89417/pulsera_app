@@ -1,5 +1,6 @@
 import { Tabs } from 'expo-router';
 import { View, Text, StyleSheet } from 'react-native';
+import { FontAwesome } from '@expo/vector-icons';
 
 // Простой layout для табов
 export default function TabsLayout() {
@@ -25,7 +26,7 @@ export default function TabsLayout() {
         options={{
           title: 'Главная',
           tabBarIcon: ({ color }) => (
-            <Text style={{ color, fontSize: 20 }}>🏠</Text>
+            <FontAwesome name="home" size={22} color={color} />
           ),
         }}
       />
@@ -34,7 +35,7 @@ export default function TabsLayout() {
         options={{
           title: 'Каталог',
           tabBarIcon: ({ color }) => (
-            <Text style={{ color, fontSize: 20 }}>📚</Text>
+            <FontAwesome name="book" size={22} color={color} />
           ),
         }}
       />
@@ -43,7 +44,7 @@ export default function TabsLayout() {
         options={{
           title: 'Сообщество',
           tabBarIcon: ({ color }) => (
-            <Text style={{ color, fontSize: 20 }}>💬</Text>
+            <FontAwesome name="comment-o" size={22} color={color} />
           ),
         }}
       />
@@ -52,7 +53,7 @@ export default function TabsLayout() {
         options={{
           title: 'Профиль',
           tabBarIcon: ({ color }) => (
-            <Text style={{ color, fontSize: 20 }}>👤</Text>
+            <FontAwesome name="user" size={22} color={color} />
           ),
         }}
       />

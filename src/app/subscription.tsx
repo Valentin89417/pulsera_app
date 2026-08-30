@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Alert, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { FontAwesome } from '@expo/vector-icons';
 import { useAuth, useSubscription, useAdmin } from '../hooks/useAuth';
 
 // Тарифы подписки
@@ -74,7 +74,7 @@ export default function SubscriptionScreen() {
           onPress={() => router.replace('/(tabs)')}
           style={styles.backButton}
         >
-          <Ionicons name="arrow-back" size={24} color="#ffffff" />
+          <FontAwesome name="arrow-left" size={20} color="#ffffff" />
           <Text style={styles.backText}>Назад</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Подписка</Text>
@@ -126,7 +126,7 @@ export default function SubscriptionScreen() {
             <View style={styles.featuresList}>
               {tierData.features.map((feature, index) => (
                 <View key={index} style={styles.featureItem}>
-                  <Ionicons name="checkmark-circle" size={16} color="#6c63ff" />
+                  <FontAwesome name="check-circle" size={16} color="#6c63ff" />
                   <Text style={styles.featureText}>{feature}</Text>
                 </View>
               ))}
@@ -186,7 +186,7 @@ export default function SubscriptionScreen() {
 
         {/* Информация */}
         <View style={styles.infoCard}>
-          <Ionicons name="information-circle" size={20} color="#6c63ff" />
+          <FontAwesome name="info-circle" size={20} color="#6c63ff" />
           <Text style={styles.infoText}>
             Цены являются заглушками. Реальная оплата будет подключена позже.
           </Text>

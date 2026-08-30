@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { FontAwesome } from '@expo/vector-icons';
 import { getContentById } from '../../services/api';
 import { ContentItem } from '../../types';
 import { AudioPlayer } from '../../components/AudioPlayer';
@@ -52,11 +53,11 @@ export default function ContentDetailScreen() {
   // Иконка типа контента
   const getTypeIcon = (type: ContentItem['type']) => {
     switch (type) {
-      case 'article': return '📝';
-      case 'video': return '🎬';
-      case 'audio': return '🎧';
-      case 'course': return '📚';
-      default: return '📄';
+      case 'article': return 'file-text-o';
+      case 'video': return 'film';
+      case 'audio': return 'headphones';
+      case 'course': return 'book';
+      default: return 'file-o';
     }
   };
 
@@ -91,8 +92,8 @@ export default function ContentDetailScreen() {
 
   if (error || !content) {
     return (
-      <View style={styles.centered}>
-        <Text style={styles.errorIcon}>⚠️</Text>
+        <View style={styles.centered}>
+          <FontAwesome name="exclamation-triangle" size={48} color="#6c63ff" />
         <Text style={styles.errorText}>{error || 'Контент не найден'}</Text>
         <TouchableOpacity style={styles.retryButton} onPress={loadContent}>
           <Text style={styles.retryText}>Повторить</Text>
@@ -115,7 +116,8 @@ export default function ContentDetailScreen() {
         {/* Шапка с кнопкой назад */}
         <View style={styles.header}>
           <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-            <Text style={styles.backText}>← Назад</Text>
+            <FontAwesome name="arrow-left" size={16} color="#6c63ff" />
+            <Text style={styles.backText}>Назад</Text>
           </TouchableOpacity>
           <View style={styles.headerRight}>
             {content.is_premium && (
@@ -138,7 +140,7 @@ export default function ContentDetailScreen() {
         >
           {/* Тип и категория */}
           <View style={styles.meta}>
-            <Text style={styles.typeIcon}>{getTypeIcon(content.type)}</Text>
+            <FontAwesome name={getTypeIcon(content.type) as any} size={18} color="#6c63ff" style={styles.typeIcon} />
             <Text style={styles.typeName}>{getTypeName(content.type)}</Text>
             <Text style={styles.dot}>·</Text>
             <Text style={styles.category}>{content.category}</Text>
@@ -174,7 +176,7 @@ export default function ContentDetailScreen() {
                 <Text style={styles.body}>{body}</Text>
               ) : (
                 <View style={styles.noContent}>
-                  <Text style={styles.noContentIcon}>📭</Text>
+                  <FontAwesome name="envelope-o" size={48} color="#6c63ff" />
                   <Text style={styles.noContentText}>Контент пока не добавлен</Text>
                 </View>
               )}
@@ -189,8 +191,8 @@ export default function ContentDetailScreen() {
             ) : body ? (
               <Text style={styles.body}>{body}</Text>
             ) : (
-              <View style={styles.noContent}>
-                <Text style={styles.noContentIcon}>📭</Text>
+            <View style={styles.noContent}>
+              <FontAwesome name="envelope-o" size={48} color="#6c63ff" />
                 <Text style={styles.noContentText}>Контент пока не добавлен</Text>
               </View>
             )}
@@ -235,11 +237,14 @@ const styles = StyleSheet.create({
     paddingBottom: 12,
   },
   backButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
     padding: 8,
   },
   backText: {
     color: '#6c63ff',
     fontSize: 16,
+    marginLeft: 6,
   },
   headerRight: {
     flexDirection: 'row',
@@ -318,18 +323,11 @@ const styles = StyleSheet.create({
   noContent: {
     alignItems: 'center',
     marginTop: 40,
-  },
-  noContentIcon: {
-    fontSize: 48,
-    marginBottom: 12,
+    gap: 12,
   },
   noContentText: {
     fontSize: 16,
     color: '#666',
-  },
-  errorIcon: {
-    fontSize: 48,
-    marginBottom: 12,
   },
   errorText: {
     fontSize: 18,

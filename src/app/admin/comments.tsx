@@ -9,6 +9,7 @@ import {
   Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import { FontAwesome } from '@expo/vector-icons';
 import { getAllComments, deleteComment, AdminComment } from '../../services/api';
 import { useAdmin } from '../../hooks/useAuth';
 
@@ -25,11 +26,11 @@ function CommentListItem({
   // Иконка типа контента
   const getTypeIcon = (type: string | null) => {
     switch (type) {
-      case 'article': return '📝';
-      case 'video': return '🎬';
-      case 'audio': return '🎧';
-      case 'course': return '📚';
-      default: return '📄';
+      case 'article': return 'file-text-o';
+      case 'video': return 'film';
+      case 'audio': return 'headphones';
+      case 'course': return 'book';
+      default: return 'file-o';
     }
   };
 
@@ -66,11 +67,11 @@ function CommentListItem({
 
       {/* Контент, к которому привязан комментарий */}
       <TouchableOpacity style={styles.contentLink} onPress={onNavigate}>
-        <Text style={styles.contentIcon}>{getTypeIcon(item.content_type)}</Text>
+        <FontAwesome name={getTypeIcon(item.content_type) as any} size={16} color="#6c63ff" style={styles.contentIcon} />
         <Text style={styles.contentTitle} numberOfLines={1}>
           {item.content_title || 'Контент удалён'}
         </Text>
-        <Text style={styles.goArrow}>→</Text>
+        <FontAwesome name="arrow-right" size={16} color="#6c63ff" />
       </TouchableOpacity>
 
       {/* Действия */}
@@ -143,11 +144,14 @@ export default function AdminCommentsScreen() {
       <View style={styles.container}>
         <View style={styles.header}>
           <TouchableOpacity onPress={() => router.back()}>
-            <Text style={styles.backButton}>← Назад</Text>
+            <View style={styles.backButton}>
+              <FontAwesome name="arrow-left" size={16} color="#6c63ff" />
+              <Text style={styles.backButtonText}>Назад</Text>
+            </View>
           </TouchableOpacity>
         </View>
         <View style={styles.centered}>
-          <Text style={styles.accessDeniedIcon}>🔒</Text>
+          <FontAwesome name="lock" size={48} color="#6c63ff" />
           <Text style={styles.accessDeniedText}>Доступ запрещён</Text>
         </View>
       </View>
@@ -159,7 +163,10 @@ export default function AdminCommentsScreen() {
       {/* Шапка */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backNav}>
-          <Text style={styles.backButton}>← Назад</Text>
+          <View style={styles.backButton}>
+            <FontAwesome name="arrow-left" size={16} color="#6c63ff" />
+            <Text style={styles.backButtonText}>Назад</Text>
+          </View>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Комментарии</Text>
         <Text style={styles.headerCount}>{comments.length} всего</Text>
@@ -170,7 +177,7 @@ export default function AdminCommentsScreen() {
         <ActivityIndicator size="large" color="#6c63ff" style={styles.loader} />
       ) : comments.length === 0 ? (
         <View style={styles.centered}>
-          <Text style={styles.emptyIcon}>💬</Text>
+          <FontAwesome name="comment-o" size={48} color="#6c63ff" />
           <Text style={styles.emptyText}>Комментариев пока нет</Text>
         </View>
       ) : (
@@ -211,8 +218,13 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   backButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  backButtonText: {
     color: '#6c63ff',
     fontSize: 16,
+    marginLeft: 6,
   },
   headerTitle: {
     fontSize: 28,

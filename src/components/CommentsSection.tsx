@@ -11,6 +11,7 @@ import {
   Platform,
   Alert,
 } from 'react-native';
+import { FontAwesome } from '@expo/vector-icons';
 import { getContentComments, addComment, updateComment, deleteComment } from '../services/api';
 import { supabase } from '../services/supabase';
 import { useAuthStore } from '../store/authStore';
@@ -150,7 +151,10 @@ export function CommentsSection({ contentId, replyTo }: CommentsSectionProps) {
           style={styles.addButton}
           onPress={() => setShowModal(true)}
         >
-          <Text style={styles.addButtonText}>✍️ Написать</Text>
+          <View style={styles.addButtonContent}>
+            <FontAwesome name="pencil" size={13} color="#fff" />
+            <Text style={styles.addButtonText}>Написать</Text>
+          </View>
         </TouchableOpacity>
       </View>
 
@@ -207,7 +211,7 @@ export function CommentsSection({ contentId, replyTo }: CommentsSectionProps) {
                     : 'Новый комментарий'}
               </Text>
               <TouchableOpacity onPress={handleClose}>
-                <Text style={styles.modalClose}>✕</Text>
+                <FontAwesome name="times" size={20} color="#666" />
               </TouchableOpacity>
             </View>
 
@@ -252,6 +256,11 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 6,
+  },
+  addButtonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
   },
   addButtonText: {
     color: '#fff',

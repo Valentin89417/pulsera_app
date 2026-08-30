@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { TouchableOpacity, Text, StyleSheet, ActivityIndicator } from 'react-native';
+import { FontAwesome } from '@expo/vector-icons';
 import { useAuthStore } from '../store/authStore';
 import { addBookmark, removeBookmark, isBookmarked } from '../services/api';
 
@@ -60,9 +61,11 @@ export function BookmarkButton({ contentId, size = 'medium' }: BookmarkButtonPro
 
   return (
     <TouchableOpacity style={[styles.button, size === 'small' && styles.buttonSmall]} onPress={toggleBookmark}>
-      <Text style={[styles.icon, size === 'small' && styles.iconSmall]}>
-        {bookmarked ? '❤️' : '🤍'}
-      </Text>
+      <FontAwesome
+        name={bookmarked ? 'heart' : 'heart-o'}
+        size={size === 'small' ? 18 : 22}
+        color={bookmarked ? '#ff4444' : '#999'}
+      />
     </TouchableOpacity>
   );
 }

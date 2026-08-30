@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import { FontAwesome } from '@expo/vector-icons';
 import { getContent, deleteContent } from '../../services/api';
 import { ContentItem } from '../../types';
 
@@ -60,11 +61,21 @@ export default function ArticlesScreen() {
   // Тип контента
   const getTypeLabel = (type: ContentItem['type']) => {
     switch (type) {
-      case 'article': return '📝 Статья';
-      case 'video': return '🎬 Видео';
-      case 'audio': return '🎧 Аудио';
-      case 'course': return '📚 Курс';
-      default: return '📄';
+      case 'article': return 'Статья';
+      case 'video': return 'Видео';
+      case 'audio': return 'Аудио';
+      case 'course': return 'Курс';
+      default: return '';
+    }
+  };
+
+  const getTypeIcon = (type: ContentItem['type']) => {
+    switch (type) {
+      case 'article': return 'file-text-o';
+      case 'video': return 'film';
+      case 'audio': return 'headphones';
+      case 'course': return 'book';
+      default: return 'file-o';
     }
   };
 
@@ -72,7 +83,10 @@ export default function ArticlesScreen() {
   const renderArticle = ({ item }: { item: ContentItem }) => (
     <View style={styles.articleCard}>
       <View style={styles.articleInfo}>
-        <Text style={styles.articleType}>{getTypeLabel(item.type)}</Text>
+        <View style={styles.articleTypeRow}>
+          <FontAwesome name={getTypeIcon(item.type) as any} size={14} color="#6c63ff" />
+          <Text style={styles.articleType}>{getTypeLabel(item.type)}</Text>
+        </View>
         <Text style={styles.articleTitle} numberOfLines={1}>{item.title}</Text>
         <Text style={styles.articleMeta}>
           {item.category} · {item.is_premium ? 'Премиум' : 'Бесплатно'}
@@ -83,13 +97,13 @@ export default function ArticlesScreen() {
           style={styles.editButton}
           onPress={() => router.push({ pathname: '/admin/article-edit', params: { id: item.id } })}
         >
-          <Text style={styles.editButtonText}>✏️</Text>
+          <FontAwesome name="pencil" size={18} color="#6c63ff" />
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.deleteButton}
           onPress={() => handleDelete(item)}
         >
-          <Text style={styles.deleteButtonText}>🗑️</Text>
+          <FontAwesome name="trash-o" size={18} color="#ff4444" />
         </TouchableOpacity>
       </View>
     </View>
@@ -100,7 +114,10 @@ export default function ArticlesScreen() {
       {/* Заголовок */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()}>
-          <Text style={styles.backButton}>← Назад</Text>
+          <View style={styles.backButton}>
+            <FontAwesome name="arrow-left" size={16} color="#6c63ff" />
+            <Text style={styles.backButtonText}>Назад</Text>
+          </View>
         </TouchableOpacity>
         <View style={styles.headerRow}>
           <Text style={styles.headerTitle}>Статьи</Text>
@@ -124,7 +141,7 @@ export default function ArticlesScreen() {
           contentContainerStyle={styles.list}
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
-              <Text style={styles.emptyIcon}>📝</Text>
+              <FontAwesome name="file-text-o" size={48} color="#6c63ff" />
               <Text style={styles.emptyText}>Пока нет статей</Text>
               <Text style={styles.emptyHint}>Нажмите "Создать" чтобы добавить первую</Text>
             </View>
@@ -146,9 +163,20 @@ const styles = StyleSheet.create({
     paddingBottom: 16,
   },
   backButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  backButtonText: {
     color: '#6c63ff',
     fontSize: 16,
-    marginBottom: 8,
+    marginLeft: 6,
+  },
+  articleTypeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 4,
   },
   headerRow: {
     flexDirection: 'row',

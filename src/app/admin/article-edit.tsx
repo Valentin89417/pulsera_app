@@ -11,6 +11,7 @@ import {
   Switch,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import { FontAwesome } from '@expo/vector-icons';
 import { getContentById, createContent, updateContent } from '../../services/api';
 import { ContentItem, ContentType } from '../../types';
 import { pickFile, uploadFile, UploadFileType } from '../../utils/upload';
@@ -206,7 +207,10 @@ export default function ArticleEditScreen() {
       {/* Заголовок */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()}>
-          <Text style={styles.backButton}>← Назад</Text>
+          <View style={styles.backButton}>
+            <FontAwesome name="arrow-left" size={16} color="#6c63ff" />
+            <Text style={styles.backButtonText}>Назад</Text>
+          </View>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>
           {isEditing ? 'Редактирование' : 'Новая статья'}
@@ -276,7 +280,7 @@ export default function ArticleEditScreen() {
             {audioUrl ? (
               <View style={styles.filePreview}>
                 <View style={styles.fileInfo}>
-                  <Text style={styles.fileIcon}>🎵</Text>
+                  <FontAwesome name="music" size={24} color="#6c63ff" />
                   <Text style={styles.fileName} numberOfLines={1}>
                     {audioFilename || 'audio.mp3'}
                   </Text>
@@ -301,7 +305,7 @@ export default function ArticleEditScreen() {
                   </View>
                 ) : (
                   <>
-                    <Text style={styles.uploadIcon}>🎵</Text>
+                    <FontAwesome name="music" size={32} color="#6c63ff" />
                     <Text style={styles.uploadText}>Выбрать аудио файл</Text>
                     <Text style={styles.uploadHint}>MP3, WAV, OGG (до 50 МБ)</Text>
                   </>
@@ -318,7 +322,7 @@ export default function ArticleEditScreen() {
             {videoUrl ? (
               <View style={styles.filePreview}>
                 <View style={styles.fileInfo}>
-                  <Text style={styles.fileIcon}>🎬</Text>
+                  <FontAwesome name="film" size={24} color="#6c63ff" />
                   <Text style={styles.fileName} numberOfLines={1}>
                     {videoFilename || 'video.mp4'}
                   </Text>
@@ -343,7 +347,7 @@ export default function ArticleEditScreen() {
                   </View>
                 ) : (
                   <>
-                    <Text style={styles.uploadIcon}>🎬</Text>
+                    <FontAwesome name="film" size={32} color="#6c63ff" />
                     <Text style={styles.uploadText}>Выбрать видео файл</Text>
                     <Text style={styles.uploadHint}>MP4, MOV, WebM (до 50 МБ)</Text>
                   </>
@@ -439,9 +443,14 @@ const styles = StyleSheet.create({
     paddingBottom: 16,
   },
   backButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  backButtonText: {
     color: '#6c63ff',
     fontSize: 16,
-    marginBottom: 8,
+    marginLeft: 6,
   },
   headerTitle: {
     fontSize: 28,
