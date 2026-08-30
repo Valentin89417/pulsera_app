@@ -12,7 +12,9 @@
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#1a1a2e"
-      }
+      },
+      "softInputMode": "adjustResize",
+      "package": "com.anonymous.pulseraapp"
     },
     "web": {
       "bundler": "metro",

@@ -52,6 +52,18 @@ export default function AdminScreen() {
 
         <TouchableOpacity
           style={styles.menuItem}
+          onPress={() => router.push('/admin/comments')}
+        >
+          <Text style={styles.menuIcon}>💬</Text>
+          <View style={styles.menuContent}>
+            <Text style={styles.menuText}>Комментарии</Text>
+            <Text style={styles.menuHint}>Просмотр и ответы на комментарии</Text>
+          </View>
+          <Text style={styles.menuArrow}>›</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.menuItem}
           onPress={async () => {
             const { Alert } = require('react-native');
             Alert.alert(

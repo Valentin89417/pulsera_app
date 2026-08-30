@@ -367,21 +367,51 @@ export const getUserBookmarks = async (userId: string): Promise<Bookmark[]> => {
 // КОММЕНТАРИИ
 // ============================================
 
-// Получить комментарии к контенту
-export const getContentComments = async (contentId: string): Promise<Comment[]> => {
+// Получить комментарии к контенту (с именем автора)
+export const getContentComments = async (contentId: string): Promise<CommentWithAuthor[]> => {
   try {
-    const { data, error } = await supabase
+    // Получаем комментарии
+    const { data: comments, error } = await supabase
       .from('comments')
       .select('*')
       .eq('content_id', contentId)
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: true });
 
     if (error) {
       console.error('Ошибка получения комментариев:', error.message);
       return [];
     }
 
-    return data || [];
+    if (!comments || comments.length === 0) return [];
+
+    // Получаем уникальные user_id и parent_id
+    const userIds = [...new Set(comments.map(c => c.user_id))];
+    const parentIds = [...new Set(comments.filter(c => c.parent_id).map(c => c.parent_id!))];
+
+    // Получаем профили авторов
+    const { data: profiles } = await supabase
+      .from('profiles')
+      .select('id, display_name')
+      .in('id', userIds);
+
+    // Получаем родительские комментарии
+    const { data: parentComments } = parentIds.length > 0
+      ? await supabase
+          .from('comments')
+          .select('id, text')
+          .in('id', parentIds)
+      : { data: [] };
+
+    // Создаём мапы
+    const profilesMap = new Map(profiles?.map(p => [p.id, p]) || []);
+    const parentsMap = new Map(parentComments?.map(c => [c.id, c]) || []);
+
+    // Объединяем данные
+    return comments.map(comment => ({
+      ...comment,
+      profiles: profilesMap.get(comment.user_id) || null,
+      parent_text: comment.parent_id ? parentsMap.get(comment.parent_id)?.text || null : null,
+    })) as CommentWithAuthor[];
   } catch (error) {
     console.error('Неожиданная ошибка при получении комментариев:', error);
     return [];
@@ -416,6 +446,92 @@ export const addComment = async (
   } catch (error) {
     console.error('Неожиданная ошибка при добавлении комментария:', error);
     return null;
+  }
+};
+
+// ============================================
+// КОММЕНТАРИИ (АДМИН)
+// ============================================
+
+// Тип комментария с автором и названием контента
+export interface AdminComment {
+  id: string;
+  user_id: string;
+  content_id: string;
+  text: string;
+  parent_id: string | null;
+  created_at: string;
+  author_name: string | null;
+  content_title: string | null;
+  content_type: string | null;
+}
+
+// Получить все комментарии (для админа)
+export const getAllComments = async (): Promise<AdminComment[]> => {
+  try {
+    // Получаем все комментарии
+    const { data: comments, error } = await supabase
+      .from('comments')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Ошибка получения комментариев:', error.message);
+      return [];
+    }
+
+    if (!comments || comments.length === 0) return [];
+
+    // Получаем уникальные user_id и content_id
+    const userIds = [...new Set(comments.map(c => c.user_id))];
+    const contentIds = [...new Set(comments.map(c => c.content_id))];
+
+    // Получаем профили авторов
+    const { data: profiles } = await supabase
+      .from('profiles')
+      .select('id, display_name')
+      .in('id', userIds);
+
+    // Получаем контент
+    const { data: contents } = await supabase
+      .from('content')
+      .select('id, title, type')
+      .in('id', contentIds);
+
+    // Создаём мапы
+    const profilesMap = new Map(profiles?.map(p => [p.id, p]) || []);
+    const contentsMap = new Map(contents?.map(c => [c.id, c]) || []);
+
+    // Объединяем данные
+    return comments.map(comment => ({
+      ...comment,
+      author_name: profilesMap.get(comment.user_id)?.display_name || null,
+      content_title: contentsMap.get(comment.content_id)?.title || null,
+      content_type: contentsMap.get(comment.content_id)?.type || null,
+    }));
+  } catch (error) {
+    console.error('Неожиданная ошибка при получении комментариев:', error);
+    return [];
+  }
+};
+
+// Удалить комментарий (для админа)
+export const deleteComment = async (commentId: string): Promise<boolean> => {
+  try {
+    const { error } = await supabase
+      .from('comments')
+      .delete()
+      .eq('id', commentId);
+
+    if (error) {
+      console.error('Ошибка удаления комментария:', error.message);
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Неожиданная ошибка при удалении комментария:', error);
+    return false;
   }
 };
 

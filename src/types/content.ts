@@ -35,6 +35,12 @@ export type Bookmark = Database['public']['Tables']['bookmarks']['Row'];
 // Комментарий
 export type Comment = Database['public']['Tables']['comments']['Row'];
 
+// Комментарий с именем автора
+export interface CommentWithAuthor extends Comment {
+  profiles: { display_name: string | null } | null;
+  parent_text?: string | null; // Текст родительского комментария (для ответов)
+}
+
 // Параметры фильтрации контента
 export interface ContentFilter {
   type?: ContentType;

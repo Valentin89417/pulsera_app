@@ -3,20 +3,22 @@ import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
   TouchableOpacity,
   ActivityIndicator,
+  SafeAreaView,
 } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { getContentById } from '../../services/api';
 import { ContentItem } from '../../types';
 import { AudioPlayer } from '../../components/AudioPlayer';
 import { VideoPlayer } from '../../components/VideoPlayer';
 import { BookmarkButton } from '../../components/BookmarkButton';
+import { CommentsSection } from '../../components/CommentsSection';
 
 // Экран детального просмотра контента
 export default function ContentDetailScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, replyTo } = useLocalSearchParams<{ id: string; replyTo?: string }>();
   const router = useRouter();
   const [content, setContent] = useState<ContentItem | null>(null);
   const [loading, setLoading] = useState(true);
@@ -101,52 +103,57 @@ export default function ContentDetailScreen() {
   const audioUrl = (content.content_data as { audio_url?: string })?.audio_url;
   const videoUrl = (content.content_data as { video_url?: string })?.video_url;
 
-  console.log('[ContentDetail] type:', content.type, 'content_data:', content.content_data);
-  console.log('[ContentDetail] videoUrl:', videoUrl, 'isVideoContent:', content.type === 'video' && !!videoUrl);
-
-  // Проверяем тип контента
   const isAudioContent = content.type === 'audio' && audioUrl;
   const isVideoContent = content.type === 'video' && videoUrl;
 
   return (
-    <View style={styles.container}>
-      {/* Шапка с кнопкой назад */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Text style={styles.backText}>← Назад</Text>
-        </TouchableOpacity>
-        <View style={styles.headerRight}>
-          {content.is_premium && (
-            <View style={styles.premiumBadge}>
-              <Text style={styles.premiumText}>Премиум</Text>
-            </View>
+    <SafeAreaView style={styles.safeArea}>
+      <View style={styles.container}>
+        {/* Шапка с кнопкой назад */}
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+            <Text style={styles.backText}>← Назад</Text>
+          </TouchableOpacity>
+          <View style={styles.headerRight}>
+            {content.is_premium && (
+              <View style={styles.premiumBadge}>
+                <Text style={styles.premiumText}>Премиум</Text>
+              </View>
+            )}
+            <BookmarkButton contentId={content.id} />
+          </View>
+        </View>
+
+        {/* Контент — скроллится с клавиатурой */}
+        <KeyboardAwareScrollView
+          style={styles.content}
+          contentContainerStyle={styles.contentContainer}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          enableOnAndroid={true}
+          extraScrollHeight={20}
+        >
+          {/* Тип и категория */}
+          <View style={styles.meta}>
+            <Text style={styles.typeIcon}>{getTypeIcon(content.type)}</Text>
+            <Text style={styles.typeName}>{getTypeName(content.type)}</Text>
+            <Text style={styles.dot}>·</Text>
+            <Text style={styles.category}>{content.category}</Text>
+          </View>
+
+          {/* Заголовок */}
+          <Text style={styles.title}>{content.title}</Text>
+
+          {/* Описание */}
+          {content.description && (
+            <Text style={styles.description}>{content.description}</Text>
           )}
-          <BookmarkButton contentId={content.id} />
-        </View>
-      </View>
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Тип и категория */}
-        <View style={styles.meta}>
-          <Text style={styles.typeIcon}>{getTypeIcon(content.type)}</Text>
-          <Text style={styles.typeName}>{getTypeName(content.type)}</Text>
-          <Text style={styles.dot}>·</Text>
-          <Text style={styles.category}>{content.category}</Text>
-        </View>
+          {/* Дата */}
+          <Text style={styles.date}>{formatDate(content.created_at)}</Text>
 
-        {/* Заголовок */}
-        <Text style={styles.title}>{content.title}</Text>
-
-        {/* Описание */}
-        {content.description && (
-          <Text style={styles.description}>{content.description}</Text>
-        )}
-
-        {/* Дата */}
-        <Text style={styles.date}>{formatDate(content.created_at)}</Text>
-
-        {/* Разделитель */}
-        <View style={styles.divider} />
+          {/* Разделитель */}
+          <View style={styles.divider} />
 
         {/* Медиа-плеер (видео / аудио) или текст */}
         {isVideoContent ? (
@@ -161,12 +168,26 @@ export default function ContentDetailScreen() {
             <Text style={styles.noContentText}>Контент пока не добавлен</Text>
           </View>
         )}
-      </ScrollView>
-    </View>
+
+        {/* Разделитель перед комментариями */}
+        <View style={styles.divider} />
+
+        {/* Комментарии с модалкой ввода */}
+        <CommentsSection contentId={content.id} replyTo={replyTo} />
+
+        {/* Дополнительный отступ внизу */}
+        <View style={{ height: 20 }} />
+        </KeyboardAwareScrollView>
+      </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#1a1a2e',
+  },
   container: {
     flex: 1,
     backgroundColor: '#1a1a2e',
@@ -210,6 +231,9 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     paddingHorizontal: 20,
+  },
+  contentContainer: {
+    paddingBottom: 20,
   },
   meta: {
     flexDirection: 'row',
