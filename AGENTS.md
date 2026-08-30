@@ -50,3 +50,7 @@ See docs/progress.md for actual status.
 - Follow existing patterns in the codebase
 - Suggest improvements if you see them
 - Explain your decisions briefly
+
+## Расположение архитектуры
+**Файл:** `/docs/architecture.md`
+**Обновляется:** при изменении архитектуры (новые фичи, изменения структуры)
