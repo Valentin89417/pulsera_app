@@ -123,6 +123,8 @@ export default function AdminCommentsScreen() {
             const success = await deleteComment(comment.id);
             if (success) {
               setComments(prev => prev.filter(c => c.id !== comment.id));
+            } else {
+              Alert.alert('Ошибка', 'Не удалось удалить комментарий. Проверьте права доступа.');
             }
           },
         },

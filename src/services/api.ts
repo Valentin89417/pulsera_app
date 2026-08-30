@@ -535,6 +535,26 @@ export const deleteComment = async (commentId: string): Promise<boolean> => {
   }
 };
 
+// Обновить комментарий
+export const updateComment = async (commentId: string, text: string): Promise<boolean> => {
+  try {
+    const { error } = await supabase
+      .from('comments')
+      .update({ text })
+      .eq('id', commentId);
+
+    if (error) {
+      console.error('Ошибка обновления комментария:', error.message);
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Неожиданная ошибка при обновлении комментария:', error);
+    return false;
+  }
+};
+
 // ============================================
 // ЧАТ
 // ============================================

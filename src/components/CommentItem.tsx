@@ -4,10 +4,14 @@ import { CommentWithAuthor } from '../types';
 // Компонент одного комментария
 interface CommentItemProps {
   comment: CommentWithAuthor;
+  currentUserId?: string | null;
   onReply?: () => void;
+  onEdit?: () => void;
+  onDelete?: () => void;
+  isAdmin?: boolean;
 }
 
-export function CommentItem({ comment, onReply }: CommentItemProps) {
+export function CommentItem({ comment, currentUserId, onReply, onEdit, onDelete, isAdmin }: CommentItemProps) {
   // Имя автора (или «Аноним»)
   const authorName = comment.profiles?.display_name || 'Аноним';
 
@@ -16,6 +20,15 @@ export function CommentItem({ comment, onReply }: CommentItemProps) {
 
   // Есть ли это ответ
   const isReply = !!comment.parent_id;
+
+  // Свой ли комментарий
+  const isOwn = currentUserId === comment.user_id;
+
+  // Можно ли удалять (свой или админ)
+  const canDelete = isOwn || isAdmin;
+
+  // Можно ли редактировать (только свой)
+  const canEdit = isOwn;
 
   // Форматирование даты
   const formatDate = (dateString: string) => {
@@ -68,12 +81,24 @@ export function CommentItem({ comment, onReply }: CommentItemProps) {
 
           <Text style={styles.text}>{comment.text}</Text>
 
-          {/* Кнопка «Ответить» */}
-          {onReply && (
-            <TouchableOpacity style={styles.replyButton} onPress={onReply}>
-              <Text style={styles.replyButtonText}>Ответить</Text>
-            </TouchableOpacity>
-          )}
+          {/* Кнопки действий */}
+          <View style={styles.actions}>
+            {onReply && (
+              <TouchableOpacity style={styles.actionButton} onPress={onReply}>
+                <Text style={styles.replyButtonText}>Ответить</Text>
+              </TouchableOpacity>
+            )}
+            {canEdit && onEdit && (
+              <TouchableOpacity style={styles.actionButton} onPress={onEdit}>
+                <Text style={styles.editButtonText}>Редактировать</Text>
+              </TouchableOpacity>
+            )}
+            {canDelete && onDelete && (
+              <TouchableOpacity style={styles.actionButton} onPress={onDelete}>
+                <Text style={styles.deleteButtonText}>Удалить</Text>
+              </TouchableOpacity>
+            )}
+          </View>
         </View>
       </View>
     </View>
@@ -156,13 +181,27 @@ const styles = StyleSheet.create({
     color: '#ddd',
     lineHeight: 22,
   },
-  replyButton: {
+  actions: {
+    flexDirection: 'row',
+    gap: 12,
     marginTop: 8,
+  },
+  actionButton: {
     alignSelf: 'flex-start',
   },
   replyButtonText: {
     fontSize: 13,
     color: '#6c63ff',
+    fontWeight: '500',
+  },
+  editButtonText: {
+    fontSize: 13,
+    color: '#999',
+    fontWeight: '500',
+  },
+  deleteButtonText: {
+    fontSize: 13,
+    color: '#ff4444',
     fontWeight: '500',
   },
 });

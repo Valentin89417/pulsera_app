@@ -12,11 +12,12 @@ import {
 // Поле ввода комментария
 interface CommentInputProps {
   onSubmit: (text: string) => Promise<void>;
+  initialText?: string;
   disabled?: boolean;
 }
 
-export function CommentInput({ onSubmit, disabled }: CommentInputProps) {
-  const [text, setText] = useState('');
+export function CommentInput({ onSubmit, initialText, disabled }: CommentInputProps) {
+  const [text, setText] = useState(initialText || '');
   const [loading, setLoading] = useState(false);
 
   // Отправка комментария

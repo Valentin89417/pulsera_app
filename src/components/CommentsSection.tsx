@@ -9,10 +9,12 @@ import {
   Modal,
   KeyboardAvoidingView,
   Platform,
+  Alert,
 } from 'react-native';
-import { getContentComments, addComment } from '../services/api';
+import { getContentComments, addComment, updateComment, deleteComment } from '../services/api';
 import { supabase } from '../services/supabase';
 import { useAuthStore } from '../store/authStore';
+import { useAdmin } from '../hooks/useAuth';
 import { CommentWithAuthor } from '../types';
 import { CommentItem } from './CommentItem';
 import { CommentInput } from './CommentInput';
@@ -25,10 +27,12 @@ interface CommentsSectionProps {
 
 export function CommentsSection({ contentId, replyTo }: CommentsSectionProps) {
   const { user } = useAuthStore();
+  const { isAdmin } = useAdmin();
   const [comments, setComments] = useState<CommentWithAuthor[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [replyToComment, setReplyToComment] = useState<CommentWithAuthor | null>(null);
+  const [editingComment, setEditingComment] = useState<CommentWithAuthor | null>(null);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
   const loadComments = useCallback(async () => {
@@ -78,14 +82,55 @@ export function CommentsSection({ contentId, replyTo }: CommentsSectionProps) {
   // Ответ на конкретный комментарий
   const handleReply = (comment: CommentWithAuthor) => {
     setReplyToComment(comment);
+    setEditingComment(null);
     setShowModal(true);
   };
 
-  // Отправка комментария
+  // Редактирование комментария
+  const handleEdit = (comment: CommentWithAuthor) => {
+    setEditingComment(comment);
+    setReplyToComment(null);
+    setShowModal(true);
+  };
+
+  // Удаление комментария
+  const handleDelete = (comment: CommentWithAuthor) => {
+    Alert.alert(
+      'Удалить комментарий',
+      `"${comment.text.substring(0, 50)}..."`,
+      [
+        { text: 'Отмена', style: 'cancel' },
+        {
+          text: 'Удалить',
+          style: 'destructive',
+          onPress: async () => {
+            const success = await deleteComment(comment.id);
+            if (success) {
+              setComments(prev => prev.filter(c => c.id !== comment.id));
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  // Отправка комментария (нового или редактирование)
   const handleSubmit = async (text: string) => {
     if (!user) return;
-    await addComment(user.id, contentId, text, replyToComment?.id || undefined);
+
+    if (editingComment) {
+      const success = await updateComment(editingComment.id, text);
+      if (success) {
+        setComments(prev =>
+          prev.map(c => c.id === editingComment.id ? { ...c, text } : c)
+        );
+      }
+    } else {
+      await addComment(user.id, contentId, text, replyToComment?.id || undefined);
+    }
+
     setReplyToComment(null);
+    setEditingComment(null);
     setShowModal(false);
   };
 
@@ -93,6 +138,7 @@ export function CommentsSection({ contentId, replyTo }: CommentsSectionProps) {
   const handleClose = () => {
     setShowModal(false);
     setReplyToComment(null);
+    setEditingComment(null);
   };
 
   return (
@@ -118,7 +164,14 @@ export function CommentsSection({ contentId, replyTo }: CommentsSectionProps) {
           data={comments}
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => (
-            <CommentItem comment={item} onReply={() => handleReply(item)} />
+            <CommentItem
+              comment={item}
+              currentUserId={user?.id}
+              isAdmin={isAdmin}
+              onReply={() => handleReply(item)}
+              onEdit={() => handleEdit(item)}
+              onDelete={() => handleDelete(item)}
+            />
           )}
           scrollEnabled={false}
         />
@@ -147,14 +200,18 @@ export function CommentsSection({ contentId, replyTo }: CommentsSectionProps) {
             {/* Заголовок модалки */}
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>
-                {replyToComment ? 'Ответ на комментарий' : 'Новый комментарий'}
+                {editingComment
+                  ? 'Редактировать комментарий'
+                  : replyToComment
+                    ? 'Ответ на комментарий'
+                    : 'Новый комментарий'}
               </Text>
               <TouchableOpacity onPress={handleClose}>
                 <Text style={styles.modalClose}>✕</Text>
               </TouchableOpacity>
             </View>
 
-            {/* Индикатор ответа */}
+            {/* Индикатор ответа / редактирования */}
             {replyToComment && (
               <View style={styles.replyBanner}>
                 <Text style={styles.replyText} numberOfLines={2}>
@@ -164,7 +221,10 @@ export function CommentsSection({ contentId, replyTo }: CommentsSectionProps) {
             )}
 
             {/* Поле ввода */}
-            <CommentInput onSubmit={handleSubmit} />
+            <CommentInput
+              onSubmit={handleSubmit}
+              initialText={editingComment?.text || ''}
+            />
           </View>
         </KeyboardAvoidingView>
       </Modal>
