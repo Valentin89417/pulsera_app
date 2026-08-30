@@ -8,9 +8,9 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { useAuthStore } from '../../store/authStore';
-import { getUserBookmarks, getContentById } from '../../services/api';
-import { ContentItem } from '../../types';
+import { useAuthStore } from '../store/authStore';
+import { getUserBookmarks, getContentById } from '../services/api';
+import { ContentItem } from '../types';
 
 // Элемент списка закладок
 function BookmarkItem({ item, onPress }: { item: ContentItem; onPress: () => void }) {

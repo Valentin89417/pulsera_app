@@ -43,6 +43,7 @@ See docs/progress.md for actual status.
 - Document architecture decisions in docs/architecture.md
 - Follow Expo best practices
 - Use functional programming patterns
+- **COMMITS: Only commit and push to Git when the user explicitly asks for it**
 
 ## IMPORTANT
 - Always check existing code before creating new files
