@@ -1,12 +1,13 @@
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
-import { useAdmin } from '../hooks/useAuth';
+import { useAdmin, useSubscription } from '../hooks/useAuth';
 import storage from '../utils/storage';
 
 // Админ панель
 export default function AdminScreen() {
   const router = useRouter();
   const { isAdmin } = useAdmin();
+  const { tier, activateSubscription, deactivateSubscription } = useSubscription();
 
   // Если не админ — показать заглушку
   if (!isAdmin) {
@@ -90,6 +91,81 @@ export default function AdminScreen() {
           <Text style={styles.menuArrow}>›</Text>
         </TouchableOpacity>
       </View>
+
+      {/* Тестирование подписки — только для админов */}
+      <View style={styles.menuSection}>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>🔧 Тестирование подписки</Text>
+        </View>
+
+        {/* Текущий статус */}
+        <View style={styles.statusRow}>
+          <Text style={styles.statusLabel}>Текущий тариф:</Text>
+          <Text style={[styles.statusValue, tier !== 'free' && styles.statusValueActive]}>
+            {tier === 'free' ? 'Бесплатный' : tier === 'path' ? 'Путь' : 'Пробуждение'}
+          </Text>
+        </View>
+
+        {/* Кнопки управления */}
+        <View style={styles.toggleButtons}>
+          <TouchableOpacity
+            style={[styles.toggleButton, tier === 'path' && styles.toggleButtonActive]}
+            onPress={async () => {
+              const { error } = await activateSubscription('path');
+              if (error) {
+                Alert.alert('Ошибка', error);
+              } else {
+                Alert.alert('Успех', 'Подписка «Путь» активирована');
+              }
+            }}
+          >
+            <Text style={styles.toggleButtonText}>⭐ Путь</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.toggleButton, tier === 'awakening' && styles.toggleButtonActive]}
+            onPress={async () => {
+              const { error } = await activateSubscription('awakening');
+              if (error) {
+                Alert.alert('Ошибка', error);
+              } else {
+                Alert.alert('Успех', 'Подписка «Пробуждение» активирована');
+              }
+            }}
+          >
+            <Text style={styles.toggleButtonText}>🌟 Пробуждение</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.toggleButton, tier === 'free' && styles.toggleButtonActive]}
+            onPress={async () => {
+              const { error } = await deactivateSubscription();
+              if (error) {
+                Alert.alert('Ошибка', error);
+              } else {
+                Alert.alert('Успех', 'Подписка отключена');
+              }
+            }}
+          >
+            <Text style={styles.toggleButtonText}>🚫 Выкл</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      {/* Перейти к экрану подписки */}
+      <View style={styles.menuSection}>
+        <TouchableOpacity
+          style={styles.menuItem}
+          onPress={() => router.push('/subscription')}
+        >
+          <Text style={styles.menuIcon}>💳</Text>
+          <View style={styles.menuContent}>
+            <Text style={styles.menuText}>Экран подписки</Text>
+            <Text style={styles.menuHint}>Просмотреть экран выбора тарифа</Text>
+          </View>
+          <Text style={styles.menuArrow}>›</Text>
+        </TouchableOpacity>
+      </View>
     </ScrollView>
   );
 }
@@ -151,6 +227,67 @@ const styles = StyleSheet.create({
   menuArrow: {
     fontSize: 24,
     color: '#666',
+  },
+  sectionHeader: {
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#1a1a2e',
+  },
+  sectionTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#ffc107',
+  },
+  statusRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#1a1a2e',
+  },
+  statusLabel: {
+    fontSize: 14,
+    color: '#999',
+  },
+  statusValue: {
+    fontSize: 14,
+    color: '#666',
+    fontWeight: '600',
+  },
+  statusValueActive: {
+    color: '#6c63ff',
+  },
+  toggleButtons: {
+    flexDirection: 'row',
+    padding: 12,
+    gap: 8,
+  },
+  toggleButton: {
+    flex: 1,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    paddingVertical: 10,
+    paddingHorizontal: 8,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  toggleButtonActive: {
+    backgroundColor: '#6c63ff',
+  },
+  toggleButtonText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  menuItemActive: {
+    backgroundColor: 'rgba(108, 99, 255, 0.2)',
+  },
+  activeIndicator: {
+    color: '#6c63ff',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
   accessDenied: {
     flex: 1,

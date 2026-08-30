@@ -1,4 +1,5 @@
 import { supabase, Database } from './supabase';
+import { CommentWithAuthor } from '../types/content';
 
 // Типы для таблиц
 type Profile = Database['public']['Tables']['profiles']['Row'];

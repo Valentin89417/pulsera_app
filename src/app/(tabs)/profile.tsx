@@ -74,7 +74,10 @@ export default function ProfileScreen() {
           </View>
         </View>
         {!isPremium && (
-          <TouchableOpacity style={styles.upgradeButton}>
+          <TouchableOpacity
+            style={styles.upgradeButton}
+            onPress={() => router.push('/subscription')}
+          >
             <Text style={styles.upgradeText}>Улучшить подписку</Text>
           </TouchableOpacity>
         )}

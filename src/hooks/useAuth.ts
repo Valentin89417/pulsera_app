@@ -52,6 +52,7 @@ export const useProtectedRoute = () => {
 // Хук для получения информации о подписке
 export const useSubscription = () => {
   const { profile } = useAuth();
+  const { updateProfile } = useAuthStore();
   
   const tier = profile?.subscription_tier || 'free';
   const isPremium = tier === 'path' || tier === 'awakening';
@@ -63,11 +64,33 @@ export const useSubscription = () => {
     return tierLevels[tier] >= tierLevels[requiredTier];
   };
 
+  // Тестирование: включение подписки (только для админов)
+  const activateSubscription = async (newTier: 'path' | 'awakening') => {
+    try {
+      const { error } = await updateProfile({ subscription_tier: newTier });
+      return { error };
+    } catch (error) {
+      return { error: 'Ошибка активации подписки' };
+    }
+  };
+
+  // Тестирование: отключение подписки (только для админов)
+  const deactivateSubscription = async () => {
+    try {
+      const { error } = await updateProfile({ subscription_tier: 'free' });
+      return { error };
+    } catch (error) {
+      return { error: 'Ошибка деактивации подписки' };
+    }
+  };
+
   return {
     tier,
     isPremium,
     isAwakening,
     hasAccess,
+    activateSubscription,
+    deactivateSubscription,
   };
 };
 

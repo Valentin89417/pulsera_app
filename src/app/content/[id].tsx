@@ -15,6 +15,8 @@ import { AudioPlayer } from '../../components/AudioPlayer';
 import { VideoPlayer } from '../../components/VideoPlayer';
 import { BookmarkButton } from '../../components/BookmarkButton';
 import { CommentsSection } from '../../components/CommentsSection';
+import { PremiumGate } from '../../components/PremiumGate';
+import { useSubscription } from '../../hooks/useAuth';
 
 // Экран детального просмотра контента
 export default function ContentDetailScreen() {
@@ -23,6 +25,7 @@ export default function ContentDetailScreen() {
   const [content, setContent] = useState<ContentItem | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { hasAccess } = useSubscription();
 
   useEffect(() => {
     loadContent();
@@ -155,18 +158,43 @@ export default function ContentDetailScreen() {
           {/* Разделитель */}
           <View style={styles.divider} />
 
-        {/* Медиа-плеер (видео / аудио) или текст */}
-        {isVideoContent ? (
-          <VideoPlayer uri={videoUrl!} title={content.title} />
-        ) : isAudioContent ? (
-          <AudioPlayer uri={audioUrl!} title={content.title} />
-        ) : body ? (
-          <Text style={styles.body}>{body}</Text>
+        {/* Медиа-плеер (видео / аудио) или текст — с PremiumGate для премиум-контента */}
+        {content.is_premium && !hasAccess(content.subscription_tier || 'path') ? (
+          <PremiumGate
+            requiredTier={content.subscription_tier || 'path'}
+            contentTitle={content.title}
+          >
+            {/* Контент (размыт за замком) */}
+            <View>
+              {isVideoContent ? (
+                <VideoPlayer uri={videoUrl!} title={content.title} />
+              ) : isAudioContent ? (
+                <AudioPlayer uri={audioUrl!} title={content.title} />
+              ) : body ? (
+                <Text style={styles.body}>{body}</Text>
+              ) : (
+                <View style={styles.noContent}>
+                  <Text style={styles.noContentIcon}>📭</Text>
+                  <Text style={styles.noContentText}>Контент пока не добавлен</Text>
+                </View>
+              )}
+            </View>
+          </PremiumGate>
         ) : (
-          <View style={styles.noContent}>
-            <Text style={styles.noContentIcon}>📭</Text>
-            <Text style={styles.noContentText}>Контент пока не добавлен</Text>
-          </View>
+          <>
+            {isVideoContent ? (
+              <VideoPlayer uri={videoUrl!} title={content.title} />
+            ) : isAudioContent ? (
+              <AudioPlayer uri={audioUrl!} title={content.title} />
+            ) : body ? (
+              <Text style={styles.body}>{body}</Text>
+            ) : (
+              <View style={styles.noContent}>
+                <Text style={styles.noContentIcon}>📭</Text>
+                <Text style={styles.noContentText}>Контент пока не добавлен</Text>
+              </View>
+            )}
+          </>
         )}
 
         {/* Разделитель перед комментариями */}
