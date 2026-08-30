@@ -12,15 +12,16 @@ import { useRouter } from 'expo-router';
 import { FontAwesome } from '@expo/vector-icons';
 import { getContent, deleteContent } from '../../services/api';
 import { ContentItem } from '../../types';
+import { useTheme } from '../../hooks/useTheme';
+import { ThemeColors } from '../../utils/themeColors';
 
-// Список статей (админ)
 export default function ArticlesScreen() {
   const router = useRouter();
+  const { colors } = useTheme();
 
   const [articles, setArticles] = useState<ContentItem[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Загрузка статей
   const loadArticles = async () => {
     try {
       setLoading(true);
@@ -37,7 +38,6 @@ export default function ArticlesScreen() {
     loadArticles();
   }, []);
 
-  // Удаление статьи
   const handleDelete = (item: ContentItem) => {
     Alert.alert(
       'Удаление',
@@ -58,7 +58,6 @@ export default function ArticlesScreen() {
     );
   };
 
-  // Тип контента
   const getTypeLabel = (type: ContentItem['type']) => {
     switch (type) {
       case 'article': return 'Статья';
@@ -79,12 +78,11 @@ export default function ArticlesScreen() {
     }
   };
 
-  // Рендер статьи
   const renderArticle = ({ item }: { item: ContentItem }) => (
     <View style={styles.articleCard}>
       <View style={styles.articleInfo}>
         <View style={styles.articleTypeRow}>
-          <FontAwesome name={getTypeIcon(item.type) as any} size={14} color="#6c63ff" />
+          <FontAwesome name={getTypeIcon(item.type) as any} size={14} color={colors.primary} />
           <Text style={styles.articleType}>{getTypeLabel(item.type)}</Text>
         </View>
         <Text style={styles.articleTitle} numberOfLines={1}>{item.title}</Text>
@@ -97,13 +95,13 @@ export default function ArticlesScreen() {
           style={styles.editButton}
           onPress={() => router.push({ pathname: '/admin/article-edit', params: { id: item.id } })}
         >
-          <FontAwesome name="pencil" size={18} color="#6c63ff" />
+          <FontAwesome name="pencil" size={18} color={colors.primary} />
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.deleteButton}
           onPress={() => handleDelete(item)}
         >
-          <FontAwesome name="trash-o" size={18} color="#ff4444" />
+          <FontAwesome name="trash-o" size={18} color={colors.error} />
         </TouchableOpacity>
       </View>
     </View>
@@ -111,11 +109,10 @@ export default function ArticlesScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Заголовок */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()}>
           <View style={styles.backButton}>
-            <FontAwesome name="arrow-left" size={16} color="#6c63ff" />
+            <FontAwesome name="arrow-left" size={16} color={colors.primary} />
             <Text style={styles.backButtonText}>Назад</Text>
           </View>
         </TouchableOpacity>
@@ -130,9 +127,8 @@ export default function ArticlesScreen() {
         </View>
       </View>
 
-      {/* Список */}
       {loading ? (
-        <ActivityIndicator size="large" color="#6c63ff" style={styles.loader} />
+        <ActivityIndicator size="large" color={colors.primary} style={styles.loader} />
       ) : (
         <FlatList
           data={articles}
@@ -141,7 +137,7 @@ export default function ArticlesScreen() {
           contentContainerStyle={styles.list}
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
-              <FontAwesome name="file-text-o" size={48} color="#6c63ff" />
+              <FontAwesome name="file-text-o" size={48} color={colors.primary} />
               <Text style={styles.emptyText}>Пока нет статей</Text>
               <Text style={styles.emptyHint}>Нажмите "Создать" чтобы добавить первую</Text>
             </View>
@@ -152,10 +148,10 @@ export default function ArticlesScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#1a1a2e',
+    backgroundColor: colors.background,
   },
   header: {
     paddingTop: 60,
@@ -168,7 +164,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   backButtonText: {
-    color: '#6c63ff',
+    color: colors.primary,
     fontSize: 16,
     marginLeft: 6,
   },
@@ -186,16 +182,16 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#fff',
+    color: colors.text,
   },
   addButton: {
-    backgroundColor: '#6c63ff',
+    backgroundColor: colors.primary,
     borderRadius: 8,
     paddingHorizontal: 16,
     paddingVertical: 8,
   },
   addButtonText: {
-    color: '#fff',
+    color: colors.onPrimary,
     fontSize: 14,
     fontWeight: '600',
   },
@@ -206,7 +202,7 @@ const styles = StyleSheet.create({
   },
   articleCard: {
     flexDirection: 'row',
-    backgroundColor: '#16213e',
+    backgroundColor: colors.surface,
     borderRadius: 12,
     padding: 16,
     alignItems: 'center',
@@ -216,18 +212,18 @@ const styles = StyleSheet.create({
   },
   articleType: {
     fontSize: 12,
-    color: '#999',
+    color: colors.textSecondary,
     marginBottom: 4,
   },
   articleTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#fff',
+    color: colors.text,
     marginBottom: 4,
   },
   articleMeta: {
     fontSize: 12,
-    color: '#666',
+    color: colors.textMuted,
   },
   articleActions: {
     flexDirection: 'row',
@@ -237,7 +233,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 8,
-    backgroundColor: '#1a1a2e',
+    backgroundColor: colors.background,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -248,7 +244,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 8,
-    backgroundColor: '#1a1a2e',
+    backgroundColor: colors.background,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -268,11 +264,43 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 18,
-    color: '#fff',
+    color: colors.text,
     marginBottom: 4,
   },
   emptyHint: {
     fontSize: 14,
-    color: '#666',
+    color: colors.textMuted,
   },
+});
+
+const styles = createStyles({
+  background: '#1a1a2e',
+  surface: '#16213e',
+  surfaceLight: '#1f2b47',
+  primary: '#6c63ff',
+  primaryLight: '#8b83ff',
+  onPrimary: '#ffffff',
+  gold: '#ffc107',
+  copper: '#a5593b',
+  cardBorder: '#333333',
+  cardIconBg: '#1a1a2e',
+  cardIconColor: '#6c63ff',
+  inputBg: '#16213e',
+  text: '#ffffff',
+  textSecondary: '#999999',
+  textMuted: '#666666',
+  border: '#333333',
+  borderLight: '#444444',
+  success: '#4caf50',
+  error: '#ff4444',
+  primaryAlpha10: 'rgba(108, 99, 255, 0.1)',
+  primaryAlpha13: 'rgba(108, 99, 255, 0.13)',
+  primaryAlpha20: 'rgba(108, 99, 255, 0.2)',
+  primaryAlpha27: 'rgba(108, 99, 255, 0.27)',
+  surfaceAlpha98: 'rgba(22, 33, 62, 0.98)',
+  overlay: 'rgba(0, 0, 0, 0.5)',
+  whiteAlpha60: 'rgba(255, 255, 255, 0.6)',
+  whiteAlpha70: 'rgba(255, 255, 255, 0.7)',
+  placeholder: '#666666',
+  statusBar: 'light',
 });

@@ -3,13 +3,14 @@ import {
   View,
   TextInput,
   TouchableOpacity,
-  Text,
   StyleSheet,
   ActivityIndicator,
   Keyboard,
 } from 'react-native';
+import { FontAwesome } from '@expo/vector-icons';
+import { useTheme } from '../hooks/useTheme';
+import { ThemeColors } from '../utils/themeColors';
 
-// Поле ввода комментария
 interface CommentInputProps {
   onSubmit: (text: string) => Promise<void>;
   initialText?: string;
@@ -17,10 +18,10 @@ interface CommentInputProps {
 }
 
 export function CommentInput({ onSubmit, initialText, disabled }: CommentInputProps) {
+  const { colors } = useTheme();
   const [text, setText] = useState(initialText || '');
   const [loading, setLoading] = useState(false);
 
-  // Отправка комментария
   const handleSubmit = async () => {
     const trimmed = text.trim();
     if (!trimmed || loading || disabled) return;
@@ -37,6 +38,8 @@ export function CommentInput({ onSubmit, initialText, disabled }: CommentInputPr
     }
   };
 
+  const styles = createStyles(colors);
+
   return (
     <View style={styles.container}>
       <TextInput
@@ -44,7 +47,7 @@ export function CommentInput({ onSubmit, initialText, disabled }: CommentInputPr
         value={text}
         onChangeText={setText}
         placeholder="Написать комментарий..."
-        placeholderTextColor="#666"
+        placeholderTextColor={colors.placeholder}
         multiline
         maxLength={500}
         editable={!loading && !disabled}
@@ -55,20 +58,20 @@ export function CommentInput({ onSubmit, initialText, disabled }: CommentInputPr
         disabled={!text.trim() || loading || disabled}
       >
         {loading ? (
-          <ActivityIndicator size="small" color="#fff" />
+          <ActivityIndicator size="small" color={colors.onPrimary} />
         ) : (
-          <Text style={styles.buttonText}>→</Text>
+          <FontAwesome name="arrow-right" size={16} color={colors.onPrimary} />
         )}
       </TouchableOpacity>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'flex-end',
-    backgroundColor: '#16213e',
+    backgroundColor: colors.inputBg,
     borderRadius: 12,
     padding: 12,
     marginTop: 8,
@@ -76,7 +79,7 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     fontSize: 15,
-    color: '#fff',
+    color: colors.text,
     maxHeight: 100,
     marginRight: 8,
   },
@@ -84,16 +87,11 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#6c63ff',
+    backgroundColor: colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
   },
   buttonDisabled: {
-    backgroundColor: '#6c63ff44',
-  },
-  buttonText: {
-    fontSize: 18,
-    color: '#fff',
-    fontWeight: '600',
+    backgroundColor: colors.primaryAlpha27,
   },
 });

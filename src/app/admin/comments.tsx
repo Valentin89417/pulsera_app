@@ -12,18 +12,22 @@ import { useRouter } from 'expo-router';
 import { FontAwesome } from '@expo/vector-icons';
 import { getAllComments, deleteComment, AdminComment } from '../../services/api';
 import { useAdmin } from '../../hooks/useAuth';
+import { useTheme } from '../../hooks/useTheme';
+import { ThemeColors } from '../../utils/themeColors';
 
-// Элемент комментария в списке
 function CommentListItem({
   item,
   onDelete,
   onNavigate,
+  colors,
 }: {
   item: AdminComment;
   onDelete: () => void;
   onNavigate: () => void;
+  colors: ThemeColors;
 }) {
-  // Иконка типа контента
+  const styles = createStyles(colors);
+
   const getTypeIcon = (type: string | null) => {
     switch (type) {
       case 'article': return 'file-text-o';
@@ -34,7 +38,6 @@ function CommentListItem({
     }
   };
 
-  // Форматирование даты
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('ru-RU', {
@@ -47,7 +50,6 @@ function CommentListItem({
 
   return (
     <View style={styles.card}>
-      {/* Шапка карточки */}
       <View style={styles.cardHeader}>
         <View style={styles.authorInfo}>
           <View style={styles.avatar}>
@@ -62,19 +64,16 @@ function CommentListItem({
         </View>
       </View>
 
-      {/* Текст комментария */}
       <Text style={styles.commentText}>{item.text}</Text>
 
-      {/* Контент, к которому привязан комментарий */}
       <TouchableOpacity style={styles.contentLink} onPress={onNavigate}>
-        <FontAwesome name={getTypeIcon(item.content_type) as any} size={16} color="#6c63ff" style={styles.contentIcon} />
+        <FontAwesome name={getTypeIcon(item.content_type) as any} size={16} color={colors.primary} style={styles.contentIcon} />
         <Text style={styles.contentTitle} numberOfLines={1}>
           {item.content_title || 'Контент удалён'}
         </Text>
-        <FontAwesome name="arrow-right" size={16} color="#6c63ff" />
+        <FontAwesome name="arrow-right" size={16} color={colors.primary} />
       </TouchableOpacity>
 
-      {/* Действия */}
       <View style={styles.actions}>
         <TouchableOpacity style={styles.replyButton} onPress={onNavigate}>
           <Text style={styles.replyText}>Ответить</Text>
@@ -87,12 +86,14 @@ function CommentListItem({
   );
 }
 
-// Экран управления комментариями
 export default function AdminCommentsScreen() {
   const router = useRouter();
   const { isAdmin } = useAdmin();
+  const { colors } = useTheme();
   const [comments, setComments] = useState<AdminComment[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const styles = createStyles(colors);
 
   useEffect(() => {
     if (isAdmin) loadComments();
@@ -110,7 +111,6 @@ export default function AdminCommentsScreen() {
     }
   };
 
-  // Удаление комментария
   const handleDelete = (comment: AdminComment) => {
     Alert.alert(
       'Удалить комментарий',
@@ -133,25 +133,23 @@ export default function AdminCommentsScreen() {
     );
   };
 
-  // Навигация к контенту (с ответом)
   const handleNavigate = (contentId: string, commentId: string) => {
     router.push(`/content/${contentId}?replyTo=${commentId}`);
   };
 
-  // Если не админ
   if (!isAdmin) {
     return (
       <View style={styles.container}>
         <View style={styles.header}>
           <TouchableOpacity onPress={() => router.back()}>
             <View style={styles.backButton}>
-              <FontAwesome name="arrow-left" size={16} color="#6c63ff" />
+              <FontAwesome name="arrow-left" size={16} color={colors.primary} />
               <Text style={styles.backButtonText}>Назад</Text>
             </View>
           </TouchableOpacity>
         </View>
         <View style={styles.centered}>
-          <FontAwesome name="lock" size={48} color="#6c63ff" />
+          <FontAwesome name="lock" size={48} color={colors.primary} />
           <Text style={styles.accessDeniedText}>Доступ запрещён</Text>
         </View>
       </View>
@@ -160,11 +158,10 @@ export default function AdminCommentsScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Шапка */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backNav}>
           <View style={styles.backButton}>
-            <FontAwesome name="arrow-left" size={16} color="#6c63ff" />
+            <FontAwesome name="arrow-left" size={16} color={colors.primary} />
             <Text style={styles.backButtonText}>Назад</Text>
           </View>
         </TouchableOpacity>
@@ -172,12 +169,11 @@ export default function AdminCommentsScreen() {
         <Text style={styles.headerCount}>{comments.length} всего</Text>
       </View>
 
-      {/* Список */}
       {loading ? (
-        <ActivityIndicator size="large" color="#6c63ff" style={styles.loader} />
+        <ActivityIndicator size="large" color={colors.primary} style={styles.loader} />
       ) : comments.length === 0 ? (
         <View style={styles.centered}>
-          <FontAwesome name="comment-o" size={48} color="#6c63ff" />
+          <FontAwesome name="comment-o" size={48} color={colors.primary} />
           <Text style={styles.emptyText}>Комментариев пока нет</Text>
         </View>
       ) : (
@@ -189,6 +185,7 @@ export default function AdminCommentsScreen() {
               item={item}
               onDelete={() => handleDelete(item)}
               onNavigate={() => handleNavigate(item.content_id, item.id)}
+              colors={colors}
             />
           )}
           contentContainerStyle={styles.list}
@@ -199,10 +196,10 @@ export default function AdminCommentsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#1a1a2e',
+    backgroundColor: colors.background,
   },
   centered: {
     flex: 1,
@@ -222,18 +219,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   backButtonText: {
-    color: '#6c63ff',
+    color: colors.primary,
     fontSize: 16,
     marginLeft: 6,
   },
   headerTitle: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#fff',
+    color: colors.text,
   },
   headerCount: {
     fontSize: 14,
-    color: '#666',
+    color: colors.textMuted,
     marginTop: 4,
   },
   loader: {
@@ -245,7 +242,7 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
   },
   card: {
-    backgroundColor: '#16213e',
+    backgroundColor: colors.surface,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
@@ -264,7 +261,7 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#6c63ff33',
+    backgroundColor: colors.primaryAlpha20,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 10,
@@ -272,27 +269,27 @@ const styles = StyleSheet.create({
   avatarText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#6c63ff',
+    color: colors.primary,
   },
   authorName: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#fff',
+    color: colors.text,
   },
   date: {
     fontSize: 12,
-    color: '#666',
+    color: colors.textMuted,
   },
   commentText: {
     fontSize: 15,
-    color: '#ddd',
+    color: colors.textSecondary,
     lineHeight: 22,
     marginBottom: 12,
   },
   contentLink: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1a1a2e',
+    backgroundColor: colors.background,
     borderRadius: 8,
     padding: 10,
     marginBottom: 12,
@@ -304,11 +301,11 @@ const styles = StyleSheet.create({
   contentTitle: {
     flex: 1,
     fontSize: 13,
-    color: '#999',
+    color: colors.textSecondary,
   },
   goArrow: {
     fontSize: 16,
-    color: '#6c63ff',
+    color: colors.primary,
   },
   actions: {
     flexDirection: 'row',
@@ -319,10 +316,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 6,
-    backgroundColor: '#6c63ff22',
+    backgroundColor: colors.primaryAlpha13,
   },
   replyText: {
-    color: '#6c63ff',
+    color: colors.primary,
     fontSize: 13,
     fontWeight: '500',
   },
@@ -330,10 +327,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 6,
-    backgroundColor: '#ff444422',
+    backgroundColor: colors.primaryAlpha13,
   },
   deleteText: {
-    color: '#ff4444',
+    color: colors.error,
     fontSize: 13,
     fontWeight: '500',
   },
@@ -344,7 +341,7 @@ const styles = StyleSheet.create({
   accessDeniedText: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#fff',
+    color: colors.text,
   },
   emptyIcon: {
     fontSize: 48,
@@ -352,6 +349,6 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 16,
-    color: '#666',
+    color: colors.textMuted,
   },
 });

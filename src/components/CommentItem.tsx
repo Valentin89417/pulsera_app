@@ -1,7 +1,8 @@
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { CommentWithAuthor } from '../types';
+import { useTheme } from '../hooks/useTheme';
+import { ThemeColors } from '../utils/themeColors';
 
-// Компонент одного комментария
 interface CommentItemProps {
   comment: CommentWithAuthor;
   currentUserId?: string | null;
@@ -12,25 +13,14 @@ interface CommentItemProps {
 }
 
 export function CommentItem({ comment, currentUserId, onReply, onEdit, onDelete, isAdmin }: CommentItemProps) {
-  // Имя автора (или «Аноним»)
+  const { colors } = useTheme();
   const authorName = comment.profiles?.display_name || 'Аноним';
-
-  // Первая буква имени для аватара
   const avatarLetter = authorName.charAt(0).toUpperCase();
-
-  // Есть ли это ответ
   const isReply = !!comment.parent_id;
-
-  // Свой ли комментарий
   const isOwn = currentUserId === comment.user_id;
-
-  // Можно ли удалять (свой или админ)
   const canDelete = isOwn || isAdmin;
-
-  // Можно ли редактировать (только свой)
   const canEdit = isOwn;
 
-  // Форматирование даты
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     const now = new Date();
@@ -50,27 +40,25 @@ export function CommentItem({ comment, currentUserId, onReply, onEdit, onDelete,
     });
   };
 
+  const styles = createStyles(colors);
+
   return (
     <View style={[styles.wrapper, isReply && styles.replyWrapper]}>
-      {/* Линия-индикатор ответа */}
       {isReply && <View style={styles.replyLine} />}
 
       <View style={styles.container}>
-        {/* Аватар */}
         <View style={[styles.avatar, isReply && styles.replyAvatar]}>
           <Text style={[styles.avatarText, isReply && styles.replyAvatarText]}>
             {avatarLetter}
           </Text>
         </View>
 
-        {/* Контент */}
         <View style={styles.content}>
           <View style={styles.header}>
             <Text style={styles.author}>{authorName}</Text>
             <Text style={styles.date}>{formatDate(comment.created_at)}</Text>
           </View>
 
-          {/* Текст ответа */}
           {isReply && comment.parent_text && (
             <View style={styles.replyTo}>
               <Text style={styles.replyToText} numberOfLines={1}>
@@ -81,7 +69,6 @@ export function CommentItem({ comment, currentUserId, onReply, onEdit, onDelete,
 
           <Text style={styles.text}>{comment.text}</Text>
 
-          {/* Кнопки действий */}
           <View style={styles.actions}>
             {onReply && (
               <TouchableOpacity style={styles.actionButton} onPress={onReply}>
@@ -105,7 +92,7 @@ export function CommentItem({ comment, currentUserId, onReply, onEdit, onDelete,
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   wrapper: {
     marginBottom: 16,
   },
@@ -118,7 +105,7 @@ const styles = StyleSheet.create({
     top: 0,
     bottom: 0,
     width: 2,
-    backgroundColor: '#6c63ff44',
+    backgroundColor: colors.primaryAlpha27,
     borderRadius: 1,
   },
   container: {
@@ -128,7 +115,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#6c63ff33',
+    backgroundColor: colors.primaryAlpha20,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
@@ -141,7 +128,7 @@ const styles = StyleSheet.create({
   avatarText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#6c63ff',
+    color: colors.primary,
   },
   replyAvatarText: {
     fontSize: 11,
@@ -158,14 +145,14 @@ const styles = StyleSheet.create({
   author: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#fff',
+    color: colors.text,
   },
   date: {
     fontSize: 12,
-    color: '#666',
+    color: colors.textMuted,
   },
   replyTo: {
-    backgroundColor: '#6c63ff11',
+    backgroundColor: colors.primaryAlpha10,
     borderRadius: 4,
     paddingHorizontal: 8,
     paddingVertical: 4,
@@ -173,12 +160,12 @@ const styles = StyleSheet.create({
   },
   replyToText: {
     fontSize: 12,
-    color: '#6c63ff',
+    color: colors.primary,
     fontStyle: 'italic',
   },
   text: {
     fontSize: 15,
-    color: '#ddd',
+    color: colors.textSecondary,
     lineHeight: 22,
   },
   actions: {
@@ -191,17 +178,17 @@ const styles = StyleSheet.create({
   },
   replyButtonText: {
     fontSize: 13,
-    color: '#6c63ff',
+    color: colors.primary,
     fontWeight: '500',
   },
   editButtonText: {
     fontSize: 13,
-    color: '#999',
+    color: colors.textSecondary,
     fontWeight: '500',
   },
   deleteButtonText: {
     fontSize: 13,
-    color: '#ff4444',
+    color: colors.error,
     fontWeight: '500',
   },
 });

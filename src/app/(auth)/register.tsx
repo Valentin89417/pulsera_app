@@ -12,11 +12,13 @@ import {
 } from 'react-native';
 import { useRouter, Link } from 'expo-router';
 import { useAuthStore } from '../../store/authStore';
+import { useTheme } from '../../hooks/useTheme';
+import { ThemeColors } from '../../utils/themeColors';
 
-// Экран регистрации
 export default function RegisterScreen() {
   const router = useRouter();
   const { signUp, isLoading } = useAuthStore();
+  const { colors } = useTheme();
 
   const [displayName, setDisplayName] = useState('');
   const [email, setEmail] = useState('');
@@ -56,6 +58,8 @@ export default function RegisterScreen() {
     }
   };
 
+  const styles = createStyles(colors);
+
   return (
     <KeyboardAvoidingView
       style={styles.container}
@@ -70,7 +74,7 @@ export default function RegisterScreen() {
           <TextInput
             style={styles.input}
             placeholder="Ваше имя"
-            placeholderTextColor="#666"
+            placeholderTextColor={colors.textMuted}
             value={displayName}
             onChangeText={setDisplayName}
             autoCapitalize="words"
@@ -78,7 +82,7 @@ export default function RegisterScreen() {
           <TextInput
             style={styles.input}
             placeholder="Email"
-            placeholderTextColor="#666"
+            placeholderTextColor={colors.textMuted}
             value={email}
             onChangeText={setEmail}
             keyboardType="email-address"
@@ -89,7 +93,7 @@ export default function RegisterScreen() {
             <TextInput
               style={styles.passwordInput}
               placeholder="Пароль"
-              placeholderTextColor="#666"
+              placeholderTextColor={colors.textMuted}
               value={password}
               onChangeText={setPassword}
               secureTextEntry={!showPassword}
@@ -105,7 +109,7 @@ export default function RegisterScreen() {
             <TextInput
               style={styles.passwordInput}
               placeholder="Повторите пароль"
-              placeholderTextColor="#666"
+              placeholderTextColor={colors.textMuted}
               value={confirmPassword}
               onChangeText={setConfirmPassword}
               secureTextEntry={!showPassword}
@@ -124,7 +128,7 @@ export default function RegisterScreen() {
             disabled={localLoading || isLoading}
           >
             {localLoading || isLoading ? (
-              <ActivityIndicator color="#fff" />
+              <ActivityIndicator color={colors.onPrimary} />
             ) : (
               <Text style={styles.buttonText}>Зарегистрироваться</Text>
             )}
@@ -144,10 +148,10 @@ export default function RegisterScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#1a1a2e',
+    backgroundColor: colors.background,
   },
   inner: {
     flex: 1,
@@ -157,18 +161,18 @@ const styles = StyleSheet.create({
   },
   logo: {
     fontSize: 48,
-    color: '#6c63ff',
+    color: colors.primary,
     marginBottom: 12,
   },
   title: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#fff',
+    color: colors.text,
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 16,
-    color: '#999',
+    color: colors.textSecondary,
     marginBottom: 32,
   },
   form: {
@@ -176,27 +180,27 @@ const styles = StyleSheet.create({
     gap: 14,
   },
   input: {
-    backgroundColor: '#16213e',
+    backgroundColor: colors.surface,
     borderRadius: 12,
     padding: 16,
     fontSize: 16,
-    color: '#fff',
+    color: colors.text,
     borderWidth: 1,
-    borderColor: '#333',
+    borderColor: colors.border,
   },
   passwordContainer: {
     flexDirection: 'row',
-    backgroundColor: '#16213e',
+    backgroundColor: colors.surface,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#333',
+    borderColor: colors.border,
     alignItems: 'center',
   },
   passwordInput: {
     flex: 1,
     padding: 16,
     fontSize: 16,
-    color: '#fff',
+    color: colors.text,
   },
   eyeButton: {
     paddingHorizontal: 16,
@@ -205,7 +209,7 @@ const styles = StyleSheet.create({
     fontSize: 20,
   },
   button: {
-    backgroundColor: '#6c63ff',
+    backgroundColor: colors.primary,
     borderRadius: 12,
     padding: 16,
     alignItems: 'center',
@@ -215,7 +219,7 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   buttonText: {
-    color: '#fff',
+    color: colors.onPrimary,
     fontSize: 18,
     fontWeight: '600',
   },
@@ -224,11 +228,11 @@ const styles = StyleSheet.create({
     marginTop: 32,
   },
   footerText: {
-    color: '#999',
+    color: colors.textSecondary,
     fontSize: 14,
   },
   linkText: {
-    color: '#6c63ff',
+    color: colors.primary,
     fontSize: 14,
     fontWeight: '600',
   },

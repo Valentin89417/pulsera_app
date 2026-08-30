@@ -15,8 +15,9 @@ import { FontAwesome } from '@expo/vector-icons';
 import { getContentById, createContent, updateContent } from '../../services/api';
 import { ContentItem, ContentType } from '../../types';
 import { pickFile, uploadFile, UploadFileType } from '../../utils/upload';
+import { useTheme } from '../../hooks/useTheme';
+import { ThemeColors } from '../../utils/themeColors';
 
-// Типы контента
 const CONTENT_TYPES: { key: ContentType; label: string }[] = [
   { key: 'article', label: 'Статья' },
   { key: 'video', label: 'Видео' },
@@ -24,17 +25,16 @@ const CONTENT_TYPES: { key: ContentType; label: string }[] = [
   { key: 'course', label: 'Курс' },
 ];
 
-// Тарифы
 const TIERS: { key: ContentItem['subscription_tier']; label: string }[] = [
   { key: 'free', label: 'Бесплатно' },
   { key: 'path', label: 'Путь' },
   { key: 'awakening', label: 'Пробуждение' },
 ];
 
-// Экран создания/редактирования статьи
 export default function ArticleEditScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id?: string }>();
+  const { colors } = useTheme();
   const isEditing = !!id;
 
   const [title, setTitle] = useState('');
@@ -53,7 +53,6 @@ export default function ArticleEditScreen() {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  // Загрузка статьи при редактировании
   useEffect(() => {
     if (isEditing) {
       loadArticle();
@@ -84,7 +83,6 @@ export default function ArticleEditScreen() {
     }
   };
 
-  // Загрузка файла
   const handleUploadFile = async (fileType: UploadFileType) => {
     try {
       const file = await pickFile(fileType);
@@ -113,7 +111,6 @@ export default function ArticleEditScreen() {
     }
   };
 
-  // Удалить загруженный файл
   const handleRemoveFile = (fileType: UploadFileType) => {
     if (fileType === 'audio') {
       setAudioUrl('');
@@ -124,7 +121,6 @@ export default function ArticleEditScreen() {
     }
   };
 
-  // Сохранение
   const handleSave = async () => {
     if (!title.trim()) {
       Alert.alert('Ошибка', 'Введите заголовок');
@@ -138,7 +134,6 @@ export default function ArticleEditScreen() {
     try {
       setSaving(true);
 
-      // Формируем content_data в зависимости от типа
       const contentData: Record<string, unknown> = {};
       if (type === 'article') {
         contentData.body = body.trim();
@@ -194,21 +189,22 @@ export default function ArticleEditScreen() {
     }
   };
 
+  const styles = createStyles(colors);
+
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#6c63ff" />
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      {/* Заголовок */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()}>
           <View style={styles.backButton}>
-            <FontAwesome name="arrow-left" size={16} color="#6c63ff" />
+            <FontAwesome name="arrow-left" size={16} color={colors.primary} />
             <Text style={styles.backButtonText}>Назад</Text>
           </View>
         </TouchableOpacity>
@@ -217,9 +213,7 @@ export default function ArticleEditScreen() {
         </Text>
       </View>
 
-      {/* Форма */}
       <View style={styles.form}>
-        {/* Заголовок */}
         <View style={styles.field}>
           <Text style={styles.label}>Заголовок *</Text>
           <TextInput
@@ -227,11 +221,10 @@ export default function ArticleEditScreen() {
             value={title}
             onChangeText={setTitle}
             placeholder="Введите заголовок"
-            placeholderTextColor="#666"
+            placeholderTextColor={colors.placeholder}
           />
         </View>
 
-        {/* Описание */}
         <View style={styles.field}>
           <Text style={styles.label}>Описание</Text>
           <TextInput
@@ -239,11 +232,10 @@ export default function ArticleEditScreen() {
             value={description}
             onChangeText={setDescription}
             placeholder="Краткое описание"
-            placeholderTextColor="#666"
+            placeholderTextColor={colors.placeholder}
           />
         </View>
 
-        {/* Категория */}
         <View style={styles.field}>
           <Text style={styles.label}>Категория *</Text>
           <TextInput
@@ -251,11 +243,10 @@ export default function ArticleEditScreen() {
             value={category}
             onChangeText={setCategory}
             placeholder="meditation, practice, spiritual..."
-            placeholderTextColor="#666"
+            placeholderTextColor={colors.placeholder}
           />
         </View>
 
-        {/* Тип контента */}
         <View style={styles.field}>
           <Text style={styles.label}>Тип контента</Text>
           <View style={styles.chipRow}>
@@ -273,14 +264,13 @@ export default function ArticleEditScreen() {
           </View>
         </View>
 
-        {/* Поле для загрузки аудио (только для типа audio) */}
         {type === 'audio' && (
           <View style={styles.field}>
             <Text style={styles.label}>Аудио файл *</Text>
             {audioUrl ? (
               <View style={styles.filePreview}>
                 <View style={styles.fileInfo}>
-                  <FontAwesome name="music" size={24} color="#6c63ff" />
+                  <FontAwesome name="music" size={24} color={colors.primary} />
                   <Text style={styles.fileName} numberOfLines={1}>
                     {audioFilename || 'audio.mp3'}
                   </Text>
@@ -300,12 +290,12 @@ export default function ArticleEditScreen() {
               >
                 {uploading ? (
                   <View style={styles.uploadingContainer}>
-                    <ActivityIndicator color="#6c63ff" size="small" />
+                    <ActivityIndicator color={colors.primary} size="small" />
                     <Text style={styles.uploadingText}>{uploadProgress}%</Text>
                   </View>
                 ) : (
                   <>
-                    <FontAwesome name="music" size={32} color="#6c63ff" />
+                    <FontAwesome name="music" size={32} color={colors.primary} />
                     <Text style={styles.uploadText}>Выбрать аудио файл</Text>
                     <Text style={styles.uploadHint}>MP3, WAV, OGG (до 50 МБ)</Text>
                   </>
@@ -315,14 +305,13 @@ export default function ArticleEditScreen() {
           </View>
         )}
 
-        {/* Поле для загрузки видео (только для типа video) */}
         {type === 'video' && (
           <View style={styles.field}>
             <Text style={styles.label}>Видео файл *</Text>
             {videoUrl ? (
               <View style={styles.filePreview}>
                 <View style={styles.fileInfo}>
-                  <FontAwesome name="film" size={24} color="#6c63ff" />
+                  <FontAwesome name="film" size={24} color={colors.primary} />
                   <Text style={styles.fileName} numberOfLines={1}>
                     {videoFilename || 'video.mp4'}
                   </Text>
@@ -342,12 +331,12 @@ export default function ArticleEditScreen() {
               >
                 {uploading ? (
                   <View style={styles.uploadingContainer}>
-                    <ActivityIndicator color="#6c63ff" size="small" />
+                    <ActivityIndicator color={colors.primary} size="small" />
                     <Text style={styles.uploadingText}>{uploadProgress}%</Text>
                   </View>
                 ) : (
                   <>
-                    <FontAwesome name="film" size={32} color="#6c63ff" />
+                    <FontAwesome name="film" size={32} color={colors.primary} />
                     <Text style={styles.uploadText}>Выбрать видео файл</Text>
                     <Text style={styles.uploadHint}>MP4, MOV, WebM (до 50 МБ)</Text>
                   </>
@@ -357,7 +346,6 @@ export default function ArticleEditScreen() {
           </View>
         )}
 
-        {/* Поле для текста статьи (только для типа article) */}
         {type === 'article' && (
           <View style={styles.field}>
             <Text style={styles.label}>Текст статьи</Text>
@@ -366,25 +354,23 @@ export default function ArticleEditScreen() {
               value={body}
               onChangeText={setBody}
               placeholder="Полный текст статьи..."
-              placeholderTextColor="#666"
+              placeholderTextColor={colors.placeholder}
               multiline
               textAlignVertical="top"
             />
           </View>
         )}
 
-        {/* Платный контент */}
         <View style={styles.switchRow}>
           <Text style={styles.label}>Платный контент</Text>
           <Switch
             value={isPremium}
             onValueChange={setIsPremium}
-            trackColor={{ false: '#333', true: '#6c63ff' }}
-            thumbColor={isPremium ? '#fff' : '#999'}
+            trackColor={{ false: colors.border, true: colors.primary }}
+            thumbColor={isPremium ? colors.onPrimary : colors.textSecondary}
           />
         </View>
 
-        {/* Тариф */}
         {isPremium && (
           <View style={styles.field}>
             <Text style={styles.label}>Требуемый тариф</Text>
@@ -404,14 +390,13 @@ export default function ArticleEditScreen() {
           </View>
         )}
 
-        {/* Кнопка сохранить */}
         <TouchableOpacity
           style={[styles.saveButton, saving && styles.saveButtonDisabled]}
           onPress={handleSave}
           disabled={saving}
         >
           {saving ? (
-            <ActivityIndicator color="#fff" />
+            <ActivityIndicator color={colors.onPrimary} />
           ) : (
             <Text style={styles.saveButtonText}>
               {isEditing ? 'Сохранить' : 'Создать'}
@@ -423,17 +408,17 @@ export default function ArticleEditScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#1a1a2e',
+    backgroundColor: colors.background,
   },
   content: {
     paddingBottom: 40,
   },
   loadingContainer: {
     flex: 1,
-    backgroundColor: '#1a1a2e',
+    backgroundColor: colors.background,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -448,14 +433,14 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   backButtonText: {
-    color: '#6c63ff',
+    color: colors.primary,
     fontSize: 16,
     marginLeft: 6,
   },
   headerTitle: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#fff',
+    color: colors.text,
   },
   form: {
     paddingHorizontal: 20,
@@ -467,16 +452,16 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#fff',
+    color: colors.text,
   },
   input: {
-    backgroundColor: '#16213e',
+    backgroundColor: colors.surface,
     borderRadius: 12,
     padding: 16,
     fontSize: 16,
-    color: '#fff',
+    color: colors.text,
     borderWidth: 1,
-    borderColor: '#333',
+    borderColor: colors.border,
   },
   textArea: {
     height: 200,
@@ -484,7 +469,7 @@ const styles = StyleSheet.create({
   },
   hint: {
     fontSize: 12,
-    color: '#666',
+    color: colors.textMuted,
     marginTop: 4,
   },
   chipRow: {
@@ -493,23 +478,23 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
   },
   chip: {
-    backgroundColor: '#16213e',
+    backgroundColor: colors.surface,
     borderRadius: 20,
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderWidth: 1,
-    borderColor: '#333',
+    borderColor: colors.border,
   },
   chipActive: {
-    backgroundColor: '#6c63ff',
-    borderColor: '#6c63ff',
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
   },
   chipText: {
-    color: '#999',
+    color: colors.textSecondary,
     fontSize: 14,
   },
   chipTextActive: {
-    color: '#fff',
+    color: colors.onPrimary,
   },
   switchRow: {
     flexDirection: 'row',
@@ -517,7 +502,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   saveButton: {
-    backgroundColor: '#6c63ff',
+    backgroundColor: colors.primary,
     borderRadius: 12,
     padding: 16,
     alignItems: 'center',
@@ -527,15 +512,15 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   saveButtonText: {
-    color: '#fff',
+    color: colors.onPrimary,
     fontSize: 18,
     fontWeight: '600',
   },
   uploadButton: {
-    backgroundColor: '#16213e',
+    backgroundColor: colors.surface,
     borderRadius: 12,
     borderWidth: 2,
-    borderColor: '#333',
+    borderColor: colors.border,
     borderStyle: 'dashed',
     padding: 24,
     alignItems: 'center',
@@ -550,12 +535,12 @@ const styles = StyleSheet.create({
   uploadText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#fff',
+    color: colors.text,
     marginBottom: 4,
   },
   uploadHint: {
     fontSize: 12,
-    color: '#666',
+    color: colors.textMuted,
   },
   uploadingContainer: {
     flexDirection: 'row',
@@ -564,18 +549,18 @@ const styles = StyleSheet.create({
   },
   uploadingText: {
     fontSize: 14,
-    color: '#6c63ff',
+    color: colors.primary,
     fontWeight: '600',
   },
   filePreview: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#16213e',
+    backgroundColor: colors.surface,
     borderRadius: 12,
     padding: 16,
     borderWidth: 1,
-    borderColor: '#6c63ff',
+    borderColor: colors.primary,
   },
   fileInfo: {
     flexDirection: 'row',
@@ -588,17 +573,17 @@ const styles = StyleSheet.create({
   },
   fileName: {
     fontSize: 14,
-    color: '#fff',
+    color: colors.text,
     flex: 1,
   },
   removeFileButton: {
-    backgroundColor: '#ff444422',
+    backgroundColor: colors.primaryAlpha13,
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 6,
   },
   removeFileText: {
-    color: '#ff4444',
+    color: colors.error,
     fontSize: 12,
     fontWeight: '600',
   },

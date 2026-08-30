@@ -6,6 +6,8 @@ import {
   Dimensions,
   Platform,
 } from 'react-native';
+import { useTheme } from '../hooks/useTheme';
+import { ThemeColors } from '../utils/themeColors';
 
 interface VideoPlayerProps {
   uri: string;
@@ -14,9 +16,6 @@ interface VideoPlayerProps {
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-// ========================
-// Web-плеер (HTML5 <video>)
-// ========================
 function WebVideoPlayer({ uri, title }: VideoPlayerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -47,9 +46,6 @@ function WebVideoPlayer({ uri, title }: VideoPlayerProps) {
   );
 }
 
-// ========================
-// Native-плеер (expo-video с нативными контролами)
-// ========================
 function NativeVideoPlayer({ uri, title }: VideoPlayerProps) {
   const { VideoView, useVideoPlayer } = require('expo-video') as typeof import('expo-video');
 
@@ -76,15 +72,32 @@ function NativeVideoPlayer({ uri, title }: VideoPlayerProps) {
   );
 }
 
-// ========================
-// Экспорт: web vs native
-// ========================
 export function VideoPlayer(props: VideoPlayerProps) {
+  const { colors } = useTheme();
+
   if (Platform.OS === 'web') {
     return <WebVideoPlayer {...props} />;
   }
   return <NativeVideoPlayer {...props} />;
 }
+
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
+  container: {
+    backgroundColor: '#000',
+    borderRadius: 16,
+    overflow: 'hidden',
+  },
+  video: {
+    width: SCREEN_WIDTH - 40,
+    height: (SCREEN_WIDTH - 40) * (9 / 16),
+  },
+  title: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.text,
+    padding: 12,
+  },
+});
 
 const styles = StyleSheet.create({
   container: {

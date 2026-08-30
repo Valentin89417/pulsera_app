@@ -3,8 +3,9 @@ import { TouchableOpacity, Text, StyleSheet, ActivityIndicator } from 'react-nat
 import { FontAwesome } from '@expo/vector-icons';
 import { useAuthStore } from '../store/authStore';
 import { addBookmark, removeBookmark, isBookmarked } from '../services/api';
+import { useTheme } from '../hooks/useTheme';
+import { ThemeColors } from '../utils/themeColors';
 
-// Кнопка добавления/удаления закладки
 interface BookmarkButtonProps {
   contentId: string;
   size?: 'small' | 'medium';
@@ -12,10 +13,10 @@ interface BookmarkButtonProps {
 
 export function BookmarkButton({ contentId, size = 'medium' }: BookmarkButtonProps) {
   const { user } = useAuthStore();
+  const { colors } = useTheme();
   const [bookmarked, setBookmarked] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  // Проверяем статус закладки при загрузке
   useEffect(() => {
     checkBookmark();
   }, [contentId, user?.id]);
@@ -30,7 +31,6 @@ export function BookmarkButton({ contentId, size = 'medium' }: BookmarkButtonPro
     }
   };
 
-  // Переключение закладки
   const toggleBookmark = async () => {
     if (!user || loading) return;
     
@@ -51,10 +51,12 @@ export function BookmarkButton({ contentId, size = 'medium' }: BookmarkButtonPro
     }
   };
 
+  const styles = createStyles(colors);
+
   if (loading) {
     return (
       <TouchableOpacity style={[styles.button, size === 'small' && styles.buttonSmall]} disabled>
-        <ActivityIndicator size="small" color="#6c63ff" />
+        <ActivityIndicator size="small" color={colors.primary} />
       </TouchableOpacity>
     );
   }
@@ -64,13 +66,13 @@ export function BookmarkButton({ contentId, size = 'medium' }: BookmarkButtonPro
       <FontAwesome
         name={bookmarked ? 'heart' : 'heart-o'}
         size={size === 'small' ? 18 : 22}
-        color={bookmarked ? '#ff4444' : '#999'}
+        color={bookmarked ? colors.error : colors.textSecondary}
       />
     </TouchableOpacity>
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   button: {
     padding: 10,
     borderRadius: 20,

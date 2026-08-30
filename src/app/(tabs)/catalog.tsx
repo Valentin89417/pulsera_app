@@ -12,6 +12,8 @@ import { useRouter } from 'expo-router';
 import { FontAwesome } from '@expo/vector-icons';
 import { getContent } from '../../services/api';
 import { ContentItem, ContentType } from '../../types';
+import { useTheme } from '../../hooks/useTheme';
+import { ThemeColors } from '../../utils/themeColors';
 
 // Фильтры по типу контента
 const FILTERS: { key: ContentType | 'all'; label: string; icon: string }[] = [
@@ -22,9 +24,155 @@ const FILTERS: { key: ContentType | 'all'; label: string; icon: string }[] = [
   { key: 'course', label: 'Курсы', icon: 'book' },
 ];
 
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
+  header: {
+    paddingTop: 60,
+    paddingHorizontal: 20,
+    paddingBottom: 12,
+  },
+  headerTitle: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: colors.text,
+    marginBottom: 4,
+  },
+  headerSubtitle: {
+    fontSize: 14,
+    color: colors.textSecondary,
+  },
+  filtersContainer: {
+    marginBottom: 16,
+  },
+  filtersList: {
+    paddingHorizontal: 20,
+    gap: 8,
+  },
+  filterButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    gap: 6,
+  },
+  filterButtonActive: {
+    backgroundColor: colors.primary,
+  },
+  filterIcon: {
+    fontSize: 14,
+  },
+  filterText: {
+    color: colors.textSecondary,
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  filterTextActive: {
+    color: colors.onPrimary,
+  },
+  list: {
+    paddingHorizontal: 20,
+    paddingBottom: 20,
+    gap: 12,
+  },
+  card: {
+    flexDirection: 'row',
+    backgroundColor: colors.surface,
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: colors.cardBorder,
+  },
+  cardType: {
+    width: 48,
+    height: 48,
+    borderRadius: 12,
+    backgroundColor: colors.cardIconBg,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  cardTypeIcon: {
+    fontSize: 24,
+  },
+  cardContent: {
+    flex: 1,
+  },
+  cardTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.text,
+    marginBottom: 4,
+  },
+  cardDescription: {
+    fontSize: 13,
+    color: colors.textSecondary,
+    marginBottom: 8,
+    lineHeight: 18,
+  },
+  cardMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  cardCategory: {
+    fontSize: 12,
+    color: colors.textMuted,
+  },
+  premiumBadge: {
+    backgroundColor: colors.primaryAlpha13,
+    borderRadius: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  premiumText: {
+    color: colors.primary,
+    fontSize: 10,
+    fontWeight: '600',
+  },
+  loader: {
+    marginTop: 40,
+  },
+  emptyContainer: {
+    alignItems: 'center',
+    marginTop: 40,
+  },
+  emptyIcon: {
+    fontSize: 48,
+    marginBottom: 12,
+  },
+  emptyText: {
+    fontSize: 18,
+    color: colors.text,
+    marginBottom: 4,
+  },
+  emptyHint: {
+    fontSize: 14,
+    color: colors.textMuted,
+  },
+  retryButton: {
+    marginTop: 16,
+    backgroundColor: colors.primary,
+    borderRadius: 8,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+  },
+  retryText: {
+    color: colors.onPrimary,
+    fontSize: 14,
+    fontWeight: '600',
+  },
+});
+
 // Экран каталога
 export default function CatalogScreen() {
   const router = useRouter();
+  const { colors } = useTheme();
+  const styles = createStyles(colors);
 
   const [content, setContent] = useState<ContentItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -79,7 +227,7 @@ export default function CatalogScreen() {
       activeOpacity={0.7}
     >
       <View style={styles.cardType}>
-        <FontAwesome name={getTypeIcon(item.type) as any} size={24} color="#6c63ff" />
+        <FontAwesome name={getTypeIcon(item.type) as any} size={24} color={colors.cardIconColor} />
       </View>
       <View style={styles.cardContent}>
         <Text style={styles.cardTitle} numberOfLines={2}>{item.title}</Text>
@@ -101,7 +249,7 @@ export default function CatalogScreen() {
   // Пустой список
   const renderEmpty = () => {
     if (loading) {
-      return <ActivityIndicator size="large" color="#6c63ff" style={styles.loader} />;
+      return <ActivityIndicator size="large" color={colors.primary} style={styles.loader} />;
     }
     if (error) {
       return (
@@ -147,7 +295,7 @@ export default function CatalogScreen() {
               ]}
               onPress={() => setActiveFilter(item.key)}
             >
-              <FontAwesome name={item.icon as any} size={14} color={activeFilter === item.key ? '#fff' : '#999'} />
+              <FontAwesome name={item.icon as any} size={14} color={activeFilter === item.key ? colors.onPrimary : colors.textSecondary} />
               <Text
                 style={[
                   styles.filterText,
@@ -172,7 +320,7 @@ export default function CatalogScreen() {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={() => loadContent(true)}
-            tintColor="#6c63ff"
+            tintColor={colors.primary}
           />
         }
         showsVerticalScrollIndicator={false}
@@ -180,145 +328,3 @@ export default function CatalogScreen() {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#1a1a2e',
-  },
-  header: {
-    paddingTop: 60,
-    paddingHorizontal: 20,
-    paddingBottom: 12,
-  },
-  headerTitle: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#fff',
-    marginBottom: 4,
-  },
-  headerSubtitle: {
-    fontSize: 14,
-    color: '#999',
-  },
-  filtersContainer: {
-    marginBottom: 16,
-  },
-  filtersList: {
-    paddingHorizontal: 20,
-    gap: 8,
-  },
-  filterButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#16213e',
-    borderRadius: 20,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    gap: 6,
-  },
-  filterButtonActive: {
-    backgroundColor: '#6c63ff',
-  },
-  filterIcon: {
-    fontSize: 14,
-  },
-  filterText: {
-    color: '#999',
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  filterTextActive: {
-    color: '#fff',
-  },
-  list: {
-    paddingHorizontal: 20,
-    paddingBottom: 20,
-    gap: 12,
-  },
-  card: {
-    flexDirection: 'row',
-    backgroundColor: '#16213e',
-    borderRadius: 16,
-    padding: 16,
-  },
-  cardType: {
-    width: 48,
-    height: 48,
-    borderRadius: 12,
-    backgroundColor: '#1a1a2e',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  cardTypeIcon: {
-    fontSize: 24,
-  },
-  cardContent: {
-    flex: 1,
-  },
-  cardTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#fff',
-    marginBottom: 4,
-  },
-  cardDescription: {
-    fontSize: 13,
-    color: '#999',
-    marginBottom: 8,
-    lineHeight: 18,
-  },
-  cardMeta: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  cardCategory: {
-    fontSize: 12,
-    color: '#666',
-  },
-  premiumBadge: {
-    backgroundColor: '#6c63ff22',
-    borderRadius: 6,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-  },
-  premiumText: {
-    color: '#6c63ff',
-    fontSize: 10,
-    fontWeight: '600',
-  },
-  loader: {
-    marginTop: 40,
-  },
-  emptyContainer: {
-    alignItems: 'center',
-    marginTop: 40,
-  },
-  emptyIcon: {
-    fontSize: 48,
-    marginBottom: 12,
-  },
-  emptyText: {
-    fontSize: 18,
-    color: '#fff',
-    marginBottom: 4,
-  },
-  emptyHint: {
-    fontSize: 14,
-    color: '#666',
-  },
-  retryButton: {
-    marginTop: 16,
-    backgroundColor: '#6c63ff',
-    borderRadius: 8,
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-  },
-  retryText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-});

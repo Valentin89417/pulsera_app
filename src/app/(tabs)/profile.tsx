@@ -3,6 +3,8 @@ import { useRouter } from 'expo-router';
 import { FontAwesome } from '@expo/vector-icons';
 import { useAuthStore } from '../../store/authStore';
 import { useSubscription, useAdmin } from '../../hooks/useAuth';
+import { useTheme } from '../../hooks/useTheme';
+import { ThemeColors } from '../../utils/themeColors';
 
 // Экран профиля
 export default function ProfileScreen() {
@@ -10,6 +12,8 @@ export default function ProfileScreen() {
   const { profile, user, signOut } = useAuthStore();
   const { tier, isPremium } = useSubscription();
   const { isAdmin } = useAdmin();
+  const { mode, colors } = useTheme();
+  const styles = createStyles(colors);
 
   // Выход из аккаунта
   const handleSignOut = async () => {
@@ -41,114 +45,115 @@ export default function ProfileScreen() {
 
   const getTierColor = () => {
     switch (tier) {
-      case 'awakening': return '#ffd700';
-      case 'path': return '#6c63ff';
-      default: return '#666';
+      case 'awakening': return colors.gold;
+      case 'path': return colors.primary;
+      default: return colors.textMuted;
     }
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <ScrollView style={[styles.container, { backgroundColor: colors.background }]} contentContainerStyle={styles.content}>
       {/* Заголовок */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Профиль</Text>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>Профиль</Text>
       </View>
 
       {/* Аватар и имя */}
       <View style={styles.profileSection}>
-        <View style={styles.avatar}>
-          <Text style={styles.avatarText}>
+        <View style={[styles.avatar, { backgroundColor: colors.primary }]}>
+          <Text style={[styles.avatarText, { color: colors.onPrimary }]}>
             {profile?.display_name?.charAt(0)?.toUpperCase() || user?.email?.charAt(0)?.toUpperCase() || '?'}
           </Text>
         </View>
-        <Text style={styles.name}>{profile?.display_name || 'Путник'}</Text>
-        <Text style={styles.email}>{user?.email}</Text>
-        <Text style={styles.userId}>ID: {user?.id}</Text>
+        <Text style={[styles.name, { color: colors.text }]}>{profile?.display_name || 'Путник'}</Text>
+        <Text style={[styles.email, { color: colors.textSecondary }]}>{user?.email}</Text>
       </View>
 
       {/* Статус подписки */}
-      <View style={[styles.subscriptionCard, { borderColor: getTierColor() }]}>
+      <View style={[styles.subscriptionCard, { backgroundColor: colors.surface, borderColor: colors.cardBorder }]}>
         <View style={styles.subscriptionHeader}>
-          <Text style={styles.subscriptionLabel}>Ваш тариф</Text>
+          <Text style={[styles.subscriptionLabel, { color: colors.textSecondary }]}>Ваш тариф</Text>
           <View style={[styles.tierBadge, { backgroundColor: getTierColor() + '22' }]}>
             <Text style={[styles.tierText, { color: getTierColor() }]}>{getTierLabel()}</Text>
           </View>
         </View>
         {!isPremium && (
           <TouchableOpacity
-            style={styles.upgradeButton}
+            style={[styles.upgradeButton, { backgroundColor: colors.primary }]}
             onPress={() => router.push('/subscription')}
           >
-            <Text style={styles.upgradeText}>Улучшить подписку</Text>
+            <Text style={[styles.upgradeText, { color: colors.onPrimary }]}>Улучшить подписку</Text>
           </TouchableOpacity>
         )}
       </View>
 
       {/* Меню */}
-      <View style={styles.menuSection}>
+      <View style={[styles.menuSection, { backgroundColor: colors.surface }]}>
         <TouchableOpacity
-          style={styles.menuItem}
+          style={[styles.menuItem, { borderBottomColor: colors.border }]}
           onPress={() => router.push('/bookmarks')}
         >
-          <FontAwesome name="heart" size={20} color="#6c63ff" style={styles.menuIcon} />
-          <Text style={styles.menuText}>Закладки</Text>
-          <Text style={styles.menuArrow}>›</Text>
+          <FontAwesome name="heart" size={20} color={colors.primary} style={styles.menuIcon} />
+          <Text style={[styles.menuText, { color: colors.text }]}>Закладки</Text>
+          <Text style={[styles.menuArrow, { color: colors.textMuted }]}>›</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.menuItem}>
-          <FontAwesome name="download" size={20} color="#6c63ff" style={styles.menuIcon} />
-          <Text style={styles.menuText}>Скачанное</Text>
-          <Text style={styles.menuArrow}>›</Text>
+        <TouchableOpacity style={[styles.menuItem, { borderBottomColor: colors.border }]}>
+          <FontAwesome name="download" size={20} color={colors.primary} style={styles.menuIcon} />
+          <Text style={[styles.menuText, { color: colors.text }]}>Скачанное</Text>
+          <Text style={[styles.menuArrow, { color: colors.textMuted }]}>›</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.menuItem}>
-          <FontAwesome name="cog" size={20} color="#6c63ff" style={styles.menuIcon} />
-          <Text style={styles.menuText}>Настройки</Text>
-          <Text style={styles.menuArrow}>›</Text>
+        <TouchableOpacity style={[styles.menuItem, { borderBottomColor: colors.border }]}>
+          <FontAwesome name="comment-o" size={20} color={colors.primary} style={styles.menuIcon} />
+          <Text style={[styles.menuText, { color: colors.text }]}>Чат с автором</Text>
+          <Text style={[styles.menuArrow, { color: colors.textMuted }]}>›</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.menuItem}>
-          <FontAwesome name="comment-o" size={20} color="#6c63ff" style={styles.menuIcon} />
-          <Text style={styles.menuText}>Чат с автором</Text>
-          <Text style={styles.menuArrow}>›</Text>
+        <TouchableOpacity style={[styles.menuItem, { borderBottomColor: colors.border }]}>
+          <FontAwesome name="question-circle" size={20} color={colors.primary} style={styles.menuIcon} />
+          <Text style={[styles.menuText, { color: colors.text }]}>Помощь</Text>
+          <Text style={[styles.menuArrow, { color: colors.textMuted }]}>›</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.menuItem}>
-          <FontAwesome name="question-circle" size={20} color="#6c63ff" style={styles.menuIcon} />
-          <Text style={styles.menuText}>Помощь</Text>
-          <Text style={styles.menuArrow}>›</Text>
+        <TouchableOpacity
+          style={[styles.menuItem, { borderBottomColor: colors.border }]}
+          onPress={() => router.push('/settings')}
+        >
+          <FontAwesome name="cog" size={20} color={colors.primary} style={styles.menuIcon} />
+          <Text style={[styles.menuText, { color: colors.text }]}>Настройки</Text>
+          <Text style={[styles.menuArrow, { color: colors.textMuted }]}>›</Text>
         </TouchableOpacity>
       </View>
 
       {/* Админ — только для админов */}
       {isAdmin && (
-        <View style={styles.menuSection}>
+        <View style={[styles.menuSection, { backgroundColor: colors.surface }]}>
           <TouchableOpacity
-            style={styles.menuItem}
+            style={[styles.menuItem, { borderBottomColor: colors.border }]}
             onPress={() => router.push('/admin')}
           >
-          <FontAwesome name="shield" size={20} color="#6c63ff" style={styles.menuIcon} />
-            <Text style={styles.menuText}>Админ панель</Text>
-            <Text style={styles.menuArrow}>›</Text>
+          <FontAwesome name="shield" size={20} color={colors.primary} style={styles.menuIcon} />
+            <Text style={[styles.menuText, { color: colors.text }]}>Админ панель</Text>
+            <Text style={[styles.menuArrow, { color: colors.textMuted }]}>›</Text>
           </TouchableOpacity>
         </View>
       )}
 
       {/* Кнопка выхода */}
       <TouchableOpacity style={styles.signOutButton} onPress={handleSignOut}>
-        <Text style={styles.signOutText}>Выйти из аккаунта</Text>
+        <Text style={[styles.signOutText, { color: colors.error }]}>Выйти из аккаунта</Text>
       </TouchableOpacity>
 
       {/* Версия */}
-      <Text style={styles.version}>Pulsera v1.0.0</Text>
+      <Text style={[styles.version, { color: colors.textMuted }]}>Pulsera v1.0.0</Text>
     </ScrollView>
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#1a1a2e',
   },
   content: {
     paddingBottom: 40,
@@ -161,7 +166,6 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#fff',
   },
   profileSection: {
     alignItems: 'center',
@@ -172,7 +176,6 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: '#6c63ff',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 12,
@@ -180,30 +183,22 @@ const styles = StyleSheet.create({
   avatarText: {
     fontSize: 32,
     fontWeight: 'bold',
-    color: '#fff',
   },
   name: {
     fontSize: 22,
     fontWeight: '600',
-    color: '#fff',
     marginBottom: 4,
   },
   email: {
     fontSize: 14,
-    color: '#999',
-  },
-  userId: {
-    fontSize: 11,
-    color: '#666',
-    marginTop: 4,
   },
   subscriptionCard: {
-    backgroundColor: '#16213e',
     borderRadius: 16,
     padding: 16,
     marginHorizontal: 20,
     marginBottom: 24,
     borderWidth: 1,
+    borderColor: colors.cardBorder,
   },
   subscriptionHeader: {
     flexDirection: 'row',
@@ -213,7 +208,6 @@ const styles = StyleSheet.create({
   },
   subscriptionLabel: {
     fontSize: 14,
-    color: '#999',
   },
   tierBadge: {
     borderRadius: 8,
@@ -225,22 +219,21 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   upgradeButton: {
-    backgroundColor: '#6c63ff',
     borderRadius: 10,
     padding: 12,
     alignItems: 'center',
   },
   upgradeText: {
-    color: '#fff',
     fontSize: 16,
     fontWeight: '600',
   },
   menuSection: {
-    backgroundColor: '#16213e',
     borderRadius: 16,
     marginHorizontal: 20,
     marginBottom: 16,
     overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: colors.cardBorder,
   },
   menuItem: {
     flexDirection: 'row',
@@ -248,7 +241,6 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     paddingHorizontal: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#1a1a2e',
   },
   menuIcon: {
     fontSize: 20,
@@ -257,11 +249,9 @@ const styles = StyleSheet.create({
   menuText: {
     flex: 1,
     fontSize: 16,
-    color: '#fff',
   },
   menuArrow: {
     fontSize: 24,
-    color: '#666',
   },
   signOutButton: {
     marginHorizontal: 20,
@@ -269,12 +259,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   signOutText: {
-    color: '#ff4444',
     fontSize: 16,
   },
   version: {
     textAlign: 'center',
-    color: '#666',
     fontSize: 12,
     marginTop: 20,
   },

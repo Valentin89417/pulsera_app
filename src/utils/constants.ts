@@ -1,33 +1,5 @@
 // Константы приложения
 
-// Цвета
-export const COLORS = {
-  // Основные цвета
-  primary: '#6c63ff',
-  primaryDark: '#5a52d5',
-  primaryLight: '#8b83ff',
-
-  // Фон
-  background: '#1a1a2e',
-  surface: '#16213e',
-  surfaceLight: '#1f2b47',
-
-  // Текст
-  text: '#ffffff',
-  textSecondary: '#999999',
-  textMuted: '#666666',
-
-  // Акценты
-  success: '#4caf50',
-  warning: '#ff9800',
-  error: '#ff4444',
-  info: '#2196f3',
-
-  // Границы
-  border: '#333333',
-  borderLight: '#444444',
-};
-
 // Размеры
 export const SIZES = {
   // Шрифты

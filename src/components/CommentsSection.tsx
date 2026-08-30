@@ -16,11 +16,12 @@ import { getContentComments, addComment, updateComment, deleteComment } from '..
 import { supabase } from '../services/supabase';
 import { useAuthStore } from '../store/authStore';
 import { useAdmin } from '../hooks/useAuth';
+import { useTheme } from '../hooks/useTheme';
+import { ThemeColors } from '../utils/themeColors';
 import { CommentWithAuthor } from '../types';
 import { CommentItem } from './CommentItem';
 import { CommentInput } from './CommentInput';
 
-// Секция комментариев с модалкой ввода
 interface CommentsSectionProps {
   contentId: string;
   replyTo?: string | null;
@@ -29,6 +30,7 @@ interface CommentsSectionProps {
 export function CommentsSection({ contentId, replyTo }: CommentsSectionProps) {
   const { user } = useAuthStore();
   const { isAdmin } = useAdmin();
+  const { colors } = useTheme();
   const [comments, setComments] = useState<CommentWithAuthor[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -80,21 +82,18 @@ export function CommentsSection({ contentId, replyTo }: CommentsSectionProps) {
     };
   }, [contentId, loadComments]);
 
-  // Ответ на конкретный комментарий
   const handleReply = (comment: CommentWithAuthor) => {
     setReplyToComment(comment);
     setEditingComment(null);
     setShowModal(true);
   };
 
-  // Редактирование комментария
   const handleEdit = (comment: CommentWithAuthor) => {
     setEditingComment(comment);
     setReplyToComment(null);
     setShowModal(true);
   };
 
-  // Удаление комментария
   const handleDelete = (comment: CommentWithAuthor) => {
     Alert.alert(
       'Удалить комментарий',
@@ -115,7 +114,6 @@ export function CommentsSection({ contentId, replyTo }: CommentsSectionProps) {
     );
   };
 
-  // Отправка комментария (нового или редактирование)
   const handleSubmit = async (text: string) => {
     if (!user) return;
 
@@ -135,16 +133,16 @@ export function CommentsSection({ contentId, replyTo }: CommentsSectionProps) {
     setShowModal(false);
   };
 
-  // Закрытие модалки
   const handleClose = () => {
     setShowModal(false);
     setReplyToComment(null);
     setEditingComment(null);
   };
 
+  const styles = createStyles(colors);
+
   return (
     <View style={styles.container}>
-      {/* Заголовок + кнопка */}
       <View style={styles.header}>
         <Text style={styles.title}>Комментарии ({comments.length})</Text>
         <TouchableOpacity
@@ -152,15 +150,14 @@ export function CommentsSection({ contentId, replyTo }: CommentsSectionProps) {
           onPress={() => setShowModal(true)}
         >
           <View style={styles.addButtonContent}>
-            <FontAwesome name="pencil" size={13} color="#fff" />
+            <FontAwesome name="pencil" size={13} color={colors.onPrimary} />
             <Text style={styles.addButtonText}>Написать</Text>
           </View>
         </TouchableOpacity>
       </View>
 
-      {/* Список */}
       {loading ? (
-        <ActivityIndicator size="small" color="#6c63ff" style={styles.loader} />
+        <ActivityIndicator size="small" color={colors.primary} style={styles.loader} />
       ) : comments.length === 0 ? (
         <Text style={styles.empty}>Пока нет комментариев. Будьте первым!</Text>
       ) : (
@@ -181,7 +178,6 @@ export function CommentsSection({ contentId, replyTo }: CommentsSectionProps) {
         />
       )}
 
-      {/* Модалка ввода */}
       <Modal
         visible={showModal}
         animationType="slide"
@@ -192,16 +188,13 @@ export function CommentsSection({ contentId, replyTo }: CommentsSectionProps) {
           style={styles.modalOverlay}
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         >
-          {/* Пустая область для закрытия по тапу */}
           <TouchableOpacity
             style={styles.modalBackdrop}
             activeOpacity={1}
             onPress={handleClose}
           />
 
-          {/* Контент модалки */}
           <View style={styles.modalContent}>
-            {/* Заголовок модалки */}
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>
                 {editingComment
@@ -211,11 +204,10 @@ export function CommentsSection({ contentId, replyTo }: CommentsSectionProps) {
                     : 'Новый комментарий'}
               </Text>
               <TouchableOpacity onPress={handleClose}>
-                <FontAwesome name="times" size={20} color="#666" />
+                <FontAwesome name="times" size={20} color={colors.textMuted} />
               </TouchableOpacity>
             </View>
 
-            {/* Индикатор ответа / редактирования */}
             {replyToComment && (
               <View style={styles.replyBanner}>
                 <Text style={styles.replyText} numberOfLines={2}>
@@ -224,7 +216,6 @@ export function CommentsSection({ contentId, replyTo }: CommentsSectionProps) {
               </View>
             )}
 
-            {/* Поле ввода */}
             <CommentInput
               onSubmit={handleSubmit}
               initialText={editingComment?.text || ''}
@@ -236,7 +227,7 @@ export function CommentsSection({ contentId, replyTo }: CommentsSectionProps) {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     paddingTop: 8,
   },
@@ -249,10 +240,10 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#fff',
+    color: colors.text,
   },
   addButton: {
-    backgroundColor: '#6c63ff',
+    backgroundColor: colors.primary,
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 6,
@@ -263,7 +254,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   addButtonText: {
-    color: '#fff',
+    color: colors.onPrimary,
     fontSize: 13,
     fontWeight: '600',
   },
@@ -272,20 +263,19 @@ const styles = StyleSheet.create({
   },
   empty: {
     fontSize: 14,
-    color: '#666',
+    color: colors.textMuted,
     fontStyle: 'italic',
   },
-  // Модалка
   modalOverlay: {
     flex: 1,
     justifyContent: 'flex-end',
   },
   modalBackdrop: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: colors.overlay,
   },
   modalContent: {
-    backgroundColor: '#1e1e2e',
+    backgroundColor: colors.surface,
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
     padding: 20,
@@ -300,21 +290,21 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#fff',
+    color: colors.text,
   },
   modalClose: {
     fontSize: 20,
-    color: '#666',
+    color: colors.textMuted,
   },
   replyBanner: {
-    backgroundColor: '#6c63ff22',
+    backgroundColor: colors.primaryAlpha13,
     borderRadius: 8,
     padding: 10,
     marginBottom: 12,
   },
   replyText: {
     fontSize: 13,
-    color: '#999',
+    color: colors.textSecondary,
     fontStyle: 'italic',
   },
 });

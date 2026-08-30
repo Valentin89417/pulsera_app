@@ -9,6 +9,8 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import storage from '../utils/storage';
+import { useTheme } from '../hooks/useTheme';
+import { ThemeColors } from '../utils/themeColors';
 
 const { width } = Dimensions.get('window');
 
@@ -40,6 +42,7 @@ const ONBOARDING_KEY = '@pulsera_onboarding_done';
 export default function OnboardingScreen() {
   const router = useRouter();
   const [currentIndex, setCurrentIndex] = useState(0);
+  const { colors } = useTheme();
 
   const isLast = currentIndex === ONBOARDING_DATA.length - 1;
   const item = ONBOARDING_DATA[currentIndex];
@@ -67,6 +70,8 @@ export default function OnboardingScreen() {
     }
     router.replace('/(auth)/login');
   };
+
+  const styles = createStyles(colors);
 
   return (
     <View style={styles.container}>
@@ -107,10 +112,10 @@ export default function OnboardingScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#1a1a2e',
+    backgroundColor: colors.background,
   },
   skipButton: {
     position: 'absolute',
@@ -121,7 +126,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   skipText: {
-    color: '#999',
+    color: colors.textSecondary,
     fontSize: 16,
   },
   slide: {
@@ -137,13 +142,13 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#fff',
+    color: colors.text,
     textAlign: 'center',
     marginBottom: 16,
   },
   description: {
     fontSize: 16,
-    color: '#999',
+    color: colors.textSecondary,
     textAlign: 'center',
     lineHeight: 24,
   },
@@ -156,15 +161,15 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#333',
+    backgroundColor: colors.border,
     marginHorizontal: 4,
   },
   indicatorActive: {
-    backgroundColor: '#6c63ff',
+    backgroundColor: colors.primary,
     width: 24,
   },
   nextButton: {
-    backgroundColor: '#6c63ff',
+    backgroundColor: colors.primary,
     marginHorizontal: 32,
     borderRadius: 12,
     padding: 16,
@@ -172,7 +177,7 @@ const styles = StyleSheet.create({
     marginBottom: 60,
   },
   nextButtonText: {
-    color: '#fff',
+    color: colors.onPrimary,
     fontSize: 18,
     fontWeight: '600',
   },

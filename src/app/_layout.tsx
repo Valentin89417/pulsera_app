@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import { Stack, useRouter, useSegments } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
 import storage from '../utils/storage';
 import { useAuthStore } from '../store/authStore';
+import { useThemeStore } from '../store/themeStore';
 
 const ONBOARDING_KEY = '@pulsera_onboarding_done';
 
@@ -11,6 +13,7 @@ export default function RootLayout() {
   const router = useRouter();
   const segments = useSegments();
   const { initialize, user, isInitialized, isLoading } = useAuthStore();
+  const { colors, loadTheme } = useThemeStore();
   const [onboardingDone, setOnboardingDone] = useState<boolean | null>(null);
   const [routerReady, setRouterReady] = useState(false);
 
@@ -18,6 +21,7 @@ export default function RootLayout() {
   useEffect(() => {
     initialize();
     checkOnboarding();
+    loadTheme();
   }, []);
 
   const checkOnboarding = async () => {
@@ -65,24 +69,28 @@ export default function RootLayout() {
   // Загрузка
   if (!isInitialized || onboardingDone === null || isLoading) {
     return (
-      <View style={{ flex: 1, backgroundColor: '#1a1a2e', justifyContent: 'center', alignItems: 'center' }}>
-        <ActivityIndicator size="large" color="#6c63ff" />
+      <View style={{ flex: 1, backgroundColor: colors.background, justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
 
   return (
-    <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="onboarding" />
-      <Stack.Screen name="(auth)" />
-      <Stack.Screen name="(tabs)" />
-      <Stack.Screen
-        name="subscription"
-        options={{
-          headerShown: false,
-          presentation: 'modal',
-        }}
-      />
-    </Stack>
+    <>
+      <StatusBar style={colors.statusBar} />
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="onboarding" />
+        <Stack.Screen name="(auth)" />
+        <Stack.Screen name="(tabs)" />
+        <Stack.Screen
+          name="subscription"
+          options={{
+            headerShown: false,
+            presentation: 'modal',
+          }}
+        />
+        <Stack.Screen name="settings" />
+      </Stack>
+    </>
   );
 }

@@ -12,11 +12,13 @@ import {
 } from 'react-native';
 import { useRouter, Link } from 'expo-router';
 import { useAuthStore } from '../../store/authStore';
+import { useTheme } from '../../hooks/useTheme';
+import { ThemeColors } from '../../utils/themeColors';
 
-// Экран входа
 export default function LoginScreen() {
   const router = useRouter();
   const { signIn, isLoading } = useAuthStore();
+  const { colors } = useTheme();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -40,6 +42,8 @@ export default function LoginScreen() {
     }
   };
 
+  const styles = createStyles(colors);
+
   return (
     <KeyboardAvoidingView
       style={styles.container}
@@ -54,7 +58,7 @@ export default function LoginScreen() {
           <TextInput
             style={styles.input}
             placeholder="Email"
-            placeholderTextColor="#666"
+            placeholderTextColor={colors.textMuted}
             value={email}
             onChangeText={setEmail}
             keyboardType="email-address"
@@ -65,7 +69,7 @@ export default function LoginScreen() {
             <TextInput
               style={styles.passwordInput}
               placeholder="Пароль"
-              placeholderTextColor="#666"
+              placeholderTextColor={colors.textMuted}
               value={password}
               onChangeText={setPassword}
               secureTextEntry={!showPassword}
@@ -84,7 +88,7 @@ export default function LoginScreen() {
             disabled={localLoading || isLoading}
           >
             {localLoading || isLoading ? (
-              <ActivityIndicator color="#fff" />
+              <ActivityIndicator color={colors.onPrimary} />
             ) : (
               <Text style={styles.buttonText}>Войти</Text>
             )}
@@ -110,10 +114,10 @@ export default function LoginScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#1a1a2e',
+    backgroundColor: colors.background,
   },
   inner: {
     flex: 1,
@@ -123,18 +127,18 @@ const styles = StyleSheet.create({
   },
   logo: {
     fontSize: 48,
-    color: '#6c63ff',
+    color: colors.primary,
     marginBottom: 12,
   },
   title: {
     fontSize: 32,
     fontWeight: 'bold',
-    color: '#fff',
+    color: colors.text,
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 16,
-    color: '#999',
+    color: colors.textSecondary,
     marginBottom: 40,
   },
   form: {
@@ -142,27 +146,27 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   input: {
-    backgroundColor: '#16213e',
+    backgroundColor: colors.surface,
     borderRadius: 12,
     padding: 16,
     fontSize: 16,
-    color: '#fff',
+    color: colors.text,
     borderWidth: 1,
-    borderColor: '#333',
+    borderColor: colors.border,
   },
   passwordContainer: {
     flexDirection: 'row',
-    backgroundColor: '#16213e',
+    backgroundColor: colors.surface,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#333',
+    borderColor: colors.border,
     alignItems: 'center',
   },
   passwordInput: {
     flex: 1,
     padding: 16,
     fontSize: 16,
-    color: '#fff',
+    color: colors.text,
   },
   eyeButton: {
     paddingHorizontal: 16,
@@ -171,7 +175,7 @@ const styles = StyleSheet.create({
     fontSize: 20,
   },
   button: {
-    backgroundColor: '#6c63ff',
+    backgroundColor: colors.primary,
     borderRadius: 12,
     padding: 16,
     alignItems: 'center',
@@ -181,7 +185,7 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   buttonText: {
-    color: '#fff',
+    color: colors.onPrimary,
     fontSize: 18,
     fontWeight: '600',
   },
@@ -190,7 +194,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   forgotText: {
-    color: '#999',
+    color: colors.textSecondary,
     fontSize: 14,
   },
   footer: {
@@ -198,11 +202,11 @@ const styles = StyleSheet.create({
     marginTop: 40,
   },
   footerText: {
-    color: '#999',
+    color: colors.textSecondary,
     fontSize: 14,
   },
   linkText: {
-    color: '#6c63ff',
+    color: colors.primary,
     fontSize: 14,
     fontWeight: '600',
   },

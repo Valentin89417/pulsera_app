@@ -2,6 +2,8 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Modal } from 'react-native';
 import { useRouter } from 'expo-router';
 import { FontAwesome } from '@expo/vector-icons';
+import { useTheme } from '../hooks/useTheme';
+import { ThemeColors } from '../utils/themeColors';
 
 interface PremiumGateProps {
   children: React.ReactNode;
@@ -9,37 +11,33 @@ interface PremiumGateProps {
   contentTitle?: string;
 }
 
-// Названия тарифов на русском
 const tierNames: Record<string, string> = {
   free: 'Бесплатный',
   path: 'Путь',
   awakening: 'Пробуждение',
 };
 
-// Описание тарифов
 const tierDescriptions: Record<string, string> = {
   path: 'Доступ ко всему платному контенту',
   awakening: 'Платный контент + разборы + чат с автором',
 };
 
-// Компонент-обёртка для премиум-контента
-// Если у пользователя нет доступа — показывает размытый контент с замком
 export function PremiumGate({ children, requiredTier, contentTitle }: PremiumGateProps) {
   const router = useRouter();
+  const { colors } = useTheme();
 
-  // Если тариф бесплатный — показываем контент без ограничений
   if (requiredTier === 'free') {
     return <>{children}</>;
   }
 
+  const styles = createStyles(colors);
+
   return (
     <View style={styles.container}>
-      {/* Контент (всегда рендерится, но размыт) */}
       <View style={styles.content}>
         {children}
       </View>
 
-      {/* Модальное окно замка — поверх всех элементов */}
       <Modal
         visible={true}
         transparent={true}
@@ -48,7 +46,7 @@ export function PremiumGate({ children, requiredTier, contentTitle }: PremiumGat
       >
         <View style={styles.modalOverlay}>
           <View style={styles.lockContainer}>
-            <FontAwesome name="lock" size={48} color="#6c63ff" />
+            <FontAwesome name="lock" size={48} color={colors.primary} />
             <Text style={styles.title}>
               {contentTitle || 'Премиум-контент'}
             </Text>
@@ -71,7 +69,7 @@ export function PremiumGate({ children, requiredTier, contentTitle }: PremiumGat
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     position: 'relative',
     minHeight: 200,
@@ -81,20 +79,19 @@ const styles = StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(26, 26, 46, 0.85)',
+    backgroundColor: colors.overlay,
     justifyContent: 'center',
     alignItems: 'center',
   },
   lockContainer: {
     alignItems: 'center',
     padding: 32,
-    backgroundColor: 'rgba(22, 33, 62, 0.98)',
+    backgroundColor: colors.surfaceAlpha98,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: 'rgba(108, 99, 255, 0.3)',
+    borderColor: colors.primaryAlpha27,
     maxWidth: 320,
     width: '90%',
-    // Тень для глубины
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
@@ -104,32 +101,32 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#ffffff',
+    color: colors.text,
     marginTop: 16,
     marginBottom: 8,
     textAlign: 'center',
   },
   description: {
     fontSize: 14,
-    color: 'rgba(255, 255, 255, 0.7)',
+    color: colors.whiteAlpha70,
     marginBottom: 4,
     textAlign: 'center',
   },
   tierName: {
     fontSize: 12,
-    color: '#6c63ff',
+    color: colors.primary,
     marginBottom: 20,
     textAlign: 'center',
   },
   subscribeButton: {
-    backgroundColor: '#6c63ff',
+    backgroundColor: colors.primary,
     paddingVertical: 14,
     paddingHorizontal: 32,
     borderRadius: 12,
     width: '100%',
   },
   subscribeButtonText: {
-    color: '#ffffff',
+    color: colors.onPrimary,
     fontSize: 16,
     fontWeight: 'bold',
     textAlign: 'center',

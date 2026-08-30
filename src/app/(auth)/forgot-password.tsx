@@ -12,11 +12,13 @@ import {
 } from 'react-native';
 import { useRouter, Link } from 'expo-router';
 import { useAuthStore } from '../../store/authStore';
+import { useTheme } from '../../hooks/useTheme';
+import { ThemeColors } from '../../utils/themeColors';
 
-// Экран сброса пароля
 export default function ForgotPasswordScreen() {
   const router = useRouter();
   const { resetPassword } = useAuthStore();
+  const { colors } = useTheme();
 
   const [email, setEmail] = useState('');
   const [localLoading, setLocalLoading] = useState(false);
@@ -38,6 +40,8 @@ export default function ForgotPasswordScreen() {
       setSent(true);
     }
   };
+
+  const styles = createStyles(colors);
 
   if (sent) {
     return (
@@ -74,7 +78,7 @@ export default function ForgotPasswordScreen() {
           <TextInput
             style={styles.input}
             placeholder="Email"
-            placeholderTextColor="#666"
+            placeholderTextColor={colors.textMuted}
             value={email}
             onChangeText={setEmail}
             keyboardType="email-address"
@@ -88,7 +92,7 @@ export default function ForgotPasswordScreen() {
             disabled={localLoading}
           >
             {localLoading ? (
-              <ActivityIndicator color="#fff" />
+              <ActivityIndicator color={colors.onPrimary} />
             ) : (
               <Text style={styles.buttonText}>Отправить ссылку</Text>
             )}
@@ -108,10 +112,10 @@ export default function ForgotPasswordScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#1a1a2e',
+    backgroundColor: colors.background,
   },
   inner: {
     flex: 1,
@@ -126,12 +130,12 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#fff',
+    color: colors.text,
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 16,
-    color: '#999',
+    color: colors.textSecondary,
     textAlign: 'center',
     marginBottom: 32,
     lineHeight: 22,
@@ -141,16 +145,16 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   input: {
-    backgroundColor: '#16213e',
+    backgroundColor: colors.surface,
     borderRadius: 12,
     padding: 16,
     fontSize: 16,
-    color: '#fff',
+    color: colors.text,
     borderWidth: 1,
-    borderColor: '#333',
+    borderColor: colors.border,
   },
   button: {
-    backgroundColor: '#6c63ff',
+    backgroundColor: colors.primary,
     borderRadius: 12,
     padding: 16,
     alignItems: 'center',
@@ -160,7 +164,7 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   buttonText: {
-    color: '#fff',
+    color: colors.onPrimary,
     fontSize: 18,
     fontWeight: '600',
   },
@@ -169,11 +173,11 @@ const styles = StyleSheet.create({
     marginTop: 32,
   },
   footerText: {
-    color: '#999',
+    color: colors.textSecondary,
     fontSize: 14,
   },
   linkText: {
-    color: '#6c63ff',
+    color: colors.primary,
     fontSize: 14,
     fontWeight: '600',
   },
