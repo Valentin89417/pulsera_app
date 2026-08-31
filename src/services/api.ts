@@ -146,6 +146,26 @@ export const getContentById = async (contentId: string): Promise<Content | null>
   }
 };
 
+// Проверить какие ID контента существуют в Supabase
+export const getExistingContentIds = async (ids: string[]): Promise<Set<string>> => {
+  if (ids.length === 0) return new Set();
+  try {
+    const { data, error } = await supabase
+      .from('content')
+      .select('id')
+      .in('id', ids);
+
+    if (error) {
+      console.error('Ошибка проверки контента:', error.message);
+      return new Set(ids); // при ошибке считаем все существующими
+    }
+
+    return new Set(data.map(c => c.id));
+  } catch {
+    return new Set(ids);
+  }
+};
+
 // Создать контент
 export const createContent = async (data: {
   title: string;

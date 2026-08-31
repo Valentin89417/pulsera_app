@@ -6,6 +6,7 @@ import {
   DownloadMeta,
 } from '../utils/offlineCache';
 import { ContentItem } from '../types';
+import { getExistingContentIds } from '../services/api';
 
 // Состояние store скачанного
 interface DownloadState {
@@ -26,12 +27,33 @@ export const useDownloadStore = create<DownloadState>((set, get) => ({
   downloads: [],
   isLoaded: false,
 
-  // Загрузка списка скачанного из AsyncStorage
+  // Загрузка списка скачанного из AsyncStorage + очистка удалённых статей
   loadDownloads: async () => {
     try {
       const meta = await getDownloadsMeta();
-      const ids = new Set(meta.map((d) => d.id));
-      set({ downloads: meta, downloadedIds: ids, isLoaded: true });
+      const ids = meta.map((d) => d.id);
+
+      if (ids.length > 0) {
+        // Проверяем какие статьи ещё существуют в Supabase
+        const existingIds = await getExistingContentIds(ids);
+        const orphaned = meta.filter(d => !existingIds.has(d.id));
+
+        // Удаляем осиротевшие записи и файлы
+        if (orphaned.length > 0) {
+          console.log(`Очистка ${orphaned.length} удалённых статей из кэша`);
+          for (const entry of orphaned) {
+            await removeDownload(entry.id);
+          }
+          // Перечитываем метаданные после очистки
+          const cleanedMeta = await getDownloadsMeta();
+          const cleanedIds = new Set(cleanedMeta.map((d) => d.id));
+          set({ downloads: cleanedMeta, downloadedIds: cleanedIds, isLoaded: true });
+          return;
+        }
+      }
+
+      const idSet = new Set(ids);
+      set({ downloads: meta, downloadedIds: idSet, isLoaded: true });
     } catch (error) {
       console.error('Ошибка загрузки скачанного:', error);
       set({ isLoaded: true });
