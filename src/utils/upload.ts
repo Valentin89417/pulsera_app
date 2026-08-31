@@ -166,28 +166,45 @@ export const deleteFile = async (mediaIdOrUrl: string | number): Promise<boolean
       return false;
     }
 
-    // Если передан URL — пытаемся извлечь media ID из него
+    // Если передан URL — пытаемся найти media по URL
     let mediaId: number;
     if (typeof mediaIdOrUrl === 'number') {
       mediaId = mediaIdOrUrl;
     } else {
-      // Пытаемся найти media по URL
       const mediaUrl = mediaIdOrUrl;
+      const filename = mediaUrl.split('/').pop() || '';
+
+      // Ищем media по имени файла
       const searchResponse = await fetch(
-        `${WP_API_BASE}/media?search=${encodeURIComponent(mediaUrl.split('/').pop() || '')}&per_page=5`,
+        `${WP_API_BASE}/media?search=${encodeURIComponent(filename)}&per_page=10`,
         { headers: { 'Authorization': getAuthHeader() } }
       );
 
       if (!searchResponse.ok) {
-        console.error('Ошибка поиска media для удаления');
+        console.error('Ошибка поиска media для удаления:', searchResponse.status);
         return false;
       }
 
       const mediaList = await searchResponse.json();
-      const media = mediaList.find((m: any) => m.source_url === mediaUrl);
+
+      // Нормализуем URL для сравнения (убираем trailing slash, приводим к https)
+      const normalizeUrl = (u: string) => u.replace(/\/+$/, '').replace(/^http:/, 'https:');
+      const targetUrl = normalizeUrl(mediaUrl);
+
+      // Ищем точное совпадение source_url
+      let media = mediaList.find((m: any) => normalizeUrl(m.source_url) === targetUrl);
+
+      // Если не нашли по source_url — ищем по slug (имя файла без расширения)
+      if (!media) {
+        const slug = filename.replace(/\.[^.]+$/, '');
+        media = mediaList.find((m: any) => {
+          const mSlug = m.slug || m.title?.rendered || '';
+          return mSlug === slug || mSlug.includes(slug);
+        });
+      }
 
       if (!media) {
-        console.warn('Media не найден для удаления:', mediaUrl);
+        console.warn('Media не найден для удаления:', mediaUrl, '| filename:', filename);
         return false;
       }
 
@@ -199,6 +216,10 @@ export const deleteFile = async (mediaIdOrUrl: string | number): Promise<boolean
       method: 'DELETE',
       headers: { 'Authorization': getAuthHeader() },
     });
+
+    if (!deleteResponse.ok) {
+      console.error('Ошибка удаления media:', deleteResponse.status, mediaId);
+    }
 
     return deleteResponse.ok;
   } catch (error) {
@@ -241,6 +262,10 @@ const extractFileUrlsFromMarkdown = (markdown: string): string[] => {
 export const deleteContentFiles = async (contentData: Record<string, unknown>): Promise<void> => {
   const urlsToDelete: string[] = [];
 
+  // Превью-изображение (обложка статьи)
+  const imageUrl = contentData?.image_url as string;
+  if (imageUrl && isWpMediaUrl(imageUrl)) urlsToDelete.push(imageUrl);
+
   // Тело статьи (изображения в markdown)
   const body = contentData?.body as string;
   if (body) urlsToDelete.push(...extractFileUrlsFromMarkdown(body));
@@ -264,8 +289,16 @@ export const deleteContentFiles = async (contentData: Record<string, unknown>): 
 
   // Удаляем уникальные URLs
   const uniqueUrls = [...new Set(urlsToDelete)];
-  if (uniqueUrls.length === 0) return;
+  if (uniqueUrls.length === 0) {
+    console.log('Нет файлов WordPress для удаления');
+    return;
+  }
 
-  console.log(`Удаление ${uniqueUrls.length} файлов контента из WordPress...`);
-  await Promise.allSettled(uniqueUrls.map(url => deleteFile(url)));
+  console.log(`Удаление ${uniqueUrls.length} файлов из WordPress:`, uniqueUrls);
+  const results = await Promise.allSettled(uniqueUrls.map(url => deleteFile(url)));
+  results.forEach((r, i) => {
+    if (r.status === 'rejected') console.error('Ошибка удаления:', uniqueUrls[i], r.reason);
+    else if (!r.value) console.warn('Не удалось удалить:', uniqueUrls[i]);
+    else console.log('Удалён:', uniqueUrls[i]);
+  });
 };
