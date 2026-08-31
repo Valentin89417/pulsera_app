@@ -1,6 +1,7 @@
 import { supabase, Database } from './supabase';
 import { CommentWithAuthor } from '../types/content';
 import { deleteContentFiles } from '../utils/upload';
+import { removeDownload } from '../utils/offlineCache';
 
 // Типы для таблиц
 type Profile = Database['public']['Tables']['profiles']['Row'];
@@ -228,6 +229,9 @@ export const deleteContent = async (contentId: string): Promise<boolean> => {
       console.error('Ошибка удаления контента:', error.message);
       return false;
     }
+
+    // Удаляем локальный кэш (скачанные файлы)
+    await removeDownload(contentId);
 
     return true;
   } catch (error) {
