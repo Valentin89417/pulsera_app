@@ -311,7 +311,7 @@ export default function ArticleEditScreen() {
                 <>
                   <FontAwesome name="image" size={32} color={colors.primary} />
                   <Text style={styles.uploadText}>Выбрать изображение</Text>
-                  <Text style={styles.uploadHint}>JPG, PNG, WebP (до 50 МБ)</Text>
+                  <Text style={styles.uploadHint}>JPG, PNG, WebP</Text>
                 </>
               )}
             </TouchableOpacity>
@@ -351,7 +351,7 @@ export default function ArticleEditScreen() {
                   <>
                     <FontAwesome name="music" size={32} color={colors.primary} />
                     <Text style={styles.uploadText}>Выбрать аудио файл</Text>
-                    <Text style={styles.uploadHint}>MP3, WAV, OGG (до 50 МБ)</Text>
+                    <Text style={styles.uploadHint}>MP3, WAV, OGG</Text>
                   </>
                 )}
               </TouchableOpacity>
@@ -392,7 +392,7 @@ export default function ArticleEditScreen() {
                   <>
                     <FontAwesome name="film" size={32} color={colors.primary} />
                     <Text style={styles.uploadText}>Выбрать видео файл</Text>
-                    <Text style={styles.uploadHint}>MP4, MOV, WebM (до 50 МБ)</Text>
+                    <Text style={styles.uploadHint}>MP4, MOV, WebM</Text>
                   </>
                 )}
               </TouchableOpacity>

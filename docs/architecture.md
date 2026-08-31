@@ -9,7 +9,8 @@
 - **Expo Router** (файловая маршрутизация)
 - **TypeScript** (строгий режим)
 - **Zustand** (управление состоянием)
-- **Supabase** (аутентификация, база данных, хранилище, realtime)
+- **Supabase** (аутентификация, база данных, realtime)
+- **WordPress Media Library** (хранение файлов: изображения, аудио, видео через WP REST API)
 - **expo-video** (видеоплеер на нативе)
 - **expo-file-system** (офлайн-кэширование)
 - **react-native-keyboard-aware-scroll-view** (обработка клавиатуры)
@@ -20,7 +21,7 @@
 ```
 D:\pulsera_app\
 ├── AGENTS.md                          # Инструкции для AI
-├── .env                               # Переменные окружения (Supabase)
+├── .env                               # Переменные окружения (Supabase + WordPress)
 ├── app.json                           # Конфигурация Expo
 ├── package.json                       # Зависимости
 │
@@ -89,7 +90,9 @@ D:\pulsera_app\
 │   │
 │   └── utils/
 │       ├── themeColors.ts             # Палитры тем (ThemeColors, darkColors, lightColors)
-│       ├── constants.ts               # Константы (SIZES, CONTENT_TYPES)
+│       ├── constants.ts               # Константы (SIZES, CONTENT_TYPES, API_ENDPOINTS)
+│       ├── config.ts                  # Конфигурация (Supabase, WordPress credentials)
+│       ├── upload.ts                  # Загрузка файлов в WordPress Media Library
 │       ├── storage.ts                 # Платформенный адаптер (localStorage / AsyncStorage)
 │       └── offlineCache.ts            # Скачивание/чтение контента (expo-file-system)
 │
@@ -130,6 +133,15 @@ D:\pulsera_app\
 - WebView оплата → deep link `pulsera://payment/success`
 - Тарифы: Free / Путь / Пробуждение
 - Тестирование: toggle-кнопки в админ-панели
+
+### Хранение файлов (WordPress Media Library)
+- Файлы (изображения, аудио, видео) хранятся на WordPress хостинге pulsera.ru
+- Загрузка через WP REST API `/wp-json/wp/v2/media` с Basic Auth (Application Passwords)
+- Лимиты определяются хостингом (php.ini `upload_max_filesize`), не Supabase
+- URL формат: `https://pulsera.ru/wp-content/uploads/YYYY/MM/filename.ext`
+- Конфигурация: `src/config.ts` (WP_URL, WP_USER, WP_APP_PASSWORD из .env)
+- Загрузка/удаление: `src/utils/upload.ts`
+- Supabase используется ТОЛЬКО для базы данных и аутентификации (не для хранения файлов)
 
 ### Роли и RLS
 - `profiles.role`: `'user'` | `'admin'`

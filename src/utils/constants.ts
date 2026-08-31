@@ -73,6 +73,9 @@ export const TIER_DESCRIPTIONS = {
 export const API_ENDPOINTS = {
   SUPABASE_URL: process.env.EXPO_PUBLIC_SUPABASE_URL || '',
   SUPABASE_ANON_KEY: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || '',
+  WP_URL: process.env.EXPO_PUBLIC_WP_URL || '',
+  WP_USER: process.env.EXPO_PUBLIC_WP_USER || '',
+  WP_APP_PASSWORD: process.env.EXPO_PUBLIC_WP_APP_PASSWORD || '',
 } as const;
 
 // Лимиты

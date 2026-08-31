@@ -70,27 +70,21 @@
 
 ## Запланированные задачи
 
-### Markdown-редактор для статей
-**Статус:** Запланировано
-**Приоритет:** Средний
+### Markdown-редактор для статей ✅
+**Статус:** Завершено
 
-**Задачи:**
-- Подключить рендеринг Markdown для чтения статей (`react-native-markdown-display`)
-- Добавить Markdown-редактор в админку (веб) — `@uiw/react-md-editor` или `react-simplemde-editor`
-- Формат хранения: `content_data.body` в Markdown
-- На вебе рендеринг через `react-markdown`
+**Реализовано:**
+- [x] Рендеринг Markdown для чтения статей (`react-native-markdown-display`) — `src/app/content/[id].tsx`
+- [x] Markdown-редактор в админке с тулбаром (14 кнопок: жирный, курсив, списки, код, ссылки, изображения, таблицы) — `src/components/MarkdownEditor.tsx` + `MarkdownToolbar.tsx`
+- [x] Переключение "Редактор / Просмотр" с предпросмотром
+- [x] Формат хранения: `content_data.body` в Markdown
+- [x] Кастомные стили для рендеринга — `src/utils/markdownStyles.ts`
 
 **Изображения в статьях:**
-- Папка `images/` в бакете `content` (Supabase Storage)
-- Функция загрузки изображений в `api.ts`
-- Кнопка «📷 Вставить изображение» в редакторе
-- Автоматическая вставка `![описание](URL)` в Markdown
-- Рендеринг изображений в `react-native-markdown-display` и `react-markdown`
-
-**Зависимости:**
-- `react-native-markdown-display` — рендеринг на нативе
-- `@uiw/react-md-editor` — редактор в админке (веб)
-- `react-markdown` — рендеринг на вебе
+- [x] Кнопка «Вставить изображение» в тулбаре (picker + upload в WordPress Media Library)
+- [x] Автоматическая вставка `![описание](URL)` в Markdown с позиционированием курсора
+- [x] Кастомный рендеринг изображений с определением пропорций — `src/components/MarkdownImage.tsx`
+- [x] Подсказка по синтаксису под полем ввода
 
 ---
 
@@ -163,11 +157,14 @@
 - **Комментарии**: двухзапросной подход (comments + profiles раздельно из-за отсутствия FK в schema cache)
 - **RLS**: SELECT публичный, INSERT/UPDATE/DELETE только для автора + админ
 - **Реалтайм**: подписка на INSERT комментариев через Supabase channels
+- **Хранение файлов**: WordPress Media Library (WP REST API `/wp-json/wp/v2/media`) с Basic Auth (Application Passwords). Файлы: `https://pulsera.ru/wp-content/uploads/YYYY/MM/...`
 
 ---
 
+- [x] Markdown-редактор для статей (тулбар, превью, upload изображений)
+- [x] Хранение файлов: WordPress Media Library вместо Supabase Storage (нет лимита 50 МБ)
+
 ## Следующие шаги
-1. **Markdown-редактор** — рендеринг и редактирование статей в Markdown
-2. **Платная подписка** — ЮKassa + Stripe, WebView оплата
-3. **Чат** — общение с автором
-4. **Push-уведомления** — оповещения о новом контенте
+1. **Платная подписка** — ЮKassa + Stripe, WebView оплата
+2. **Чат** — общение с автором
+3. **Push-уведомления** — оповещения о новом контенте
