@@ -45,6 +45,10 @@ export function PremiumGate({ children, requiredTier, contentTitle }: PremiumGat
         statusBarTranslucent
       >
         <View style={styles.modalOverlay}>
+          <TouchableOpacity style={styles.closeButton} onPress={() => router.back()}>
+            <FontAwesome name="arrow-left" size={16} color={colors.whiteAlpha70} />
+            <Text style={styles.closeText}>Назад</Text>
+          </TouchableOpacity>
           <View style={styles.lockContainer}>
             <FontAwesome name="lock" size={48} color={colors.primary} />
             <Text style={styles.title}>
@@ -82,6 +86,20 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     backgroundColor: colors.overlay,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  closeButton: {
+    position: 'absolute',
+    top: 60,
+    left: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 8,
+    zIndex: 10,
+  },
+  closeText: {
+    color: colors.whiteAlpha70,
+    fontSize: 16,
+    marginLeft: 6,
   },
   lockContainer: {
     alignItems: 'center',
