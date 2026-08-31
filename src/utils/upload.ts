@@ -213,3 +213,59 @@ export const extractMediaId = (url: string): number | null => {
   // Media ID не содержится в URL, нужно искать через API
   return null;
 };
+
+// Проверить, является ли URL файлом из WordPress Media Library
+const isWpMediaUrl = (url: string): boolean => {
+  return url.includes('/wp-content/uploads/');
+};
+
+// Извлечь URLs файлов из Markdown-текста (изображения)
+const extractFileUrlsFromMarkdown = (markdown: string): string[] => {
+  if (!markdown) return [];
+  const urls: string[] = [];
+  // ![...](url) — стандартный markdown
+  const mdRegex = /!\[[^\]]*\]\(([^)]+)\)/g;
+  let match;
+  while ((match = mdRegex.exec(markdown)) !== null) {
+    if (isWpMediaUrl(match[1])) urls.push(match[1]);
+  }
+  // <img src="url"> — HTML-теги
+  const imgRegex = /<img[^>]+src="([^"]+)"/g;
+  while ((match = imgRegex.exec(markdown)) !== null) {
+    if (isWpMediaUrl(match[1])) urls.push(match[1]);
+  }
+  return [...new Set(urls)];
+};
+
+// Удалить все файлы, связанные с контентом
+export const deleteContentFiles = async (contentData: Record<string, unknown>): Promise<void> => {
+  const urlsToDelete: string[] = [];
+
+  // Тело статьи (изображения в markdown)
+  const body = contentData?.body as string;
+  if (body) urlsToDelete.push(...extractFileUrlsFromMarkdown(body));
+
+  // Премиум-тело (изображения в markdown)
+  const premiumBody = contentData?.premium_body as string;
+  if (premiumBody) urlsToDelete.push(...extractFileUrlsFromMarkdown(premiumBody));
+
+  // Аудио и видео
+  const audioUrl = contentData?.audio_url as string;
+  if (audioUrl && isWpMediaUrl(audioUrl)) urlsToDelete.push(audioUrl);
+
+  const videoUrl = contentData?.video_url as string;
+  if (videoUrl && isWpMediaUrl(videoUrl)) urlsToDelete.push(videoUrl);
+
+  const premiumAudioUrl = contentData?.premium_audio_url as string;
+  if (premiumAudioUrl && isWpMediaUrl(premiumAudioUrl)) urlsToDelete.push(premiumAudioUrl);
+
+  const premiumVideoUrl = contentData?.premium_video_url as string;
+  if (premiumVideoUrl && isWpMediaUrl(premiumVideoUrl)) urlsToDelete.push(premiumVideoUrl);
+
+  // Удаляем уникальные URLs
+  const uniqueUrls = [...new Set(urlsToDelete)];
+  if (uniqueUrls.length === 0) return;
+
+  console.log(`Удаление ${uniqueUrls.length} файлов контента из WordPress...`);
+  await Promise.allSettled(uniqueUrls.map(url => deleteFile(url)));
+};

@@ -1,5 +1,6 @@
 import { supabase, Database } from './supabase';
 import { CommentWithAuthor } from '../types/content';
+import { deleteContentFiles } from '../utils/upload';
 
 // Типы для таблиц
 type Profile = Database['public']['Tables']['profiles']['Row'];
@@ -201,6 +202,23 @@ export const updateContent = async (
 // Удалить контент
 export const deleteContent = async (contentId: string): Promise<boolean> => {
   try {
+    // Получаем контент перед удалением (нужны данные о файлах)
+    const { data: content, error: fetchError } = await supabase
+      .from('content')
+      .select('content_data')
+      .eq('id', contentId)
+      .single();
+
+    if (fetchError) {
+      console.error('Ошибка получения контента для удаления файлов:', fetchError.message);
+    }
+
+    // Удаляем связанные файлы из WordPress Media Library
+    if (content?.content_data) {
+      await deleteContentFiles(content.content_data as Record<string, unknown>);
+    }
+
+    // Удаляем запись из Supabase
     const { error } = await supabase
       .from('content')
       .delete()
