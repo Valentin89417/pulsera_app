@@ -56,6 +56,13 @@ export default function ArticleEditScreen() {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
 
+  // Премиум-контент (то, что скрывается за подпиской)
+  const [premiumBody, setPremiumBody] = useState('');
+  const [premiumAudioUrl, setPremiumAudioUrl] = useState('');
+  const [premiumAudioFilename, setPremiumAudioFilename] = useState('');
+  const [premiumVideoUrl, setPremiumVideoUrl] = useState('');
+  const [premiumVideoFilename, setPremiumVideoFilename] = useState('');
+
   useEffect(() => {
     if (isEditing) {
       loadArticle();
@@ -80,6 +87,14 @@ export default function ArticleEditScreen() {
         setCategory(article.category);
         setIsPremium(article.is_premium);
         setSubscriptionTier(article.subscription_tier);
+
+        // Загрузка премиум-контента
+        const cd = article.content_data as Record<string, any>;
+        setPremiumBody(cd?.premium_body || '');
+        setPremiumAudioUrl(cd?.premium_audio_url || '');
+        setPremiumAudioFilename(cd?.premium_audio_filename || '');
+        setPremiumVideoUrl(cd?.premium_video_url || '');
+        setPremiumVideoFilename(cd?.premium_video_filename || '');
       }
     } catch (error) {
       console.error('Ошибка загрузки статьи:', error);
@@ -132,6 +147,44 @@ export default function ArticleEditScreen() {
     }
   };
 
+  const handleUploadPremiumFile = async (fileType: 'audio' | 'video') => {
+    try {
+      const file = await pickFile(fileType);
+      if (!file) return;
+
+      setUploading(true);
+      setUploadProgress(0);
+
+      const result = await uploadFile(file, fileType, setUploadProgress);
+
+      if (fileType === 'audio') {
+        setPremiumAudioUrl(result.url);
+        setPremiumAudioFilename(result.filename);
+      } else if (fileType === 'video') {
+        setPremiumVideoUrl(result.url);
+        setPremiumVideoFilename(result.filename);
+      }
+
+      Alert.alert('Готово', 'Премиум-файл загружен');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Не удалось загрузить файл';
+      Alert.alert('Ошибка', message);
+    } finally {
+      setUploading(false);
+      setUploadProgress(0);
+    }
+  };
+
+  const handleRemovePremiumFile = (fileType: 'audio' | 'video') => {
+    if (fileType === 'audio') {
+      setPremiumAudioUrl('');
+      setPremiumAudioFilename('');
+    } else if (fileType === 'video') {
+      setPremiumVideoUrl('');
+      setPremiumVideoFilename('');
+    }
+  };
+
   const handleSave = async () => {
     if (!title.trim()) {
       Alert.alert('Ошибка', 'Введите заголовок');
@@ -158,6 +211,19 @@ export default function ArticleEditScreen() {
       } else if (type === 'video') {
         contentData.video_url = videoUrl.trim();
         contentData.video_filename = videoFilename;
+      }
+
+      // Премиум-контент
+      if (isPremium) {
+        if (type === 'article' && premiumBody.trim()) {
+          contentData.premium_body = premiumBody.trim();
+        } else if (type === 'audio' && premiumAudioUrl.trim()) {
+          contentData.premium_audio_url = premiumAudioUrl.trim();
+          contentData.premium_audio_filename = premiumAudioFilename;
+        } else if (type === 'video' && premiumVideoUrl.trim()) {
+          contentData.premium_video_url = premiumVideoUrl.trim();
+          contentData.premium_video_filename = premiumVideoFilename;
+        }
       }
 
       console.log('[SAVE] type:', type, 'contentData:', contentData);
@@ -443,6 +509,111 @@ export default function ArticleEditScreen() {
           </View>
         )}
 
+        {isPremium && type === 'article' && (
+          <View style={styles.field}>
+            <View style={styles.premiumSectionHeader}>
+              <FontAwesome name="lock" size={14} color={colors.primary} />
+              <Text style={styles.premiumSectionTitle}>Платный текст статьи</Text>
+            </View>
+            <Text style={styles.hint}>
+              Эта часть будет скрыта за подпиской. Показывается только подписчикам.
+            </Text>
+            <MarkdownEditor
+              value={premiumBody}
+              onChangeText={setPremiumBody}
+              placeholder="Платная часть статьи..."
+            />
+          </View>
+        )}
+
+        {isPremium && type === 'audio' && (
+          <View style={styles.field}>
+            <View style={styles.premiumSectionHeader}>
+              <FontAwesome name="lock" size={14} color={colors.primary} />
+              <Text style={styles.premiumSectionTitle}>Платный аудио файл</Text>
+            </View>
+            {premiumAudioUrl ? (
+              <View style={styles.filePreview}>
+                <View style={styles.fileInfo}>
+                  <FontAwesome name="music" size={24} color={colors.primary} />
+                  <Text style={styles.fileName} numberOfLines={1}>
+                    {premiumAudioFilename || 'premium_audio.mp3'}
+                  </Text>
+                </View>
+                <TouchableOpacity
+                  style={styles.removeFileButton}
+                  onPress={() => handleRemovePremiumFile('audio')}
+                >
+                  <Text style={styles.removeFileText}>Удалить</Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <TouchableOpacity
+                style={[styles.uploadButton, uploading && styles.uploadButtonDisabled]}
+                onPress={() => handleUploadPremiumFile('audio')}
+                disabled={uploading}
+              >
+                {uploading ? (
+                  <View style={styles.uploadingContainer}>
+                    <ActivityIndicator color={colors.primary} size="small" />
+                    <Text style={styles.uploadingText}>{uploadProgress}%</Text>
+                  </View>
+                ) : (
+                  <>
+                    <FontAwesome name="music" size={32} color={colors.primary} />
+                    <Text style={styles.uploadText}>Выбрать премиум аудио</Text>
+                    <Text style={styles.uploadHint}>Полная версия для подписчиков</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
+
+        {isPremium && type === 'video' && (
+          <View style={styles.field}>
+            <View style={styles.premiumSectionHeader}>
+              <FontAwesome name="lock" size={14} color={colors.primary} />
+              <Text style={styles.premiumSectionTitle}>Платный видео файл</Text>
+            </View>
+            {premiumVideoUrl ? (
+              <View style={styles.filePreview}>
+                <View style={styles.fileInfo}>
+                  <FontAwesome name="film" size={24} color={colors.primary} />
+                  <Text style={styles.fileName} numberOfLines={1}>
+                    {premiumVideoFilename || 'premium_video.mp4'}
+                  </Text>
+                </View>
+                <TouchableOpacity
+                  style={styles.removeFileButton}
+                  onPress={() => handleRemovePremiumFile('video')}
+                >
+                  <Text style={styles.removeFileText}>Удалить</Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <TouchableOpacity
+                style={[styles.uploadButton, uploading && styles.uploadButtonDisabled]}
+                onPress={() => handleUploadPremiumFile('video')}
+                disabled={uploading}
+              >
+                {uploading ? (
+                  <View style={styles.uploadingContainer}>
+                    <ActivityIndicator color={colors.primary} size="small" />
+                    <Text style={styles.uploadingText}>{uploadProgress}%</Text>
+                  </View>
+                ) : (
+                  <>
+                    <FontAwesome name="film" size={32} color={colors.primary} />
+                    <Text style={styles.uploadText}>Выбрать премиум видео</Text>
+                    <Text style={styles.uploadHint}>Полная версия для подписчиков</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
+
         <TouchableOpacity
           style={[styles.saveButton, saving && styles.saveButtonDisabled]}
           onPress={handleSave}
@@ -639,5 +810,16 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     color: colors.error,
     fontSize: 12,
     fontWeight: '600',
+  },
+  premiumSectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 4,
+  },
+  premiumSectionTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.primary,
   },
 });

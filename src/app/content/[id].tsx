@@ -18,7 +18,6 @@ import { VideoPlayer } from '../../components/VideoPlayer';
 import { BookmarkButton } from '../../components/BookmarkButton';
 import { DownloadButton } from '../../components/DownloadButton';
 import { CommentsSection } from '../../components/CommentsSection';
-import { PremiumGate } from '../../components/PremiumGate';
 import { useSubscription } from '../../hooks/useAuth';
 import { readDownloadedArticle, getDownloadedMediaUri } from '../../utils/offlineCache';
 import { useTheme } from '../../hooks/useTheme';
@@ -138,6 +137,56 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   noContentText: {
     fontSize: 16,
     color: colors.textMuted,
+  },
+  premiumBlock: {
+    alignItems: 'center',
+    paddingVertical: 24,
+    paddingHorizontal: 20,
+    marginTop: 8,
+  },
+  premiumDivider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    width: '100%',
+    marginBottom: 16,
+  },
+  premiumDividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: colors.primaryAlpha27,
+  },
+  premiumLockIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: colors.primaryAlpha13,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginHorizontal: 12,
+  },
+  premiumTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.text,
+    marginBottom: 4,
+    textAlign: 'center',
+  },
+  premiumTier: {
+    fontSize: 13,
+    color: colors.primary,
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  premiumButton: {
+    backgroundColor: colors.primary,
+    borderRadius: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 40,
+  },
+  premiumButtonText: {
+    color: colors.onPrimary,
+    fontSize: 16,
+    fontWeight: '600',
   },
   errorText: {
     fontSize: 18,
@@ -289,8 +338,15 @@ export default function ContentDetailScreen() {
   const audioUrl = offlineMediaUri || (content.content_data as { audio_url?: string })?.audio_url;
   const videoUrl = offlineMediaUri || (content.content_data as { video_url?: string })?.video_url;
 
+  // Премиум-контент
+  const cd = content.content_data as Record<string, any>;
+  const premiumBody = cd?.premium_body || '';
+  const premiumAudioUrl = cd?.premium_audio_url || '';
+  const premiumVideoUrl = cd?.premium_video_url || '';
+
   const isAudioContent = content.type === 'audio' && audioUrl;
   const isVideoContent = content.type === 'video' && videoUrl;
+  const hasPremiumContent = content.is_premium && !hasAccess(content.subscription_tier || 'path');
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -336,46 +392,59 @@ export default function ContentDetailScreen() {
 
           <View style={styles.divider} />
 
-        {content.is_premium && !hasAccess(content.subscription_tier || 'path') ? (
-          <PremiumGate
-            requiredTier={content.subscription_tier || 'path'}
-            contentTitle={content.title}
-          >
-            <View>
-              {isVideoContent ? (
-                <VideoPlayer uri={videoUrl!} title={content.title} />
-              ) : isAudioContent ? (
-                <AudioPlayer uri={audioUrl!} title={content.title} />
-              ) : body ? (
-                <View style={styles.bodyContainer}>
-                  <Markdown style={markdownStyles} rules={markdownRules}>{body}</Markdown>
-                </View>
-              ) : (
-                <View style={styles.noContent}>
-                  <FontAwesome name="envelope-o" size={48} color={colors.primary} />
-                  <Text style={styles.noContentText}>Контент пока не добавлен</Text>
-                </View>
-              )}
+          {/* Бесплатный контент */}
+          {isVideoContent ? (
+            <VideoPlayer uri={videoUrl!} title={content.title} />
+          ) : isAudioContent ? (
+            <AudioPlayer uri={audioUrl!} title={content.title} />
+          ) : body ? (
+            <View style={styles.bodyContainer}>
+              <Markdown style={markdownStyles} rules={markdownRules}>{body}</Markdown>
             </View>
-          </PremiumGate>
-        ) : (
-          <>
-            {isVideoContent ? (
-              <VideoPlayer uri={videoUrl!} title={content.title} />
-            ) : isAudioContent ? (
-              <AudioPlayer uri={audioUrl!} title={content.title} />
-            ) : body ? (
-              <View style={styles.bodyContainer}>
-                <Markdown style={markdownStyles} rules={markdownRules}>{body}</Markdown>
-              </View>
-            ) : (
+          ) : (
             <View style={styles.noContent}>
               <FontAwesome name="envelope-o" size={48} color={colors.primary} />
-                <Text style={styles.noContentText}>Контент пока не добавлен</Text>
+              <Text style={styles.noContentText}>Контент пока не добавлен</Text>
+            </View>
+          )}
+
+          {/* Блок "Подписаться" для премиум-контента */}
+          {hasPremiumContent && (
+            <View style={styles.premiumBlock}>
+              <View style={styles.premiumDivider}>
+                <View style={styles.premiumDividerLine} />
+                <View style={styles.premiumLockIcon}>
+                  <FontAwesome name="lock" size={18} color={colors.primary} />
+                </View>
+                <View style={styles.premiumDividerLine} />
               </View>
-            )}
-          </>
-        )}
+              <Text style={styles.premiumTitle}>Полная версия доступна по подписке</Text>
+              <Text style={styles.premiumTier}>
+                Тариф: «{content.subscription_tier === 'awakening' ? 'Пробуждение' : 'Путь'}»
+              </Text>
+              <TouchableOpacity
+                style={styles.premiumButton}
+                onPress={() => router.push('/subscription')}
+              >
+                <Text style={styles.premiumButtonText}>Подписаться</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
+          {/* Премиум-контент (если есть доступ) */}
+          {content.is_premium && !hasPremiumContent && (
+            <>
+              {content.type === 'article' && premiumBody ? (
+                <View style={styles.bodyContainer}>
+                  <Markdown style={markdownStyles} rules={markdownRules}>{premiumBody}</Markdown>
+                </View>
+              ) : content.type === 'audio' && premiumAudioUrl ? (
+                <AudioPlayer uri={premiumAudioUrl} title={content.title + ' (полная версия)'} />
+              ) : content.type === 'video' && premiumVideoUrl ? (
+                <VideoPlayer uri={premiumVideoUrl} title={content.title + ' (полная версия)'} />
+              ) : null}
+            </>
+          )}
 
         <View style={styles.divider} />
 
