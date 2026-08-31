@@ -55,6 +55,9 @@ export function CommentsSection({ contentId, replyTo }: CommentsSectionProps) {
     }
   }, [contentId, replyTo]);
 
+  const loadCommentsRef = useRef(loadComments);
+  loadCommentsRef.current = loadComments;
+
   useEffect(() => {
     loadComments();
 
@@ -72,8 +75,8 @@ export function CommentsSection({ contentId, replyTo }: CommentsSectionProps) {
           table: 'comments',
           filter: `content_id=eq.${contentId}`,
         },
-        async () => {
-          await loadComments();
+        () => {
+          loadCommentsRef.current();
         }
       )
       .subscribe();
@@ -84,7 +87,7 @@ export function CommentsSection({ contentId, replyTo }: CommentsSectionProps) {
         channelRef.current = null;
       }
     };
-  }, [contentId, loadComments]);
+  }, [contentId]);
 
   const handleReply = (comment: CommentWithAuthor) => {
     setReplyToComment(comment);
