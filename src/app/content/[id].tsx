@@ -346,7 +346,8 @@ export default function ContentDetailScreen() {
 
   const isAudioContent = content.type === 'audio' && audioUrl;
   const isVideoContent = content.type === 'video' && videoUrl;
-  const hasPremiumContent = content.is_premium && !hasAccess(content.subscription_tier || 'path');
+  const hasAccessToPremium = content.is_premium && hasAccess(content.subscription_tier || 'path');
+  const hasPremiumContent = content.is_premium && !hasAccessToPremium;
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -392,23 +393,45 @@ export default function ContentDetailScreen() {
 
           <View style={styles.divider} />
 
-          {/* Бесплатный контент */}
-          {isVideoContent ? (
-            <VideoPlayer uri={videoUrl!} title={content.title} />
-          ) : isAudioContent ? (
-            <AudioPlayer uri={audioUrl!} title={content.title} />
-          ) : body ? (
-            <View style={styles.bodyContainer}>
-              <Markdown style={markdownStyles} rules={markdownRules}>{body}</Markdown>
-            </View>
+          {/* Контент: премиум-пользователь видит ТОЛЬКО полную версию */}
+          {content.is_premium && hasAccessToPremium ? (
+            <>
+              {content.type === 'article' && premiumBody ? (
+                <View style={styles.bodyContainer}>
+                  <Markdown style={markdownStyles} rules={markdownRules}>{premiumBody}</Markdown>
+                </View>
+              ) : content.type === 'audio' && premiumAudioUrl ? (
+                <AudioPlayer uri={premiumAudioUrl} title={content.title} />
+              ) : content.type === 'video' && premiumVideoUrl ? (
+                <VideoPlayer uri={premiumVideoUrl} title={content.title} />
+              ) : (
+                <View style={styles.noContent}>
+                  <FontAwesome name="envelope-o" size={48} color={colors.primary} />
+                  <Text style={styles.noContentText}>Контент пока не добавлен</Text>
+                </View>
+              )}
+            </>
           ) : (
-            <View style={styles.noContent}>
-              <FontAwesome name="envelope-o" size={48} color={colors.primary} />
-              <Text style={styles.noContentText}>Контент пока не добавлен</Text>
-            </View>
+            /* Бесплатный контент (или премиум-превью без доступа) */
+            <>
+              {isVideoContent ? (
+                <VideoPlayer uri={videoUrl!} title={content.title} />
+              ) : isAudioContent ? (
+                <AudioPlayer uri={audioUrl!} title={content.title} />
+              ) : body ? (
+                <View style={styles.bodyContainer}>
+                  <Markdown style={markdownStyles} rules={markdownRules}>{body}</Markdown>
+                </View>
+              ) : (
+                <View style={styles.noContent}>
+                  <FontAwesome name="envelope-o" size={48} color={colors.primary} />
+                  <Text style={styles.noContentText}>Контент пока не добавлен</Text>
+                </View>
+              )}
+            </>
           )}
 
-          {/* Блок "Подписаться" для премиум-контента */}
+          {/* Блок "Подписаться" для премиум-контента без доступа */}
           {hasPremiumContent && (
             <View style={styles.premiumBlock}>
               <View style={styles.premiumDivider}>
@@ -429,21 +452,6 @@ export default function ContentDetailScreen() {
                 <Text style={styles.premiumButtonText}>Подписаться</Text>
               </TouchableOpacity>
             </View>
-          )}
-
-          {/* Премиум-контент (если есть доступ) */}
-          {content.is_premium && !hasPremiumContent && (
-            <>
-              {content.type === 'article' && premiumBody ? (
-                <View style={styles.bodyContainer}>
-                  <Markdown style={markdownStyles} rules={markdownRules}>{premiumBody}</Markdown>
-                </View>
-              ) : content.type === 'audio' && premiumAudioUrl ? (
-                <AudioPlayer uri={premiumAudioUrl} title={content.title + ' (полная версия)'} />
-              ) : content.type === 'video' && premiumVideoUrl ? (
-                <VideoPlayer uri={premiumVideoUrl} title={content.title + ' (полная версия)'} />
-              ) : null}
-            </>
           )}
 
         <View style={styles.divider} />
