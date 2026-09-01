@@ -275,8 +275,6 @@ export default function AdminChatDialogScreen() {
           </View>
         </View>
 
-        <View style={{ flex: 1 }} />
-
         <TouchableOpacity
           style={styles.headerButton}
           onPress={handleExportChat}
@@ -432,6 +430,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   userInfo: {
     flexDirection: 'row',
     alignItems: 'center',
+    flex: 1,
   },
   userAvatar: {
     width: 40,
