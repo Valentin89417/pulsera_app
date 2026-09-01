@@ -1069,33 +1069,46 @@ export const updateUserSubscription = async (
 // ЭКСПОРТ ЧАТА В MARKDOWN
 // ============================================
 
-// Форматирование даты для экспорта
+// Форматирование даты для экспорта: [DD.MM.YYYY HH:MM]
 const formatDateForExport = (dateStr: string): string => {
   const date = new Date(dateStr);
-  return date.toLocaleDateString('ru-RU', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
+  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const year = date.getFullYear();
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  return `${day}.${month}.${year} ${hours}:${minutes}`;
 };
 
 // Обработка ссылок на статьи в тексте для экспорта
 const formatMessageForExport = (text: string): string => {
-  // Заменяем [{title|uuid}] на "Название статьи"
+  // Заменяем [{title|uuid}] на «Название статьи»
   return text.replace(/\[\{([^\]|]+)\|([a-f0-9-]+)\}\]/g, '«$1»');
+};
+
+// Получить имя текущего пользователя (автора/админа)
+const getCurrentUserName = async (): Promise<string> => {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return 'Автор';
+
+    const profile = await getProfile(user.id);
+    return profile?.display_name || 'Автор';
+  } catch {
+    return 'Автор';
+  }
 };
 
 // Генерация Markdown содержимого чата
 export const exportChatToMarkdown = async (userId: string): Promise<string | null> => {
   try {
-    const [messages, profile] = await Promise.all([
+    const [messages, userProfile, authorName] = await Promise.all([
       getAdminChatMessages(userId),
       getProfile(userId),
+      getCurrentUserName(),
     ]);
 
-    const userName = profile?.display_name || 'Пользователь';
+    const userName = userProfile?.display_name || 'Пользователь';
     const now = new Date().toLocaleDateString('ru-RU', {
       day: '2-digit',
       month: '2-digit',
@@ -1104,20 +1117,19 @@ export const exportChatToMarkdown = async (userId: string): Promise<string | nul
       minute: '2-digit',
     });
 
-    let md = `# Чат с ${userName}\n\n`;
+    let md = `### Чат с ${userName}\n`;
+    md += `*Экспортировано: ${now}*\n\n`;
+    md += `---\n\n`;
 
     for (const msg of messages) {
-      const sender = msg.sender === 'author' ? '**Автор**' : '**Пользователь**';
+      const senderName = msg.sender === 'author' ? authorName : userName;
       const date = formatDateForExport(msg.created_at);
       const text = formatMessageForExport(msg.message);
       const edited = msg.edited ? ' *(ред.)*' : '';
 
-      md += `### ${sender} — ${date}${edited}\n\n`;
-      md += `${text}\n\n`;
-      md += `---\n\n`;
+      md += `**[${date}] ${senderName}:**\n`;
+      md += `${text}${edited}\n\n`;
     }
-
-    md += `*Экспортировано: ${now}*\n`;
 
     return md;
   } catch (error) {
