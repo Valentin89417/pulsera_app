@@ -158,16 +158,43 @@
 - **RLS**: SELECT публичный, INSERT/UPDATE/DELETE только для автора + админ
 - **Реалтайм**: подписка на INSERT комментариев через Supabase channels
 - **Хранение файлов**: WordPress Media Library (WP REST API `/wp-json/wp/v2/media`) с Basic Auth (Application Passwords). Файлы: `https://pulsera.ru/wp-content/uploads/YYYY/MM/...`
+- **useFocusEffect**: экраны (главная, каталог, админ-статьи) обновляют данные при каждом фокусе, а не только при маунте
+- **Автозаполнение категорий**: `CategoryInput` компонент — показывает топ-5 категорий по популярности, фильтрация при вводе. API: `getCategories()` возвращает `{ name, count }[]`
+- **Чекбоксы в Markdown**: `processCheckboxes()` заменяет `- [ ]` / `- [x]` на юникод-символы (☐/☑), т.к. `react-native-markdown-display` не поддерживает GitHub task lists
 
 ---
 
-- [x] Markdown-редактор для статей (тулбар, превью, upload изображений)
-- [x] Хранение файлов: WordPress Media Library вместо Supabase Storage (нет лимита 50 МБ)
-- [x] Увеличение max_upload_size на хостинге (upload_max_filesize=256M, post_max_size=256M, max_execution_time=300, memory_limit=512M)
-- [x] Автозаполнение категорий — выпадающий список с подсказками существующих категорий в админке
+## Завершённые задачи
+
+### Markdown-редактор для статей ✅
+- [x] Рендеринг Markdown для чтения статей (`react-native-markdown-display`)
+- [x] Markdown-редактор в админке с тулбаром (14 кнопок)
+- [x] Переключение "Редактор / Просмотр" с предпросмотром
+- [x] Формат хранения: `content_data.body` в Markdown
+- [x] Кастомные стили для рендеринга — `src/utils/markdownStyles.ts`
+- [x] Кнопка «Вставить изображение» в тулбаре (picker + upload в WordPress Media Library)
+- [x] Автоматическая вставка `![описание](URL)` в Markdown
+- [x] Кастомный рендеринг изображений — `src/components/MarkdownImage.tsx`
+- [x] Чекбоксы в Markdown — юникод-символы (☐/☑)
+
+### Хранение файлов ✅
+- [x] WordPress Media Library вместо Supabase Storage (нет лимита 50 МБ)
+- [x] Увеличение max_upload_size на хостинге (upload_max_filesize=256M, post_max_size=256M)
+
+### Админ-панель ✅
+- [x] Автозаполнение категорий — выпадающий список с топ-5 по популярности
+- [x] Превью изображения выше типа контента в редакторе
+- [x] Премиум-контент в редакторе (premium_body, premium_audio_url, premium_video_url)
+
+### Офлайн-кэш ✅
+- [x] Скачивание текста/аудио/видео
+- [x] Приоритет: локальный файл → сетевой URL
+- [x] Автоочистка удалённых статей при загрузке
+
+---
 
 ## Следующие шаги
 1. **Платная подписка** — ЮKassa + Stripe, WebView оплата
-2. **Чат** — общение с автором
-3. **Push-уведомления** — оповещения о новом контенте
-4. **Детальный экран статьи** — вывести обложку (image_url из content_data) над телом контента
+2. **Детальный экран статьи** — вывести обложку (image_url из content_data) над телом контента
+3. **Чат** — общение с автором
+4. **Push-уведомления** — оповещения о новом контенте

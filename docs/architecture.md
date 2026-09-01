@@ -11,9 +11,12 @@
 - **Zustand** (управление состоянием)
 - **Supabase** (аутентификация, база данных, realtime)
 - **WordPress Media Library** (хранение файлов: изображения, аудио, видео через WP REST API)
+- **ЮKassa + Stripe** (платежи через WebView)
 - **expo-video** (видеоплеер на нативе)
+- **expo-av** (аудиоплеер)
 - **expo-file-system** (офлайн-кэширование)
 - **react-native-keyboard-aware-scroll-view** (обработка клавиатуры)
+- **react-native-markdown-display** (рендеринг Markdown)
 - **FontAwesome** (@expo/vector-icons) — все UI-иконки
 
 ## Структура проекта
@@ -69,7 +72,11 @@ D:\pulsera_app\
 │   │   ├── CommentItem.tsx            # Комментарий (ответ, редактирование, удаление)
 │   │   ├── CommentInput.tsx           # Поле ввода комментария
 │   │   ├── CommentsSection.tsx        # Секция комментариев (модалка, реалтайм)
-│   │   └── PremiumGate.tsx            # Закрытый контент (Modal)
+│   │   ├── MarkdownEditor.tsx         # Markdown-редактор с тулбаром
+│   │   ├── MarkdownToolbar.tsx        # Тулбар редактора (14 кнопок)
+│   │   ├── MarkdownImage.tsx          # Кастомный рендеринг изображений в Markdown
+│   │   ├── CategoryInput.tsx          # Автозаполнение категорий (топ-5 по популярности)
+│   │   └── PremiumGate.tsx            # Закрытый контент (Modal) — не используется
 │   │
 │   ├── hooks/
 │   │   ├── useAuth.ts                 # useAuth, useProtectedRoute, useSubscription, useAdmin
@@ -92,9 +99,10 @@ D:\pulsera_app\
 │       ├── themeColors.ts             # Палитры тем (ThemeColors, darkColors, lightColors)
 │       ├── constants.ts               # Константы (SIZES, CONTENT_TYPES, API_ENDPOINTS)
 │       ├── config.ts                  # Конфигурация (Supabase, WordPress credentials)
-│       ├── upload.ts                  # Загрузка файлов в WordPress Media Library
+│       ├── upload.ts                  # Загрузка/удаление файлов в WordPress Media Library
 │       ├── storage.ts                 # Платформенный адаптер (localStorage / AsyncStorage)
-│       └── offlineCache.ts            # Скачивание/чтение контента (expo-file-system)
+│       ├── offlineCache.ts            # Скачивание/чтение контента (expo-file-system)
+│       └── markdownStyles.ts          # Стили Markdown + processCheckboxes()
 │
 └── supabase/
     └── migrations/
@@ -137,11 +145,30 @@ D:\pulsera_app\
 ### Хранение файлов (WordPress Media Library)
 - Файлы (изображения, аудио, видео) хранятся на WordPress хостинге pulsera.ru
 - Загрузка через WP REST API `/wp-json/wp/v2/media` с Basic Auth (Application Passwords)
-- Лимиты определяются хостингом (php.ini `upload_max_filesize`), не Supabase
+- Лимиты определяются хостингом (php.ini `upload_max_filesize=256M`), не Supabase
 - URL формат: `https://pulsera.ru/wp-content/uploads/YYYY/MM/filename.ext`
 - Конфигурация: `src/config.ts` (WP_URL, WP_USER, WP_APP_PASSWORD из .env)
 - Загрузка/удаление: `src/utils/upload.ts`
 - Supabase используется ТОЛЬКО для базы данных и аутентификации (не для хранения файлов)
+- Удаление контента также удаляет связанные файлы из WordPress Media Library
+
+### Автозаполнение категорий
+- `CategoryInput` компонент — `src/components/CategoryInput.tsx`
+- API: `getCategories()` возвращает `{ name: string; count: number }[]` (sorted by frequency)
+- При пустом поле — топ-5 самых популярных категорий с количеством статей
+- При вводе — фильтрация по вхождению, популярные наверху
+- Максимум 5 подсказок в выпадающем списке
+
+### Рендеринг Markdown
+- Библиотека: `react-native-markdown-display`
+- Стили: `src/utils/markdownStyles.ts`
+- Кастомные правила: изображения через `MarkdownImage` (определение пропорций)
+- Чекбоксы: `processCheckboxes()` заменяет `- [ ]` / `- [x]` на юникод ☐/☑
+
+### useFocusEffect (обновление данных)
+- Экраны (главная, каталог, админ-статьи) используют `useFocusEffect` вместо `useEffect`
+- Данные обновляются каждый раз при фокусе на экране (возврат из редактора и т.д.)
+- Избегает необходимости ручного обновления (pull-to-refresh)
 
 ### Роли и RLS
 - `profiles.role`: `'user'` | `'admin'`
