@@ -25,6 +25,7 @@ import {
   editChatMessage,
   deleteChatMessage,
   deleteChat,
+  shareChatAsMarkdown,
   markChatAsRead,
   getProfile,
   getPopularArticles,
@@ -217,6 +218,17 @@ export default function AdminChatDialogScreen() {
     }
   };
 
+  const handleExportChat = async () => {
+    if (!userId) return;
+
+    try {
+      await shareChatAsMarkdown(userId, userName);
+    } catch (error) {
+      console.error('Ошибка экспорта чата:', error);
+      Alert.alert('Ошибка', 'Не удалось экспортировать чат');
+    }
+  };
+
   const styles = createStyles(colors);
 
   if (!isAdmin) {
@@ -264,7 +276,14 @@ export default function AdminChatDialogScreen() {
         </View>
 
         <TouchableOpacity
-          style={styles.deleteButton}
+          style={styles.headerButton}
+          onPress={handleExportChat}
+        >
+          <FontAwesome name="download" size={20} color={colors.primary} />
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.headerButton}
           onPress={() => setDeleteModalVisible(true)}
         >
           <FontAwesome name="trash-o" size={20} color={colors.error} />
@@ -494,8 +513,8 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     alignItems: 'center',
     marginLeft: 8,
   },
-  deleteButton: {
-    marginLeft: 'auto',
+  headerButton: {
+    marginLeft: 8,
     padding: 8,
   },
   modalOverlay: {

@@ -15,7 +15,7 @@ import { FontAwesome } from '@expo/vector-icons';
 import { useAdmin } from '../../../hooks/useAuth';
 import { useTheme } from '../../../hooks/useTheme';
 import { ThemeColors } from '../../../utils/themeColors';
-import { getAdminChatUsers, deleteChat, AdminChatUser } from '../../../services/api';
+import { getAdminChatUsers, deleteChat, shareChatAsMarkdown, AdminChatUser } from '../../../services/api';
 
 export default function AdminChatListScreen() {
   const router = useRouter();
@@ -75,6 +75,15 @@ export default function AdminChatListScreen() {
       Alert.alert('Ошибка', 'Не удалось удалить чат');
     } finally {
       setDeleting(false);
+    }
+  };
+
+  const handleExportChat = async (user: AdminChatUser) => {
+    try {
+      await shareChatAsMarkdown(user.user_id, user.display_name || 'Пользователь');
+    } catch (error) {
+      console.error('Ошибка экспорта чата:', error);
+      Alert.alert('Ошибка', 'Не удалось экспортировать чат');
     }
   };
 
@@ -186,13 +195,21 @@ export default function AdminChatListScreen() {
                 </View>
               )}
 
-              {/* Кнопка удаления */}
-              <TouchableOpacity
-                style={styles.deleteButton}
-                onPress={() => handleDeletePress(item)}
-              >
-                <FontAwesome name="trash-o" size={18} color={colors.error} />
-              </TouchableOpacity>
+              {/* Кнопки действий */}
+              <View style={styles.actions}>
+                <TouchableOpacity
+                  style={styles.actionButton}
+                  onPress={() => handleExportChat(item)}
+                >
+                  <FontAwesome name="download" size={16} color={colors.primary} />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.actionButton}
+                  onPress={() => handleDeletePress(item)}
+                >
+                  <FontAwesome name="trash-o" size={16} color={colors.error} />
+                </TouchableOpacity>
+              </View>
             </TouchableOpacity>
           )}
           refreshControl={
@@ -347,9 +364,13 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     fontSize: 12,
     fontWeight: 'bold',
   },
-  deleteButton: {
-    padding: 8,
+  actions: {
+    flexDirection: 'row',
+    gap: 4,
     marginLeft: 8,
+  },
+  actionButton: {
+    padding: 8,
   },
   modalOverlay: {
     flex: 1,

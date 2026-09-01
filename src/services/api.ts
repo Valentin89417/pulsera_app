@@ -1064,3 +1064,104 @@ export const updateUserSubscription = async (
     return false;
   }
 };
+
+// ============================================
+// ЭКСПОРТ ЧАТА В MARKDOWN
+// ============================================
+
+// Форматирование даты для экспорта
+const formatDateForExport = (dateStr: string): string => {
+  const date = new Date(dateStr);
+  return date.toLocaleDateString('ru-RU', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+};
+
+// Обработка ссылок на статьи в тексте для экспорта
+const formatMessageForExport = (text: string): string => {
+  // Заменяем [{title|uuid}] на "Название статьи"
+  return text.replace(/\[\{([^\]|]+)\|([a-f0-9-]+)\}\]/g, '«$1»');
+};
+
+// Генерация Markdown содержимого чата
+export const exportChatToMarkdown = async (userId: string): Promise<string | null> => {
+  try {
+    const [messages, profile] = await Promise.all([
+      getAdminChatMessages(userId),
+      getProfile(userId),
+    ]);
+
+    const userName = profile?.display_name || 'Пользователь';
+    const now = new Date().toLocaleDateString('ru-RU', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+
+    let md = `# Чат с ${userName}\n\n`;
+
+    for (const msg of messages) {
+      const sender = msg.sender === 'author' ? '**Автор**' : '**Пользователь**';
+      const date = formatDateForExport(msg.created_at);
+      const text = formatMessageForExport(msg.message);
+      const edited = msg.edited ? ' *(ред.)*' : '';
+
+      md += `### ${sender} — ${date}${edited}\n\n`;
+      md += `${text}\n\n`;
+      md += `---\n\n`;
+    }
+
+    md += `*Экспортировано: ${now}*\n`;
+
+    return md;
+  } catch (error) {
+    console.error('Ошибка экспорта чата:', error);
+    return null;
+  }
+};
+
+// Шаринг чата как .md файл
+import * as FileSystem from 'expo-file-system/legacy';
+import * as Sharing from 'expo-sharing';
+
+export const shareChatAsMarkdown = async (userId: string, userName: string): Promise<boolean> => {
+  try {
+    const mdContent = await exportChatToMarkdown(userId);
+    if (!mdContent) return false;
+
+    // Безопасное имя файла
+    const safeName = (userName || 'user').replace(/[^a-zA-Zа-яА-Я0-9]/g, '_').slice(0, 30);
+    const timestamp = new Date().toISOString().slice(0, 10);
+    const fileName = `chat_${safeName}_${timestamp}.md`;
+    const filePath = `${FileSystem.cacheDirectory}${fileName}`;
+
+    // Записываем во временную папку
+    await FileSystem.writeAsStringAsync(filePath, mdContent, {
+      encoding: FileSystem.EncodingType.UTF8,
+    });
+
+    // Проверяем доступность шаринга
+    if (!(await Sharing.isAvailableAsync())) {
+      console.error('Шаринг недоступен на этом устройстве');
+      return false;
+    }
+
+    // Шарим файл
+    await Sharing.shareAsync(filePath, {
+      mimeType: 'text/markdown',
+      dialogTitle: `Экспорт чата с ${userName}`,
+      UTI: 'net.daringfireball.markdown',
+    });
+
+    return true;
+  } catch (error) {
+    console.error('Ошибка шаринга чата:', error);
+    return false;
+  }
+};
