@@ -31,6 +31,8 @@ export type Database = {
           id: string;
           display_name: string | null;
           avatar_url: string | null;
+          phone: string | null;
+          birthday: string | null;
           subscription_tier: 'free' | 'path' | 'awakening';
           role: 'user' | 'admin';
           created_at: string;
@@ -39,6 +41,8 @@ export type Database = {
           id: string;
           display_name?: string | null;
           avatar_url?: string | null;
+          phone?: string | null;
+          birthday?: string | null;
           subscription_tier?: 'free' | 'path' | 'awakening';
           role?: 'user' | 'admin';
           created_at?: string;
@@ -47,6 +51,8 @@ export type Database = {
           id?: string;
           display_name?: string | null;
           avatar_url?: string | null;
+          phone?: string | null;
+          birthday?: string | null;
           subscription_tier?: 'free' | 'path' | 'awakening';
           role?: 'user' | 'admin';
           created_at?: string;

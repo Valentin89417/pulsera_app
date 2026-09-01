@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, TouchableOpacity, Alert, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, ScrollView, Image } from 'react-native';
 import { useRouter } from 'expo-router';
 import { FontAwesome } from '@expo/vector-icons';
 import { useAuthStore } from '../../store/authStore';
@@ -60,11 +60,15 @@ export default function ProfileScreen() {
 
       {/* Аватар и имя */}
       <View style={styles.profileSection}>
-        <View style={[styles.avatar, { backgroundColor: colors.primary }]}>
-          <Text style={[styles.avatarText, { color: colors.onPrimary }]}>
-            {profile?.display_name?.charAt(0)?.toUpperCase() || user?.email?.charAt(0)?.toUpperCase() || '?'}
-          </Text>
-        </View>
+        {profile?.avatar_url ? (
+          <Image source={{ uri: profile.avatar_url }} style={styles.avatarImage} />
+        ) : (
+          <View style={[styles.avatar, { backgroundColor: colors.primary }]}>
+            <Text style={[styles.avatarText, { color: colors.onPrimary }]}>
+              {profile?.display_name?.charAt(0)?.toUpperCase() || user?.email?.charAt(0)?.toUpperCase() || '?'}
+            </Text>
+          </View>
+        )}
         <Text style={[styles.name, { color: colors.text }]}>{profile?.display_name || 'Путник'}</Text>
         <Text style={[styles.email, { color: colors.textSecondary }]}>{user?.email}</Text>
       </View>
@@ -89,6 +93,15 @@ export default function ProfileScreen() {
 
       {/* Меню */}
       <View style={[styles.menuSection, { backgroundColor: colors.surface }]}>
+        <TouchableOpacity
+          style={[styles.menuItem, { borderBottomColor: colors.border }]}
+          onPress={() => router.push('/settings')}
+        >
+          <FontAwesome name="cog" size={20} color={colors.primary} style={styles.menuIcon} />
+          <Text style={[styles.menuText, { color: colors.text }]}>Настройки</Text>
+          <Text style={[styles.menuArrow, { color: colors.textMuted }]}>›</Text>
+        </TouchableOpacity>
+
         <TouchableOpacity
           style={[styles.menuItem, { borderBottomColor: colors.border }]}
           onPress={() => router.push('/bookmarks')}
@@ -122,15 +135,6 @@ export default function ProfileScreen() {
         >
           <FontAwesome name="question-circle" size={20} color={colors.primary} style={styles.menuIcon} />
           <Text style={[styles.menuText, { color: colors.text }]}>Помощь</Text>
-          <Text style={[styles.menuArrow, { color: colors.textMuted }]}>›</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.menuItem, { borderBottomColor: colors.border }]}
-          onPress={() => router.push('/settings')}
-        >
-          <FontAwesome name="cog" size={20} color={colors.primary} style={styles.menuIcon} />
-          <Text style={[styles.menuText, { color: colors.text }]}>Настройки</Text>
           <Text style={[styles.menuArrow, { color: colors.textMuted }]}>›</Text>
         </TouchableOpacity>
       </View>
@@ -187,6 +191,12 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     borderRadius: 40,
     justifyContent: 'center',
     alignItems: 'center',
+    marginBottom: 12,
+  },
+  avatarImage: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
     marginBottom: 12,
   },
   avatarText: {

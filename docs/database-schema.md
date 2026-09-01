@@ -12,6 +12,8 @@
 | `006_chat_upgrade.sql` | Чат: sender, admin RLS, Realtime |
 | `007_admin_update_profiles.sql` | Admin RLS для обновления профилей |
 | `008_chat_edit_delete.sql` | Чат: edited колонка, RLS для редактирования/удаления |
+| `009_add_phone_to_profiles.sql` | Добавление колонки phone в profiles |
+| `010_add_birthday_to_profiles.sql` | Добавление колонки birthday в profiles |
 
 ---
 
@@ -23,6 +25,8 @@
 | id | uuid (PK) | Ссылка на auth.users |
 | display_name | text | Имя пользователя |
 | avatar_url | text | URL аватара |
+| phone | text | Номер телефона (added in 009) |
+| birthday | date | Дата рождения (added in 010) |
 | role | text | `user` / `admin` (added in 002) |
 | subscription_tier | text | `free` / `path` / `awakening` |
 | created_at | timestamptz | Дата создания |
@@ -298,4 +302,16 @@ ON chat_messages FOR DELETE
 USING (
   EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')
 );
+```
+
+### Миграция 009: Добавление телефона
+```sql
+-- Добавить колонку phone в profiles
+ALTER TABLE profiles ADD COLUMN phone text;
+```
+
+### Миграция 010: Добавление даты рождения
+```sql
+-- Добавить колонку birthday в profiles
+ALTER TABLE profiles ADD COLUMN birthday date;
 ```

@@ -9,6 +9,7 @@ import {
   RefreshControl,
   Alert,
   Switch,
+  Image,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { FontAwesome } from '@expo/vector-icons';
@@ -201,11 +202,15 @@ export default function AdminUsersScreen() {
               <View style={[styles.userItem, { borderBottomColor: colors.border }]}>
                 {/* Аватар и основная информация */}
                 <View style={styles.userMain}>
-                  <View style={[styles.avatar, { backgroundColor: isAdminUser ? colors.gold : colors.primary }]}>
-                    <Text style={[styles.avatarText, { color: colors.onPrimary }]}>
-                      {item.display_name?.charAt(0)?.toUpperCase() || '?'}
-                    </Text>
-                  </View>
+                  {item.avatar_url ? (
+                    <Image source={{ uri: item.avatar_url }} style={styles.avatarImage} />
+                  ) : (
+                    <View style={[styles.avatar, { backgroundColor: isAdminUser ? colors.gold : colors.primary }]}>
+                      <Text style={[styles.avatarText, { color: colors.onPrimary }]}>
+                        {item.display_name?.charAt(0)?.toUpperCase() || '?'}
+                      </Text>
+                    </View>
+                  )}
 
                   <View style={styles.userInfo}>
                     <View style={styles.userHeader}>
@@ -358,6 +363,12 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     borderRadius: 24,
     justifyContent: 'center',
     alignItems: 'center',
+    marginRight: 12,
+  },
+  avatarImage: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     marginRight: 12,
   },
   avatarText: {

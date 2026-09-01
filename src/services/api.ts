@@ -58,7 +58,7 @@ export const getProfile = async (userId: string): Promise<Profile | null> => {
 // Обновить профиль пользователя
 export const updateProfile = async (
   userId: string,
-  updates: Partial<Pick<Profile, 'display_name' | 'avatar_url'>>
+  updates: Partial<Pick<Profile, 'display_name' | 'avatar_url' | 'phone' | 'birthday'>>
 ): Promise<Profile | null> => {
   try {
     const { data, error } = await supabase

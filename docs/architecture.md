@@ -36,7 +36,7 @@ D:\pulsera_app\
 ├── src/
 │   ├── app/                           # Expo Router (файлы-роуты)
 │   │   ├── _layout.tsx                # Корневой layout (авторизация, тема, статус-бар, downloads)
-│   │   ├── settings.tsx               # Экран настроек (переключатель темы)
+│   │   ├── settings.tsx               # Настройки (профиль: аватар/имя/телефон + тема/уведомления)
 │   │   ├── downloads.tsx              # Экран скачанного контента
 │   │   ├── subscription.tsx           # Экран подписки
 │   │   ├── chat.tsx                   # Чат с автором (Telegram-стиль)
@@ -123,7 +123,9 @@ D:\pulsera_app\
         ├── 005_add_comment_delete_policy.sql # RLS для удаления/редактирования
         ├── 006_chat_upgrade.sql       # Чат: sender, admin RLS, Realtime
         ├── 007_admin_update_profiles.sql # Admin RLS для обновления профилей
-        └── 008_chat_edit_delete.sql   # Чат: edited колонка, RLS для редактирования/удаления
+        ├── 008_chat_edit_delete.sql   # Чат: edited колонка, RLS для редактирования/удаления
+        ├── 009_add_phone_to_profiles.sql # Добавление колонки phone
+        └── 010_add_birthday_to_profiles.sql # Добавление колонки birthday
 ```
 
 ## Ключевые решения
@@ -225,8 +227,7 @@ RootLayout
     ├── Catalog (каталог + фильтры)
     ├── Community (заглушка → чат с автором)
     └── Profile
-        ├── Редактирование профиля → /profile-edit
-        ├── Настройки → /settings
+        ├── Настройки → /settings (профиль + настройки приложения)
         ├── Скачанное → /downloads
         ├── Закладки → /bookmarks
         ├── Чат с автором → /chat (Пробуждение)

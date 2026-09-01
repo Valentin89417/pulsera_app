@@ -11,6 +11,7 @@ import {
   ActivityIndicator,
   Alert,
   Modal,
+  Image,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { FontAwesome } from '@expo/vector-icons';
@@ -48,6 +49,7 @@ export default function AdminChatDialogScreen() {
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [userName, setUserName] = useState('');
+  const [userAvatarUrl, setUserAvatarUrl] = useState<string | null>(null);
   const [showAutocomplete, setShowAutocomplete] = useState(false);
   const [autocompleteQuery, setAutocompleteQuery] = useState('');
   const [editingMessage, setEditingMessage] = useState<ChatMessage | null>(null);
@@ -58,12 +60,15 @@ export default function AdminChatDialogScreen() {
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const loadMessagesRef = useRef<(() => Promise<void>) | null>(null);
 
-  // Загрузка имени пользователя
+  // Загрузка имени пользователя и аватара
   useEffect(() => {
     if (userId) {
       getProfile(userId).then(profile => {
         if (profile?.display_name) {
           setUserName(profile.display_name);
+        }
+        if (profile?.avatar_url) {
+          setUserAvatarUrl(profile.avatar_url);
         }
       });
     }
@@ -266,11 +271,15 @@ export default function AdminChatDialogScreen() {
           </TouchableOpacity>
 
           <View style={styles.userInfo}>
-            <View style={[styles.userAvatar, { backgroundColor: colors.primary }]}>
-              <Text style={[styles.userAvatarText, { color: colors.onPrimary }]}>
-                {userName?.charAt(0)?.toUpperCase() || '?'}
-              </Text>
-            </View>
+            {userAvatarUrl ? (
+              <Image source={{ uri: userAvatarUrl }} style={styles.userAvatarImage} />
+            ) : (
+              <View style={[styles.userAvatar, { backgroundColor: colors.primary }]}>
+                <Text style={[styles.userAvatarText, { color: colors.onPrimary }]}>
+                  {userName?.charAt(0)?.toUpperCase() || '?'}
+                </Text>
+              </View>
+            )}
             <View>
               <Text style={[styles.userName, { color: colors.text }]}>{userName || 'Пользователь'}</Text>
               <Text style={[styles.userStatus, { color: colors.textMuted }]}>Пользователь</Text>
@@ -453,6 +462,12 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
+    marginRight: 10,
+  },
+  userAvatarImage: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     marginRight: 10,
   },
   userAvatarText: {

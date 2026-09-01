@@ -9,6 +9,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
+  Image,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { FontAwesome } from '@expo/vector-icons';
@@ -38,10 +39,27 @@ export default function ChatScreen() {
   const [showAutocomplete, setShowAutocomplete] = useState(false);
   const [autocompleteQuery, setAutocompleteQuery] = useState('');
   const [editingMessage, setEditingMessage] = useState<ChatMessage | null>(null);
+  const [authorAvatarUrl, setAuthorAvatarUrl] = useState<string | null>(null);
 
   const flatListRef = useRef<FlatList>(null);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const loadMessagesRef = useRef<(() => Promise<void>) | null>(null);
+
+  // Загрузка профиля автора (админа)
+  useEffect(() => {
+    const loadAuthorProfile = async () => {
+      const { data } = await supabase
+        .from('profiles')
+        .select('avatar_url')
+        .eq('role', 'admin')
+        .limit(1)
+        .single();
+      if (data?.avatar_url) {
+        setAuthorAvatarUrl(data.avatar_url);
+      }
+    };
+    loadAuthorProfile();
+  }, []);
 
   // Проверка подписки
   if (!hasAccess('awakening')) {
@@ -202,9 +220,13 @@ export default function ChatScreen() {
         </TouchableOpacity>
 
         <View style={styles.authorInfo}>
-          <View style={[styles.authorAvatar, { backgroundColor: colors.primary }]}>
-            <Text style={[styles.authorAvatarText, { color: colors.onPrimary }]}>Д</Text>
-          </View>
+          {authorAvatarUrl ? (
+            <Image source={{ uri: authorAvatarUrl }} style={styles.authorAvatarImage} />
+          ) : (
+            <View style={[styles.authorAvatar, { backgroundColor: colors.primary }]}>
+              <Text style={[styles.authorAvatarText, { color: colors.onPrimary }]}>Д</Text>
+            </View>
+          )}
           <View>
             <Text style={[styles.authorName, { color: colors.text }]}>Дина Кануникова</Text>
             <Text style={[styles.authorStatus, { color: colors.textMuted }]}>Автор</Text>
@@ -321,6 +343,12 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
+    marginRight: 10,
+  },
+  authorAvatarImage: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     marginRight: 10,
   },
   authorAvatarText: {

@@ -9,6 +9,7 @@ import {
   RefreshControl,
   Alert,
   Modal,
+  Image,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { FontAwesome } from '@expo/vector-icons';
@@ -160,11 +161,7 @@ export default function AdminChatListScreen() {
             >
               {/* Аватар */}
               {item.avatar_url ? (
-                <View style={styles.avatar}>
-                  <Text style={[styles.avatarText, { color: colors.onPrimary }]}>
-                    {item.display_name?.charAt(0)?.toUpperCase() || '?'}
-                  </Text>
-                </View>
+                <Image source={{ uri: item.avatar_url }} style={styles.avatarImage} />
               ) : (
                 <View style={[styles.avatar, { backgroundColor: colors.primary }]}>
                   <Text style={[styles.avatarText, { color: colors.onPrimary }]}>
@@ -323,6 +320,12 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     backgroundColor: colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
+    marginRight: 12,
+  },
+  avatarImage: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
     marginRight: 12,
   },
   avatarText: {
