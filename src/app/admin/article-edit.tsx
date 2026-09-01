@@ -16,6 +16,7 @@ import { getContentById, createContent, updateContent } from '../../services/api
 import { ContentItem, ContentType } from '../../types';
 import { pickFile, uploadFile, UploadFileType } from '../../utils/upload';
 import { MarkdownEditor } from '../../components/MarkdownEditor';
+import { CategoryInput } from '../../components/CategoryInput';
 import { useTheme } from '../../hooks/useTheme';
 import { ThemeColors } from '../../utils/themeColors';
 
@@ -319,12 +320,11 @@ export default function ArticleEditScreen() {
 
         <View style={styles.field}>
           <Text style={styles.label}>Категория *</Text>
-          <TextInput
-            style={styles.input}
+          <CategoryInput
             value={category}
             onChangeText={setCategory}
+            colors={colors}
             placeholder="meditation, practice, spiritual..."
-            placeholderTextColor={colors.placeholder}
           />
         </View>
 

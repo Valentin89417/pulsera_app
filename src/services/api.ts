@@ -125,6 +125,27 @@ export const getContent = async (options?: {
   }
 };
 
+// Получить уникальные категории
+export const getCategories = async (): Promise<string[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('content')
+      .select('category')
+      .not('category', 'is', null);
+
+    if (error) {
+      console.error('Ошибка получения категорий:', error.message);
+      return [];
+    }
+
+    const unique = [...new Set(data.map(c => c.category).filter(Boolean))] as string[];
+    return unique.sort();
+  } catch (error) {
+    console.error('Неожиданная ошибка при получении категорий:', error);
+    return [];
+  }
+};
+
 // Получить контент по ID
 export const getContentById = async (contentId: string): Promise<Content | null> => {
   try {
