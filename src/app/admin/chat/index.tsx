@@ -7,13 +7,15 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   RefreshControl,
+  Alert,
+  Modal,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { FontAwesome } from '@expo/vector-icons';
 import { useAdmin } from '../../../hooks/useAuth';
 import { useTheme } from '../../../hooks/useTheme';
 import { ThemeColors } from '../../../utils/themeColors';
-import { getAdminChatUsers, AdminChatUser } from '../../../services/api';
+import { getAdminChatUsers, deleteChat, AdminChatUser } from '../../../services/api';
 
 export default function AdminChatListScreen() {
   const router = useRouter();
@@ -23,6 +25,9 @@ export default function AdminChatListScreen() {
   const [chatUsers, setChatUsers] = useState<AdminChatUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [deleteModalVisible, setDeleteModalVisible] = useState(false);
+  const [userToDelete, setUserToDelete] = useState<AdminChatUser | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const loadChatUsers = useCallback(async () => {
     try {
@@ -45,6 +50,32 @@ export default function AdminChatListScreen() {
   const handleRefresh = () => {
     setRefreshing(true);
     loadChatUsers();
+  };
+
+  const handleDeletePress = (user: AdminChatUser) => {
+    setUserToDelete(user);
+    setDeleteModalVisible(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!userToDelete) return;
+
+    setDeleting(true);
+    try {
+      const success = await deleteChat(userToDelete.user_id);
+      if (success) {
+        setDeleteModalVisible(false);
+        setUserToDelete(null);
+        loadChatUsers();
+      } else {
+        Alert.alert('Ошибка', 'Не удалось удалить чат');
+      }
+    } catch (error) {
+      console.error('Ошибка удаления чата:', error);
+      Alert.alert('Ошибка', 'Не удалось удалить чат');
+    } finally {
+      setDeleting(false);
+    }
   };
 
   const formatTime = (dateStr: string) => {
@@ -154,6 +185,14 @@ export default function AdminChatListScreen() {
                   <Text style={styles.unreadText}>{item.unread_count}</Text>
                 </View>
               )}
+
+              {/* Кнопка удаления */}
+              <TouchableOpacity
+                style={styles.deleteButton}
+                onPress={() => handleDeletePress(item)}
+              >
+                <FontAwesome name="trash-o" size={18} color={colors.error} />
+              </TouchableOpacity>
             </TouchableOpacity>
           )}
           refreshControl={
@@ -161,6 +200,44 @@ export default function AdminChatListScreen() {
           }
         />
       )}
+
+      {/* Модалка подтверждения удаления */}
+      <Modal
+        visible={deleteModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setDeleteModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: colors.surface }]}>
+            <FontAwesome name="trash" size={32} color={colors.error} style={styles.modalIcon} />
+            <Text style={[styles.modalTitle, { color: colors.text }]}>Удалить чат?</Text>
+            <Text style={[styles.modalText, { color: colors.textSecondary }]}>
+              Вся переписка с пользователем {userToDelete?.display_name || 'Пользователь'} будет удалена безвозвратно.
+            </Text>
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={[styles.modalButton, { backgroundColor: colors.border }]}
+                onPress={() => setDeleteModalVisible(false)}
+                disabled={deleting}
+              >
+                <Text style={[styles.modalButtonText, { color: colors.text }]}>Отмена</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, { backgroundColor: colors.error }]}
+                onPress={handleDeleteConfirm}
+                disabled={deleting}
+              >
+                {deleting ? (
+                  <ActivityIndicator size="small" color="#ffffff" />
+                ) : (
+                  <Text style={styles.modalButtonText}>Удалить</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -269,5 +346,51 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     color: '#ffffff',
     fontSize: 12,
     fontWeight: 'bold',
+  },
+  deleteButton: {
+    padding: 8,
+    marginLeft: 8,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    width: '80%',
+    maxWidth: 320,
+    borderRadius: 16,
+    padding: 24,
+    alignItems: 'center',
+  },
+  modalIcon: {
+    marginBottom: 16,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 8,
+  },
+  modalText: {
+    fontSize: 14,
+    textAlign: 'center',
+    lineHeight: 20,
+    marginBottom: 24,
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  modalButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  modalButtonText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });

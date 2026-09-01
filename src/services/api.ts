@@ -858,6 +858,26 @@ export const markAuthorMessagesAsRead = async (userId: string): Promise<boolean>
   }
 };
 
+// Удалить чат с пользователем (все сообщения)
+export const deleteChat = async (userId: string): Promise<boolean> => {
+  try {
+    const { error } = await supabase
+      .from('chat_messages')
+      .delete()
+      .eq('user_id', userId);
+
+    if (error) {
+      console.error('Ошибка удаления чата:', error.message);
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Неожиданная ошибка при удалении чата:', error);
+    return false;
+  }
+};
+
 // ============================================
 // СТАТЬИ ДЛЯ АВТОДОПОЛНЕНИЯ @ В ЧАТЕ
 // ============================================

@@ -9,6 +9,8 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
+  Alert,
+  Modal,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { FontAwesome } from '@expo/vector-icons';
@@ -22,6 +24,7 @@ import {
   sendChatMessage,
   editChatMessage,
   deleteChatMessage,
+  deleteChat,
   markChatAsRead,
   getProfile,
   getPopularArticles,
@@ -47,6 +50,8 @@ export default function AdminChatDialogScreen() {
   const [showAutocomplete, setShowAutocomplete] = useState(false);
   const [autocompleteQuery, setAutocompleteQuery] = useState('');
   const [editingMessage, setEditingMessage] = useState<ChatMessage | null>(null);
+  const [deleteModalVisible, setDeleteModalVisible] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const flatListRef = useRef<FlatList>(null);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
@@ -192,6 +197,26 @@ export default function AdminChatDialogScreen() {
     setInputText('');
   };
 
+  const handleDeleteChat = async () => {
+    if (!userId) return;
+
+    setDeleting(true);
+    try {
+      const success = await deleteChat(userId);
+      if (success) {
+        setDeleteModalVisible(false);
+        router.back();
+      } else {
+        Alert.alert('Ошибка', 'Не удалось удалить чат');
+      }
+    } catch (error) {
+      console.error('Ошибка удаления чата:', error);
+      Alert.alert('Ошибка', 'Не удалось удалить чат');
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   const styles = createStyles(colors);
 
   if (!isAdmin) {
@@ -237,6 +262,13 @@ export default function AdminChatDialogScreen() {
             <Text style={[styles.userStatus, { color: colors.textMuted }]}>Пользователь</Text>
           </View>
         </View>
+
+        <TouchableOpacity
+          style={styles.deleteButton}
+          onPress={() => setDeleteModalVisible(true)}
+        >
+          <FontAwesome name="trash-o" size={20} color={colors.error} />
+        </TouchableOpacity>
       </View>
 
       {/* Сообщения */}
@@ -314,6 +346,44 @@ export default function AdminChatDialogScreen() {
           </TouchableOpacity>
         </View>
       </View>
+
+      {/* Модалка подтверждения удаления */}
+      <Modal
+        visible={deleteModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setDeleteModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: colors.surface }]}>
+            <FontAwesome name="trash" size={32} color={colors.error} style={styles.modalIcon} />
+            <Text style={[styles.modalTitle, { color: colors.text }]}>Удалить чат?</Text>
+            <Text style={[styles.modalText, { color: colors.textSecondary }]}>
+              Вся переписка с пользователем {userName || 'Пользователь'} будет удалена безвозвратно.
+            </Text>
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={[styles.modalButton, { backgroundColor: colors.border }]}
+                onPress={() => setDeleteModalVisible(false)}
+                disabled={deleting}
+              >
+                <Text style={[styles.modalButtonText, { color: colors.text }]}>Отмена</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, { backgroundColor: colors.error }]}
+                onPress={handleDeleteChat}
+                disabled={deleting}
+              >
+                {deleting ? (
+                  <ActivityIndicator size="small" color="#ffffff" />
+                ) : (
+                  <Text style={styles.modalButtonText}>Удалить</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </KeyboardAvoidingView>
   );
 }
@@ -423,5 +493,51 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginLeft: 8,
+  },
+  deleteButton: {
+    marginLeft: 'auto',
+    padding: 8,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    width: '80%',
+    maxWidth: 320,
+    borderRadius: 16,
+    padding: 24,
+    alignItems: 'center',
+  },
+  modalIcon: {
+    marginBottom: 16,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 8,
+  },
+  modalText: {
+    fontSize: 14,
+    textAlign: 'center',
+    lineHeight: 20,
+    marginBottom: 24,
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  modalButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  modalButtonText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
