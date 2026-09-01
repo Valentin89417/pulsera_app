@@ -24,6 +24,9 @@ export interface ExtendedUserProfile extends UserProfile {
 export interface ProfileUpdateData {
   display_name?: string;
   avatar_url?: string;
+  phone?: string;
+  bio?: string;
+  location?: string;
 }
 
 // Настройки пользователя
@@ -39,4 +42,17 @@ export interface UserStats {
   completedContent: number;
   bookmarksCount: number;
   commentsCount: number;
+}
+
+// Сообщение чата
+export type ChatMessage = Database['public']['Tables']['chat_messages']['Row'];
+
+// Чат с информацией о пользователе (для админа)
+export interface AdminChatUser {
+  user_id: string;
+  display_name: string | null;
+  avatar_url: string | null;
+  last_message: string;
+  last_message_at: string;
+  unread_count: number;
 }
