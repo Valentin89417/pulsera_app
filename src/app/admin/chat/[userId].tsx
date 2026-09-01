@@ -259,35 +259,41 @@ export default function AdminChatDialogScreen() {
     >
       {/* Хедер */}
       <View style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <FontAwesome name="arrow-left" size={18} color={colors.primary} />
-        </TouchableOpacity>
+        {/* Левая часть: назад + пользователь */}
+        <View style={styles.headerLeft}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+            <FontAwesome name="arrow-left" size={18} color={colors.primary} />
+          </TouchableOpacity>
 
-        <View style={styles.userInfo}>
-          <View style={[styles.userAvatar, { backgroundColor: colors.primary }]}>
-            <Text style={[styles.userAvatarText, { color: colors.onPrimary }]}>
-              {userName?.charAt(0)?.toUpperCase() || '?'}
-            </Text>
-          </View>
-          <View>
-            <Text style={[styles.userName, { color: colors.text }]}>{userName || 'Пользователь'}</Text>
-            <Text style={[styles.userStatus, { color: colors.textMuted }]}>Пользователь</Text>
+          <View style={styles.userInfo}>
+            <View style={[styles.userAvatar, { backgroundColor: colors.primary }]}>
+              <Text style={[styles.userAvatarText, { color: colors.onPrimary }]}>
+                {userName?.charAt(0)?.toUpperCase() || '?'}
+              </Text>
+            </View>
+            <View>
+              <Text style={[styles.userName, { color: colors.text }]}>{userName || 'Пользователь'}</Text>
+              <Text style={[styles.userStatus, { color: colors.textMuted }]}>Пользователь</Text>
+            </View>
           </View>
         </View>
 
-        <TouchableOpacity
-          style={styles.headerButton}
-          onPress={handleExportChat}
-        >
-          <FontAwesome name="download" size={20} color={colors.primary} />
-        </TouchableOpacity>
+        {/* Правая часть: кнопки */}
+        <View style={styles.headerRight}>
+          <TouchableOpacity
+            style={styles.headerButton}
+            onPress={handleExportChat}
+          >
+            <FontAwesome name="download" size={20} color={colors.primary} />
+          </TouchableOpacity>
 
-        <TouchableOpacity
-          style={styles.headerButton}
-          onPress={() => setDeleteModalVisible(true)}
-        >
-          <FontAwesome name="trash-o" size={20} color={colors.error} />
-        </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.headerButton}
+            onPress={() => setDeleteModalVisible(true)}
+          >
+            <FontAwesome name="trash-o" size={20} color={colors.error} />
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Сообщения */}
@@ -418,10 +424,20 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     paddingTop: 60,
     paddingBottom: 12,
     paddingHorizontal: 16,
     borderBottomWidth: 1,
+  },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   backButton: {
     marginRight: 12,
@@ -430,7 +446,6 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   userInfo: {
     flexDirection: 'row',
     alignItems: 'center',
-    flex: 1,
   },
   userAvatar: {
     width: 40,
