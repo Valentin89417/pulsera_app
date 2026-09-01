@@ -2,6 +2,16 @@ import { StyleSheet } from 'react-native';
 import { ThemeColors } from './themeColors';
 
 /**
+ * Заменяет синтаксис чекбоксов (- [ ] / - [x]) на юникод-символы,
+ * т.к. react-native-markdown-display не поддерживает GitHub task lists.
+ */
+export function processCheckboxes(text: string): string {
+  return text
+    .replace(/^(\s*[-*]\s)\[x\]\s/gm, '$1\u2611\uFE0F ')
+    .replace(/^(\s*[-*]\s)\[ \]\s/gm, '$1\u2610 ');
+}
+
+/**
  * Стили для рендеринга Markdown.
  * Используются в MarkdownEditor (предпросмотр) и content/[id].tsx.
  */

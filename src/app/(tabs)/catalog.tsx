@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -10,6 +10,7 @@ import {
   Image,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useFocusEffect } from '@react-navigation/native';
 import { FontAwesome } from '@expo/vector-icons';
 import { getContent } from '../../services/api';
 import { ContentItem, ContentType } from '../../types';
@@ -311,9 +312,11 @@ export default function CatalogScreen() {
     }
   };
 
-  useEffect(() => {
-    loadContent();
-  }, [activeFilter]);
+  useFocusEffect(
+    useCallback(() => {
+      loadContent();
+    }, [activeFilter])
+  );
 
   const getTypeIcon = (type: ContentItem['type']) => {
     switch (type) {

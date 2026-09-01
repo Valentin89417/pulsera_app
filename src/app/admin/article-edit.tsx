@@ -329,23 +329,6 @@ export default function ArticleEditScreen() {
         </View>
 
         <View style={styles.field}>
-          <Text style={styles.label}>Тип контента</Text>
-          <View style={styles.chipRow}>
-            {CONTENT_TYPES.map((item) => (
-              <TouchableOpacity
-                key={item.key}
-                style={[styles.chip, type === item.key && styles.chipActive]}
-                onPress={() => setType(item.key)}
-              >
-                <Text style={[styles.chipText, type === item.key && styles.chipTextActive]}>
-                  {item.label}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </View>
-
-        <View style={styles.field}>
           <Text style={styles.label}>Превью изображение</Text>
           {imageUrl ? (
             <View style={styles.filePreview}>
@@ -382,6 +365,23 @@ export default function ArticleEditScreen() {
               )}
             </TouchableOpacity>
           )}
+        </View>
+
+        <View style={styles.field}>
+          <Text style={styles.label}>Тип контента</Text>
+          <View style={styles.chipRow}>
+            {CONTENT_TYPES.map((item) => (
+              <TouchableOpacity
+                key={item.key}
+                style={[styles.chip, type === item.key && styles.chipActive]}
+                onPress={() => setType(item.key)}
+              >
+                <Text style={[styles.chipText, type === item.key && styles.chipTextActive]}>
+                  {item.label}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
         </View>
 
         {type === 'audio' && (

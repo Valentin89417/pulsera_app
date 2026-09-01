@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useFocusEffect } from '@react-navigation/native';
 import { FontAwesome } from '@expo/vector-icons';
 import { useAuthStore } from '../../store/authStore';
 import { getContent } from '../../services/api';
@@ -163,9 +164,11 @@ export default function HomeScreen() {
     }
   };
 
-  useEffect(() => {
-    loadContent();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      loadContent();
+    }, [])
+  );
 
   // Иконка типа контента
   const getTypeIcon = (type: ContentItem['type']) => {

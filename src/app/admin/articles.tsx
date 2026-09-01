@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useFocusEffect } from '@react-navigation/native';
 import { FontAwesome } from '@expo/vector-icons';
 import { getContent, deleteContent } from '../../services/api';
 import { ContentItem } from '../../types';
@@ -35,9 +36,11 @@ export default function ArticlesScreen() {
     }
   };
 
-  useEffect(() => {
-    loadArticles();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      loadArticles();
+    }, [])
+  );
 
   const handleDelete = (item: ContentItem) => {
     Alert.alert(

@@ -125,8 +125,8 @@ export const getContent = async (options?: {
   }
 };
 
-// Получить уникальные категории
-export const getCategories = async (): Promise<string[]> => {
+// Получить категории с количеством использований
+export const getCategories = async (): Promise<{ name: string; count: number }[]> => {
   try {
     const { data, error } = await supabase
       .from('content')
@@ -138,8 +138,16 @@ export const getCategories = async (): Promise<string[]> => {
       return [];
     }
 
-    const unique = [...new Set(data.map(c => c.category).filter(Boolean))] as string[];
-    return unique.sort();
+    const counts = new Map<string, number>();
+    for (const row of data) {
+      if (row.category) {
+        counts.set(row.category, (counts.get(row.category) || 0) + 1);
+      }
+    }
+
+    return [...counts.entries()]
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => b.count - a.count);
   } catch (error) {
     console.error('Неожиданная ошибка при получении категорий:', error);
     return [];

@@ -23,6 +23,7 @@ import { readDownloadedArticle, getDownloadedMediaUri } from '../../utils/offlin
 import { useTheme } from '../../hooks/useTheme';
 import { ThemeColors } from '../../utils/themeColors';
 import { getMarkdownStyles } from '../../utils/markdownStyles';
+import { processCheckboxes } from '../../utils/markdownStyles';
 import { MarkdownImage } from '../../components/MarkdownImage';
 
 const createStyles = (colors: ThemeColors) => StyleSheet.create({
@@ -398,7 +399,7 @@ export default function ContentDetailScreen() {
             <>
               {content.type === 'article' && premiumBody ? (
                 <View style={styles.bodyContainer}>
-                  <Markdown style={markdownStyles} rules={markdownRules}>{premiumBody}</Markdown>
+                  <Markdown style={markdownStyles} rules={markdownRules}>{processCheckboxes(premiumBody)}</Markdown>
                 </View>
               ) : content.type === 'audio' && premiumAudioUrl ? (
                 <AudioPlayer uri={premiumAudioUrl} title={content.title} />
@@ -420,7 +421,7 @@ export default function ContentDetailScreen() {
                 <AudioPlayer uri={audioUrl!} title={content.title} />
               ) : body ? (
                 <View style={styles.bodyContainer}>
-                  <Markdown style={markdownStyles} rules={markdownRules}>{body}</Markdown>
+                  <Markdown style={markdownStyles} rules={markdownRules}>{processCheckboxes(body)}</Markdown>
                 </View>
               ) : (
                 <View style={styles.noContent}>
