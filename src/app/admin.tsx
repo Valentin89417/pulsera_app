@@ -229,6 +229,30 @@ export default function AdminScreen() {
 
         <TouchableOpacity
           style={styles.menuItem}
+          onPress={() => router.push('/admin/chat')}
+        >
+          <FontAwesome name="comments-o" size={22} color={colors.primary} style={styles.menuIcon} />
+          <View style={styles.menuContent}>
+            <Text style={styles.menuText}>Чат с пользователями</Text>
+            <Text style={styles.menuHint}>Личные сообщения и поддержка</Text>
+          </View>
+          <Text style={styles.menuArrow}>›</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.menuItem}
+          onPress={() => router.push('/admin/users')}
+        >
+          <FontAwesome name="users" size={22} color={colors.primary} style={styles.menuIcon} />
+          <View style={styles.menuContent}>
+            <Text style={styles.menuText}>Пользователи</Text>
+            <Text style={styles.menuHint}>Управление подписками и ролями</Text>
+          </View>
+          <Text style={styles.menuArrow}>›</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.menuItem}
           onPress={async () => {
             const { Alert } = require('react-native');
             Alert.alert(

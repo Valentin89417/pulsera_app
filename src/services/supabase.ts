@@ -158,22 +158,28 @@ export type Database = {
           id: string;
           user_id: string;
           message: string;
+          sender: 'user' | 'author';
           created_at: string;
           read: boolean;
+          edited: boolean;
         };
         Insert: {
           id?: string;
           user_id: string;
           message: string;
+          sender?: 'user' | 'author';
           created_at?: string;
           read?: boolean;
+          edited?: boolean;
         };
         Update: {
           id?: string;
           user_id?: string;
           message?: string;
+          sender?: 'user' | 'author';
           created_at?: string;
           read?: boolean;
+          edited?: boolean;
         };
       };
       subscriptions: {

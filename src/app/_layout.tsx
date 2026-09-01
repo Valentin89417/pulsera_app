@@ -94,6 +94,7 @@ export default function RootLayout() {
         />
         <Stack.Screen name="settings" />
         <Stack.Screen name="downloads" />
+        <Stack.Screen name="help" />
       </Stack>
     </>
   );

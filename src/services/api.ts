@@ -631,7 +631,7 @@ export const updateComment = async (commentId: string, text: string): Promise<bo
 // ЧАТ
 // ============================================
 
-// Получить сообщения чата
+// Получить сообщения чата пользователя
 export const getChatMessages = async (userId: string): Promise<ChatMessage[]> => {
   try {
     const { data, error } = await supabase
@@ -655,12 +655,13 @@ export const getChatMessages = async (userId: string): Promise<ChatMessage[]> =>
 // Отправить сообщение в чат
 export const sendChatMessage = async (
   userId: string,
-  message: string
+  message: string,
+  sender: 'user' | 'author' = 'user'
 ): Promise<ChatMessage | null> => {
   try {
     const { data, error } = await supabase
       .from('chat_messages')
-      .insert({ user_id: userId, message })
+      .insert({ user_id: userId, message, sender })
       .select()
       .single();
 
@@ -673,6 +674,241 @@ export const sendChatMessage = async (
   } catch (error) {
     console.error('Неожиданная ошибка при отправке сообщения:', error);
     return null;
+  }
+};
+
+// Редактировать сообщение
+export const editChatMessage = async (messageId: string, newMessage: string): Promise<boolean> => {
+  try {
+    const { error } = await supabase
+      .from('chat_messages')
+      .update({ message: newMessage, edited: true })
+      .eq('id', messageId);
+
+    if (error) {
+      console.error('Ошибка редактирования сообщения:', error.message);
+      return false;
+    }
+    return true;
+  } catch (error) {
+    console.error('Неожиданная ошибка при редактировании:', error);
+    return false;
+  }
+};
+
+// Удалить сообщение
+export const deleteChatMessage = async (messageId: string): Promise<boolean> => {
+  try {
+    const { error } = await supabase
+      .from('chat_messages')
+      .delete()
+      .eq('id', messageId);
+
+    if (error) {
+      console.error('Ошибка удаления сообщения:', error.message);
+      return false;
+    }
+    return true;
+  } catch (error) {
+    console.error('Неожиданная ошибка при удалении:', error);
+    return false;
+  }
+};
+
+// Тип: пользователь чата с последним сообщением (для админа)
+export interface AdminChatUser {
+  user_id: string;
+  display_name: string | null;
+  avatar_url: string | null;
+  last_message: string;
+  last_message_at: string;
+  unread_count: number;
+}
+
+// Получить список пользователей чата (для админа)
+export const getAdminChatUsers = async (): Promise<AdminChatUser[]> => {
+  try {
+    // Получаем все уникальные user_id из чата
+    const { data: chatData, error: chatError } = await supabase
+      .from('chat_messages')
+      .select('user_id')
+      .order('created_at', { ascending: false });
+
+    if (chatError) {
+      console.error('Ошибка получения пользователей чата:', chatError.message);
+      return [];
+    }
+
+    if (!chatData || chatData.length === 0) return [];
+
+    const uniqueUserIds = [...new Set(chatData.map(c => c.user_id))];
+
+    // Получаем профили
+    const { data: profiles } = await supabase
+      .from('profiles')
+      .select('id, display_name, avatar_url')
+      .in('id', uniqueUserIds);
+
+    const profilesMap = new Map(profiles?.map(p => [p.id, p]) || []);
+
+    // Для каждого пользователя получаем последнее сообщение и непрочитанные
+    const result: AdminChatUser[] = [];
+
+    for (const userId of uniqueUserIds) {
+      // Последнее сообщение
+      const { data: lastMsg } = await supabase
+        .from('chat_messages')
+        .select('message, created_at')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+
+      // Непрочитанные сообщения (от пользователя, которые автор ещё не видел)
+      const { count } = await supabase
+        .from('chat_messages')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', userId)
+        .eq('sender', 'user')
+        .eq('read', false);
+
+      const profile = profilesMap.get(userId);
+      result.push({
+        user_id: userId,
+        display_name: profile?.display_name || null,
+        avatar_url: profile?.avatar_url || null,
+        last_message: lastMsg?.message || '',
+        last_message_at: lastMsg?.created_at || '',
+        unread_count: count || 0,
+      });
+    }
+
+    // Сортируем по дате последнего сообщения
+    result.sort((a, b) => new Date(b.last_message_at).getTime() - new Date(a.last_message_at).getTime());
+
+    return result;
+  } catch (error) {
+    console.error('Неожиданная ошибка при получении пользователей чата:', error);
+    return [];
+  }
+};
+
+// Получить сообщения чата для админа (все сообщения диалога)
+export const getAdminChatMessages = async (userId: string): Promise<ChatMessage[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('chat_messages')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: true });
+
+    if (error) {
+      console.error('Ошибка получения сообщений чата (админ):', error.message);
+      return [];
+    }
+
+    return data || [];
+  } catch (error) {
+    console.error('Неожиданная ошибка при получении сообщений чата (админ):', error);
+    return [];
+  }
+};
+
+// Отметить сообщения пользователя как прочитанные
+export const markChatAsRead = async (userId: string): Promise<boolean> => {
+  try {
+    const { error } = await supabase
+      .from('chat_messages')
+      .update({ read: true })
+      .eq('user_id', userId)
+      .eq('sender', 'user')
+      .eq('read', false);
+
+    if (error) {
+      console.error('Ошибка отметки сообщений как прочитанных:', error.message);
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Неожиданная ошибка при отметке сообщений:', error);
+    return false;
+  }
+};
+
+// Пользователь отмечает сообщения автора как прочитанные
+export const markAuthorMessagesAsRead = async (userId: string): Promise<boolean> => {
+  try {
+    const { error } = await supabase
+      .from('chat_messages')
+      .update({ read: true })
+      .eq('user_id', userId)
+      .eq('sender', 'author')
+      .eq('read', false);
+
+    if (error) {
+      console.error('Ошибка отметки сообщений автора как прочитанных:', error.message);
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Неожиданная ошибка при отметке сообщений автора:', error);
+    return false;
+  }
+};
+
+// ============================================
+// СТАТЬИ ДЛЯ АВТОДОПОЛНЕНИЯ @ В ЧАТЕ
+// ============================================
+
+// Тип статьи для автодополнения
+export interface ArticleMention {
+  id: string;
+  title: string;
+  type: Content['type'];
+}
+
+// Получить последние N статей для автодополнения
+export const getPopularArticles = async (limit: number = 5): Promise<ArticleMention[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('content')
+      .select('id, title, type')
+      .order('created_at', { ascending: false })
+      .limit(limit);
+
+    if (error) {
+      console.error('Ошибка получения статей:', error.message);
+      return [];
+    }
+
+    return data || [];
+  } catch (error) {
+    console.error('Неожиданная ошибка при получении статей:', error);
+    return [];
+  }
+};
+
+// Поиск статей по началу названия
+export const searchArticles = async (query: string): Promise<ArticleMention[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('content')
+      .select('id, title, type')
+      .ilike('title', `${query}%`)
+      .order('created_at', { ascending: false })
+      .limit(5);
+
+    if (error) {
+      console.error('Ошибка поиска статей:', error.message);
+      return [];
+    }
+
+    return data || [];
+  } catch (error) {
+    console.error('Неожиданная ошибка при поиске статей:', error);
+    return [];
   }
 };
 
@@ -713,6 +949,98 @@ export const isSubscriptionActive = async (userId: string): Promise<boolean> => 
     return subscription.status === 'active' && new Date(subscription.expires_at) > new Date();
   } catch (error) {
     console.error('Неожиданная ошибка при проверке подписки:', error);
+    return false;
+  }
+};
+
+// ============================================
+// УПРАВЛЕНИЕ ПОЛЬЗОВАТЕЛЯМИ (АДМИН)
+// ============================================
+
+// Тип: пользователь для админ-панели
+export interface AdminUser {
+  id: string;
+  email: string | null;
+  display_name: string | null;
+  avatar_url: string | null;
+  role: string | null;
+  subscription_tier: string | null;
+  created_at: string | null;
+}
+
+// Получить всех пользователей (для админа)
+export const getAllUsers = async (): Promise<AdminUser[]> => {
+  try {
+    // Получаем все профили
+    const { data: profiles, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Ошибка получения пользователей:', error.message);
+      return [];
+    }
+
+    if (!profiles || profiles.length === 0) return [];
+
+    return profiles.map(p => ({
+      id: p.id,
+      email: null, // email хранится в auth.users, не в profiles
+      display_name: p.display_name,
+      avatar_url: p.avatar_url,
+      role: p.role,
+      subscription_tier: p.subscription_tier,
+      created_at: p.created_at,
+    }));
+  } catch (error) {
+    console.error('Неожиданная ошибка при получении пользователей:', error);
+    return [];
+  }
+};
+
+// Обновить роль пользователя (admin/user)
+export const updateUserRole = async (
+  userId: string,
+  role: 'admin' | 'user'
+): Promise<boolean> => {
+  try {
+    const { error } = await supabase
+      .from('profiles')
+      .update({ role })
+      .eq('id', userId);
+
+    if (error) {
+      console.error('Ошибка обновления роли:', error.message);
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Неожиданная ошибка при обновлении роли:', error);
+    return false;
+  }
+};
+
+// Обновить подписку пользователя
+export const updateUserSubscription = async (
+  userId: string,
+  tier: 'free' | 'path' | 'awakening'
+): Promise<boolean> => {
+  try {
+    const { error } = await supabase
+      .from('profiles')
+      .update({ subscription_tier: tier })
+      .eq('id', userId);
+
+    if (error) {
+      console.error('Ошибка обновления подписки:', error.message);
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Неожиданная ошибка при обновлении подписки:', error);
     return false;
   }
 };

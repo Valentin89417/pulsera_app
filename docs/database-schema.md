@@ -9,6 +9,9 @@
 | `003_setup_storage.sql` | Storage bucket для файлов |
 | `004_enable_comments_realtime.sql` | Realtime для комментариев |
 | `005_add_comment_delete_policy.sql` | RLS удаления/редактирования комментариев |
+| `006_chat_upgrade.sql` | Чат: sender, admin RLS, Realtime |
+| `007_admin_update_profiles.sql` | Admin RLS для обновления профилей |
+| `008_chat_edit_delete.sql` | Чат: edited колонка, RLS для редактирования/удаления |
 
 ---
 
@@ -79,10 +82,12 @@
 | Колонка | Тип | Описание |
 |---------|-----|----------|
 | id | uuid (PK) | Уникальный ID |
-| user_id | uuid (FK) | Отправитель |
+| user_id | uuid (FK) | Пользователь (владелец чата) |
+| sender | text | `user` / `author` (added in 006) |
 | message | text | Текст сообщения |
-| created_at | timestamptz | Дата |
+| edited | boolean | Отредактировано ли (added in 008) |
 | read | boolean | Прочитано ли |
+| created_at | timestamptz | Дата |
 
 ### subscriptions
 | Колонка | Тип | Описание |
@@ -100,7 +105,7 @@
 | Операция | Политика |
 |----------|----------|
 | SELECT | Публичный (все видят) |
-| UPDATE | Только свой профиль (`auth.uid() = id`) |
+| UPDATE | Только свой профиль (`auth.uid() = id`) + admin может обновлять любые (007) |
 | INSERT | Автоматически через триггер |
 
 ### content
@@ -132,7 +137,10 @@
 ### chat_messages
 | Операция | Политика |
 |----------|----------|
-| ALL | Только свои сообщения (`auth.uid() = user_id`) |
+| SELECT | Пользователь видит свои + admin видит все |
+| INSERT | Пользователь может писать в свой чат + admin может писать в любой |
+| UPDATE | Пользователь может редактировать свои + admin может редактировать любые |
+| DELETE | Пользователь может удалять свои + admin может удалять любые |
 
 ### subscriptions
 | Операция | Политика |
@@ -179,6 +187,13 @@ UPDATE profiles SET role = 'admin' WHERE id = (
 ALTER PUBLICATION supabase_realtime ADD TABLE comments;
 ```
 
+Таблица `chat_messages` включена в `supabase_realtime` (006):
+```sql
+ALTER PUBLICATION supabase_realtime ADD TABLE chat_messages;
+```
+
+Realtime подписка на все события (INSERT, UPDATE) для обновления статуса прочтения.
+
 ---
 
 ## Storage
@@ -211,3 +226,76 @@ content ──1:N──▶ bookmarks
 - PostgREST не может автоматически определить связь comments → profiles
 - Двухзапросной подход в коде: comments + profiles раздельно
 - Первый пользователь автоматически становится admin
+
+### Миграция 006: Чат
+```sql
+-- Добавить колонку sender
+ALTER TABLE chat_messages ADD COLUMN sender text DEFAULT 'user';
+
+-- RLS: пользователь видит свои сообщения
+CREATE POLICY "Users can view own chat messages"
+ON chat_messages FOR SELECT
+USING (auth.uid() = user_id);
+
+-- RLS: admin видит все сообщения
+CREATE POLICY "Admin can view all chat messages"
+ON chat_messages FOR SELECT
+USING (
+  EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')
+);
+
+-- RLS: пользователь может писать в свой чат
+CREATE POLICY "Users can send messages in own chat"
+ON chat_messages FOR INSERT
+WITH CHECK (auth.uid() = user_id);
+
+-- RLS: admin может писать в любой чат
+CREATE POLICY "Admin can send messages in any chat"
+ON chat_messages FOR INSERT
+WITH CHECK (
+  EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')
+);
+
+-- Включить Realtime
+ALTER PUBLICATION supabase_realtime ADD TABLE chat_messages;
+```
+
+### Миграция 007: Admin update profiles
+```sql
+-- RLS: admin может обновлять любые профили
+CREATE POLICY "Admin can update any profile"
+ON profiles FOR UPDATE
+USING (
+  EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')
+);
+```
+
+### Миграция 008: Редактирование/удаление сообщений
+```sql
+-- Добавить колонку edited
+ALTER TABLE chat_messages ADD COLUMN edited boolean DEFAULT FALSE;
+
+-- RLS: пользователь может редактировать свои сообщения
+CREATE POLICY "Users can update own messages"
+ON chat_messages FOR UPDATE
+USING (auth.uid() = user_id);
+
+-- RLS: admin может редактировать любые сообщения
+CREATE POLICY "Admin can update any messages"
+ON chat_messages FOR UPDATE
+USING (
+  EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')
+);
+
+-- RLS: пользователь может удалять свои сообщения
+CREATE POLICY "Users can delete own messages"
+ON chat_messages FOR DELETE
+USING (auth.uid() = user_id);
+
+-- RLS: admin может удалять любые сообщения
+CREATE POLICY "Admin can delete any messages"
+ON chat_messages FOR DELETE
+USING (
+  EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')
+);
+```
