@@ -275,6 +275,8 @@ export default function AdminChatDialogScreen() {
           </View>
         </View>
 
+        <View style={{ flex: 1 }} />
+
         <TouchableOpacity
           style={styles.headerButton}
           onPress={handleExportChat}
@@ -514,7 +516,6 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     marginLeft: 8,
   },
   headerButton: {
-    marginLeft: 8,
     padding: 8,
   },
   modalOverlay: {
