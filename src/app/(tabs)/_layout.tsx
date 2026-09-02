@@ -47,7 +47,7 @@ export default function TabsLayout() {
         options={{
           title: 'Сообщество',
           tabBarIcon: ({ color }) => (
-            <FontAwesome name="comment-o" size={22} color={color} />
+            <FontAwesome name="users" size={22} color={color} />
           ),
         }}
       />

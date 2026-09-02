@@ -47,6 +47,9 @@ export interface UserStats {
 // Сообщение чата
 export type ChatMessage = Database['public']['Tables']['chat_messages']['Row'];
 
+// Сообщение чата сообщества
+export type CommunityMessage = Database['public']['Tables']['community_messages']['Row'];
+
 // Чат с информацией о пользователе (для админа)
 export interface AdminChatUser {
   user_id: string;

@@ -879,6 +879,126 @@ export const deleteChat = async (userId: string): Promise<boolean> => {
 };
 
 // ============================================
+// ЧАТ СООБЩЕСТВА
+// ============================================
+
+// Тип сообщения чата сообщества с профилем автора
+export type CommunityMessage = Database['public']['Tables']['community_messages']['Row'];
+
+export interface CommunityMessageWithProfile extends CommunityMessage {
+  profiles: { display_name: string | null; avatar_url: string | null } | null;
+}
+
+// Получить сообщения чата сообщества (пагинация)
+export const getCommunityMessages = async (limit: number = 50, before?: string): Promise<CommunityMessageWithProfile[]> => {
+  try {
+    let query = supabase
+      .from('community_messages')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(limit);
+
+    if (before) {
+      query = query.lt('created_at', before);
+    }
+
+    const { data: messages, error } = await query;
+
+    if (error) {
+      console.error('Ошибка получения сообщений сообщества:', error.message);
+      return [];
+    }
+
+    if (!messages || messages.length === 0) return [];
+
+    // Получаем уникальные user_id
+    const uniqueUserIds = [...new Set(messages.map(m => m.user_id))];
+
+    // Загружаем профили отдельно (нет FK в schema cache)
+    const { data: profiles } = await supabase
+      .from('profiles')
+      .select('id, display_name, avatar_url')
+      .in('id', uniqueUserIds);
+
+    // Создаём мапу профилей
+    const profilesMap = new Map<string, { display_name: string | null; avatar_url: string | null }>();
+    if (profiles) {
+      profiles.forEach(p => profilesMap.set(p.id, { display_name: p.display_name, avatar_url: p.avatar_url }));
+    }
+
+    // Связываем сообщения с профилями
+    const result: CommunityMessageWithProfile[] = messages.map(m => ({
+      ...m,
+      profiles: profilesMap.get(m.user_id) || null,
+    })).reverse();
+
+    return result;
+  } catch (error) {
+    console.error('Неожиданная ошибка при получении сообщений сообщества:', error);
+    return [];
+  }
+};
+
+// Отправить сообщение в чат сообщества
+export const sendCommunityMessage = async (userId: string, message: string): Promise<CommunityMessage | null> => {
+  try {
+    const { data, error } = await supabase
+      .from('community_messages')
+      .insert({ user_id: userId, message })
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Ошибка отправки сообщения в сообщество:', error.message);
+      return null;
+    }
+
+    return data;
+  } catch (error) {
+    console.error('Неожиданная ошибка при отправке сообщения в сообщество:', error);
+    return null;
+  }
+};
+
+// Редактировать сообщение сообщества
+export const editCommunityMessage = async (messageId: string, newMessage: string): Promise<boolean> => {
+  try {
+    const { error } = await supabase
+      .from('community_messages')
+      .update({ message: newMessage, edited: true })
+      .eq('id', messageId);
+
+    if (error) {
+      console.error('Ошибка редактирования сообщения сообщества:', error.message);
+      return false;
+    }
+    return true;
+  } catch (error) {
+    console.error('Неожиданная ошибка при редактировании сообщения сообщества:', error);
+    return false;
+  }
+};
+
+// Удалить сообщение сообщества
+export const deleteCommunityMessage = async (messageId: string): Promise<boolean> => {
+  try {
+    const { error } = await supabase
+      .from('community_messages')
+      .delete()
+      .eq('id', messageId);
+
+    if (error) {
+      console.error('Ошибка удаления сообщения сообщества:', error.message);
+      return false;
+    }
+    return true;
+  } catch (error) {
+    console.error('Неожиданная ошибка при удалении сообщения сообщества:', error);
+    return false;
+  }
+};
+
+// ============================================
 // СТАТЬИ ДЛЯ АВТОДОПОЛНЕНИЯ @ В ЧАТЕ
 // ============================================
 
