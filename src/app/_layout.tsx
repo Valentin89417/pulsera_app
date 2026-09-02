@@ -6,6 +6,7 @@ import storage from '../utils/storage';
 import { useAuthStore } from '../store/authStore';
 import { useThemeStore } from '../store/themeStore';
 import { useDownloadStore } from '../store/downloadStore';
+import { setupNotificationListeners } from '../services/notifications';
 
 const ONBOARDING_KEY = '@pulsera_onboarding_done';
 
@@ -25,6 +26,7 @@ export default function RootLayout() {
     checkOnboarding();
     loadTheme();
     loadDownloads();
+    setupNotificationListeners();
   }, []);
 
   const checkOnboarding = async () => {

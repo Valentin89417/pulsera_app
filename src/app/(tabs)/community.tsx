@@ -25,14 +25,18 @@ import {
   searchArticles,
   ArticleMention,
   CommunityMessageWithProfile,
+  getAllUserIds,
 } from '../../services/api';
+import { batchSend, updateLastCommunityActive } from '../../services/notifications';
+import { useChatStore } from '../../store/chatStore';
 import { CommunityChatBubble } from '../../components/CommunityChatBubble';
 import { ArticleAutocomplete } from '../../components/ArticleAutocomplete';
 
 export default function CommunityScreen() {
-  const { user } = useAuthStore();
+  const { user, profile } = useAuthStore();
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
+  const { setActiveChatScreen } = useChatStore();
 
   const [messages, setMessages] = useState<CommunityMessageWithProfile[]>([]);
   const [inputText, setInputText] = useState('');
@@ -45,6 +49,15 @@ export default function CommunityScreen() {
   const flatListRef = useRef<FlatList>(null);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const loadMessagesRef = useRef<(() => Promise<void>) | null>(null);
+
+  // Установка активного экрана community + обновление timestamp активности
+  useEffect(() => {
+    setActiveChatScreen('community');
+    if (user) {
+      updateLastCommunityActive(user.id);
+    }
+    return () => setActiveChatScreen(null);
+  }, []);
 
   // Загрузка сообщений
   const loadMessages = useCallback(async () => {
@@ -138,6 +151,21 @@ export default function CommunityScreen() {
         setEditingMessage(null);
       } else {
         await sendCommunityMessage(user.id, inputText.trim());
+
+        // Отправляем push всем пользователям кроме отправителя (с батчингом)
+        const allUserIds = await getAllUserIds();
+        const otherUserIds = allUserIds.filter((id) => id !== user.id);
+
+        const senderName = profile?.display_name || 'Пользователь';
+        const preview = inputText.trim().slice(0, 80);
+
+        for (const recipientId of otherUserIds) {
+          batchSend(recipientId, {
+            title: 'Чат сообщества',
+            body: `${senderName}: ${preview}`,
+            data: { screen: 'community' },
+          }, 'community');
+        }
       }
       setInputText('');
       setShowAutocomplete(false);

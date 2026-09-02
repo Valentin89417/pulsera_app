@@ -1297,3 +1297,71 @@ export const shareChatAsMarkdown = async (userId: string, userName: string): Pro
     return false;
   }
 };
+
+// ============================================
+// УВЕДОМЛЕНИЯ — ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
+// ============================================
+
+// Получить все ID пользователей (для массовой рассылки)
+export const getAllUserIds = async (): Promise<string[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('id');
+
+    if (error) {
+      console.error('Ошибка получения всех пользователей:', error.message);
+      return [];
+    }
+
+    return (data || []).map((p) => p.id);
+  } catch (error) {
+    console.error('Неожиданная ошибка при получении пользователей:', error);
+    return [];
+  }
+};
+
+// Получить настройки уведомлений для списка пользователей
+export const getUserNotificationPrefs = async (
+  userIds: string[]
+): Promise<Array<{ id: string; notif_chat: boolean; notif_community: boolean; notif_articles: boolean; notif_comments: boolean }>> => {
+  if (userIds.length === 0) return [];
+
+  try {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('id, notif_chat, notif_community, notif_articles, notif_comments')
+      .in('id', userIds);
+
+    if (error) {
+      console.error('Ошибка получения настроек уведомлений:', error.message);
+      return [];
+    }
+
+    return data || [];
+  } catch (error) {
+    console.error('Неожиданная ошибка при получении настроек уведомлений:', error);
+    return [];
+  }
+};
+
+// Получить user_id автора комментария по parent_id
+export const getCommentAuthorId = async (commentId: string): Promise<string | null> => {
+  try {
+    const { data, error } = await supabase
+      .from('comments')
+      .select('user_id')
+      .eq('id', commentId)
+      .single();
+
+    if (error) {
+      console.error('Ошибка получения автора комментария:', error.message);
+      return null;
+    }
+
+    return data?.user_id || null;
+  } catch (error) {
+    console.error('Неожиданная ошибка при получении автора комментария:', error);
+    return null;
+  }
+};

@@ -33,6 +33,8 @@ import {
   searchArticles,
   ArticleMention,
 } from '../../../services/api';
+import { batchSend } from '../../../services/notifications';
+import { useChatStore } from '../../../store/chatStore';
 import { ChatMessage } from '../../../types/user';
 import { ChatBubble } from '../../../components/ChatBubble';
 import { ArticleAutocomplete } from '../../../components/ArticleAutocomplete';
@@ -43,6 +45,7 @@ export default function AdminChatDialogScreen() {
   const { isAdmin } = useAdmin();
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
+  const { setActiveChatScreen } = useChatStore();
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputText, setInputText] = useState('');
@@ -59,6 +62,14 @@ export default function AdminChatDialogScreen() {
   const flatListRef = useRef<FlatList>(null);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const loadMessagesRef = useRef<(() => Promise<void>) | null>(null);
+
+  // Установка активного экрана чата (для пропуска push-уведомлений)
+  useEffect(() => {
+    if (userId) {
+      setActiveChatScreen(`admin-chat-${userId}`);
+    }
+    return () => setActiveChatScreen(null);
+  }, [userId]);
 
   // Загрузка имени пользователя и аватара
   useEffect(() => {
@@ -173,6 +184,13 @@ export default function AdminChatDialogScreen() {
         setEditingMessage(null);
       } else {
         await sendChatMessage(userId, inputText.trim(), 'author');
+
+        // Отправляем push пользователю с батчингом
+        batchSend(userId, {
+          title: 'Дина Кануникова',
+          body: inputText.trim().slice(0, 100),
+          data: { screen: 'chat' },
+        }, 'chat');
       }
       setInputText('');
       setShowAutocomplete(false);

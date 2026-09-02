@@ -12,7 +12,8 @@ import {
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { FontAwesome } from '@expo/vector-icons';
-import { getContentById, createContent, updateContent } from '../../services/api';
+import { getContentById, createContent, updateContent, getAllUserIds, getUserNotificationPrefs } from '../../services/api';
+import { sendImmediatePush } from '../../services/notifications';
 import { ContentItem, ContentType } from '../../types';
 import { pickFile, uploadFile, UploadFileType } from '../../utils/upload';
 import { MarkdownEditor } from '../../components/MarkdownEditor';
@@ -259,6 +260,27 @@ export default function ArticleEditScreen() {
 
         if (result) {
           console.log('[SAVE] created content_data:', result.content_data);
+
+          // Отправляем push-уведомление о новой статье
+          try {
+            const allUserIds = await getAllUserIds();
+            const prefs = await getUserNotificationPrefs(allUserIds);
+            const subscribedIds = prefs
+              .filter((p) => p.notif_articles)
+              .map((p) => p.id);
+
+            if (subscribedIds.length > 0) {
+              await sendImmediatePush(
+                subscribedIds,
+                'Новая публикация',
+                `${title.trim()}`,
+                { screen: 'content', contentId: result.id }
+              );
+            }
+          } catch (pushError) {
+            console.error('Ошибка отправки push о новой статье:', pushError);
+          }
+
           Alert.alert('Готово', 'Статья создана', [
             { text: 'OK', onPress: () => router.back() },
           ]);

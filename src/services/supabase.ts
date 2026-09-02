@@ -35,6 +35,11 @@ export type Database = {
           birthday: string | null;
           subscription_tier: 'free' | 'path' | 'awakening';
           role: 'user' | 'admin';
+          notif_chat: boolean;
+          notif_community: boolean;
+          notif_articles: boolean;
+          notif_comments: boolean;
+          last_community_active: string;
           created_at: string;
         };
         Insert: {
@@ -45,6 +50,11 @@ export type Database = {
           birthday?: string | null;
           subscription_tier?: 'free' | 'path' | 'awakening';
           role?: 'user' | 'admin';
+          notif_chat?: boolean;
+          notif_community?: boolean;
+          notif_articles?: boolean;
+          notif_comments?: boolean;
+          last_community_active?: string;
           created_at?: string;
         };
         Update: {
@@ -55,6 +65,11 @@ export type Database = {
           birthday?: string | null;
           subscription_tier?: 'free' | 'path' | 'awakening';
           role?: 'user' | 'admin';
+          notif_chat?: boolean;
+          notif_community?: boolean;
+          notif_articles?: boolean;
+          notif_comments?: boolean;
+          last_community_active?: string;
           created_at?: string;
         };
       };
@@ -208,6 +223,29 @@ export type Database = {
           user_id?: string;
           message?: string;
           edited?: boolean;
+          created_at?: string;
+        };
+      };
+      push_tokens: {
+        Row: {
+          id: string;
+          user_id: string;
+          token: string;
+          platform: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          token: string;
+          platform?: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          token?: string;
+          platform?: string;
           created_at?: string;
         };
       };

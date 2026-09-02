@@ -2,7 +2,20 @@ import { create } from 'zustand';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '../services/supabase';
 import { getProfile } from '../services/api';
+import { registerForPushNotifications, savePushToken, removePushToken } from '../services/notifications';
 import { AuthState, UserProfile } from '../types';
+
+// Регистрация push-токена для текущего пользователя
+const registerPushToken = async (userId: string) => {
+  try {
+    const token = await registerForPushNotifications();
+    if (token) {
+      await savePushToken(userId, token);
+    }
+  } catch (error) {
+    console.error('Ошибка регистрации push-токена:', error);
+  }
+};
 
 // Создание Zustand store для аутентификации
 export const useAuthStore = create<AuthState>((set, get) => ({
@@ -25,10 +38,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         isLoading: false,
       });
 
-      // Если есть пользователь, загружаем профиль
+      // Если есть пользователь, загружаем профиль и регистрируем токен
       if (session?.user) {
         const profile = await getProfile(session.user.id);
         set({ profile });
+        registerPushToken(session.user.id);
       }
 
       // Слушаем изменения аутентификации
@@ -44,6 +58,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         if (currentUser) {
           const profile = await getProfile(currentUser.id);
           set({ profile });
+          registerPushToken(currentUser.id);
         } else {
           set({ profile: null });
         }
@@ -76,10 +91,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         return { error: error.message };
       }
 
-      // Если пользователь создан, загружаем профиль
+      // Если пользователь создан, загружаем профиль и регистрируем токен
       if (data.user) {
         const profile = await getProfile(data.user.id);
         set({ profile });
+        registerPushToken(data.user.id);
       }
 
       set({ isLoading: false });
@@ -105,10 +121,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         return { error: error.message };
       }
 
-      // Загружаем профиль
+      // Загружаем профиль и регистрируем токен
       if (data.user) {
         const profile = await getProfile(data.user.id);
         set({ profile });
+        registerPushToken(data.user.id);
       }
 
       set({ isLoading: false });
@@ -122,6 +139,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   // Выход
   signOut: async () => {
     try {
+      const { user } = get();
+      if (user) {
+        await removePushToken(user.id);
+      }
       await supabase.auth.signOut();
       set({
         user: null,

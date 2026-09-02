@@ -20,6 +20,8 @@ import { useTheme } from '../hooks/useTheme';
 import { ThemeColors } from '../utils/themeColors';
 import { supabase } from '../services/supabase';
 import { getChatMessages, sendChatMessage, editChatMessage, deleteChatMessage, markAuthorMessagesAsRead, getPopularArticles, searchArticles, ArticleMention } from '../services/api';
+import { batchSend } from '../services/notifications';
+import { useChatStore } from '../store/chatStore';
 import { ChatMessage } from '../types/user';
 import { ChatBubble } from '../components/ChatBubble';
 import { ArticleAutocomplete } from '../components/ArticleAutocomplete';
@@ -27,7 +29,7 @@ import { ChatLockedScreen } from '../components/ChatLockedScreen';
 
 export default function ChatScreen() {
   const router = useRouter();
-  const { user } = useAuthStore();
+  const { user, profile } = useAuthStore();
   const { hasAccess } = useSubscription();
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
@@ -40,22 +42,31 @@ export default function ChatScreen() {
   const [autocompleteQuery, setAutocompleteQuery] = useState('');
   const [editingMessage, setEditingMessage] = useState<ChatMessage | null>(null);
   const [authorAvatarUrl, setAuthorAvatarUrl] = useState<string | null>(null);
+  const [authorUserId, setAuthorUserId] = useState<string | null>(null);
 
   const flatListRef = useRef<FlatList>(null);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const loadMessagesRef = useRef<(() => Promise<void>) | null>(null);
+  const { setActiveChatScreen } = useChatStore();
+
+  // Установка активного экрана чата (для пропуска push-уведомлений)
+  useEffect(() => {
+    setActiveChatScreen('chat');
+    return () => setActiveChatScreen(null);
+  }, []);
 
   // Загрузка профиля автора (админа)
   useEffect(() => {
     const loadAuthorProfile = async () => {
       const { data } = await supabase
         .from('profiles')
-        .select('avatar_url')
+        .select('id, avatar_url')
         .eq('role', 'admin')
         .limit(1)
         .single();
-      if (data?.avatar_url) {
-        setAuthorAvatarUrl(data.avatar_url);
+      if (data) {
+        if (data.avatar_url) setAuthorAvatarUrl(data.avatar_url);
+        setAuthorUserId(data.id);
       }
     };
     loadAuthorProfile();
@@ -167,6 +178,16 @@ export default function ChatScreen() {
       } else {
         // Отправка нового
         await sendChatMessage(user.id, inputText.trim(), 'user');
+
+        // Отправляем push автору (админу) с батчингом
+        if (authorUserId) {
+          const authorName = profile?.display_name || 'Пользователь';
+          batchSend(authorUserId, {
+            title: 'Дина Кануникова',
+            body: `${authorName}: ${inputText.trim().slice(0, 100)}`,
+            data: { screen: 'admin-chat', userId: user.id },
+          }, 'chat');
+        }
       }
       setInputText('');
       setShowAutocomplete(false);

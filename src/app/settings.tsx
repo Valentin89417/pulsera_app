@@ -6,6 +6,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { useTheme } from '../hooks/useTheme';
 import { useAuthStore } from '../store/authStore';
 import { updateProfile } from '../services/api';
+import { supabase } from '../services/supabase';
 import { uploadFile } from '../utils/upload';
 import { ThemeColors } from '../utils/themeColors';
 
@@ -75,6 +76,35 @@ export default function SettingsScreen() {
   const [avatarUri, setAvatarUri] = useState<string | null>(profile?.avatar_url || null);
   const [isSaving, setIsSaving] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+
+  // Настройки уведомлений
+  const [notifChat, setNotifChat] = useState(profile?.notif_chat ?? true);
+  const [notifCommunity, setNotifCommunity] = useState(profile?.notif_community ?? true);
+  const [notifArticles, setNotifArticles] = useState(profile?.notif_articles ?? true);
+  const [notifComments, setNotifComments] = useState(profile?.notif_comments ?? true);
+
+  // Переключение настройки уведомлений
+  const handleToggleNotif = async (field: string, value: boolean) => {
+    if (!user) return;
+    setNotifChat(field === 'notif_chat' ? value : notifChat);
+    setNotifCommunity(field === 'notif_community' ? value : notifCommunity);
+    setNotifArticles(field === 'notif_articles' ? value : notifArticles);
+    setNotifComments(field === 'notif_comments' ? value : notifComments);
+
+    const { error } = await supabase
+      .from('profiles')
+      .update({ [field]: value })
+      .eq('id', user.id);
+
+    if (error) {
+      console.error('Ошибка обновления настроек уведомлений:', error.message);
+      // Откатываем
+      setNotifChat(profile?.notif_chat ?? true);
+      setNotifCommunity(profile?.notif_community ?? true);
+      setNotifArticles(profile?.notif_articles ?? true);
+      setNotifComments(profile?.notif_comments ?? true);
+    }
+  };
 
   // Сохранение профиля
   const handleSave = async () => {
@@ -291,14 +321,53 @@ export default function SettingsScreen() {
           <View style={[styles.card, { backgroundColor: colors.surface }]}>
             <View style={[styles.field, { borderBottomColor: colors.border }]}>
               <View style={styles.fieldLeft}>
-                <FontAwesome name="bell" size={18} color={colors.primary} style={styles.fieldIcon} />
-                <Text style={[styles.fieldLabel, { color: colors.text }]}>Push-уведомления</Text>
+                <FontAwesome name="comments-o" size={18} color={colors.primary} style={styles.fieldIcon} />
+                <Text style={[styles.fieldLabel, { color: colors.text }]}>Сообщения в чате</Text>
               </View>
               <Switch
-                value={false}
-                onValueChange={() => {}}
+                value={notifChat}
+                onValueChange={(v) => handleToggleNotif('notif_chat', v)}
                 trackColor={{ false: colors.border, true: colors.primary }}
-                thumbColor={colors.textSecondary}
+                thumbColor={notifChat ? colors.textSecondary : colors.textSecondary}
+              />
+            </View>
+
+            <View style={[styles.field, { borderBottomColor: colors.border }]}>
+              <View style={styles.fieldLeft}>
+                <FontAwesome name="users" size={18} color={colors.primary} style={styles.fieldIcon} />
+                <Text style={[styles.fieldLabel, { color: colors.text }]}>Сообщества</Text>
+              </View>
+              <Switch
+                value={notifCommunity}
+                onValueChange={(v) => handleToggleNotif('notif_community', v)}
+                trackColor={{ false: colors.border, true: colors.primary }}
+                thumbColor={notifCommunity ? colors.textSecondary : colors.textSecondary}
+              />
+            </View>
+
+            <View style={[styles.field, { borderBottomColor: colors.border }]}>
+              <View style={styles.fieldLeft}>
+                <FontAwesome name="book" size={18} color={colors.primary} style={styles.fieldIcon} />
+                <Text style={[styles.fieldLabel, { color: colors.text }]}>Новые статьи</Text>
+              </View>
+              <Switch
+                value={notifArticles}
+                onValueChange={(v) => handleToggleNotif('notif_articles', v)}
+                trackColor={{ false: colors.border, true: colors.primary }}
+                thumbColor={notifArticles ? colors.textSecondary : colors.textSecondary}
+              />
+            </View>
+
+            <View style={styles.field}>
+              <View style={styles.fieldLeft}>
+                <FontAwesome name="comment-o" size={18} color={colors.primary} style={styles.fieldIcon} />
+                <Text style={[styles.fieldLabel, { color: colors.text }]}>Ответы на комментарии</Text>
+              </View>
+              <Switch
+                value={notifComments}
+                onValueChange={(v) => handleToggleNotif('notif_comments', v)}
+                trackColor={{ false: colors.border, true: colors.primary }}
+                thumbColor={notifComments ? colors.textSecondary : colors.textSecondary}
               />
             </View>
           </View>

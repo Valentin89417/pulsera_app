@@ -59,3 +59,9 @@ export interface AdminChatUser {
   last_message_at: string;
   unread_count: number;
 }
+
+// Push-токен
+export type PushToken = Database['public']['Tables']['push_tokens']['Row'];
+
+// Типы уведомлений
+export type NotificationType = 'chat' | 'community' | 'articles' | 'comments';
