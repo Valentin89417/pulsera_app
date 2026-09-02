@@ -1,4 +1,3 @@
-import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 import { supabase } from './supabase';
 import { useChatStore } from '../store/chatStore';
@@ -13,6 +12,35 @@ const BATCH_DELAY = 30_000;
 // Время offline в community (мс)
 const COMMUNITY_OFFLINE_THRESHOLD = 5 * 60 * 1000; // 5 минут
 
+// Кэш для модуля notifications (динамический импорт)
+let NotificationsModule: typeof import('expo-notifications') | null = null;
+let moduleLoadAttempted = false;
+
+// Попытка загрузить expo-notifications (динамически, чтобы не падать в Expo Go)
+const loadNotificationsModule = async (): Promise<typeof import('expo-notifications') | null> => {
+  if (moduleLoadAttempted) return NotificationsModule;
+  moduleLoadAttempted = true;
+
+  try {
+    // Проверяем, работаем ли мы в Expo Go (нет нативного модуля)
+    const { default: Constants } = await import('expo-constants');
+    const executionEnvironment = Constants?.executionEnvironment;
+
+    if (executionEnvironment === 'storeClient') {
+      // Expo Go — push не работают, возвращаем null
+      console.log('[Notifications] Expo Go detected — push disabled');
+      return null;
+    }
+
+    // Development build или production — загружаем модуль
+    NotificationsModule = await import('expo-notifications');
+    return NotificationsModule;
+  } catch (error) {
+    console.log('[Notifications] Module not available:', error);
+    return null;
+  }
+};
+
 // Буфер батчинга: ключ — recipientUserId
 const batchBuffers = new Map<string, {
   notifications: Array<{ title: string; body: string; data?: Record<string, unknown> }>;
@@ -26,6 +54,9 @@ const batchBuffers = new Map<string, {
 // Запрос разрешения и получение Expo Push токена
 export const registerForPushNotifications = async (): Promise<string | null> => {
   try {
+    const Notifications = await loadNotificationsModule();
+    if (!Notifications) return null; // Expo Go — пропускаем
+
     // Проверяем разрешение
     const { status: existingStatus } = await Notifications.getPermissionsAsync();
     let finalStatus = existingStatus;
@@ -269,7 +300,10 @@ const flushBatch = async (targetUserId: string): Promise<void> => {
 // ============================================
 
 // Настройка обработчика foreground-уведомлений
-export const setupNotificationListeners = () => {
+export const setupNotificationListeners = async () => {
+  const Notifications = await loadNotificationsModule();
+  if (!Notifications) return; // Expo Go — пропускаем
+
   // Когда приложение открыто — показываем уведомление в-app
   Notifications.setNotificationHandler({
     handleNotification: async () => ({
