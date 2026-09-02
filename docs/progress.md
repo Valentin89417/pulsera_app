@@ -38,7 +38,7 @@
 - [x] Офлайн-кэширование контента (скачивание текста, аудио, видео)
 - [x] Чат с автором (Telegram-стиль, Realtime, ссылки на статьи)
 - [x] Чат сообщества (общий чат для всех пользователей)
-- [ ] Push-уведомления
+- [x] Push-уведомления
 - [ ] Профиль пользователя (расширенный)
 
 ## Phase 5: UI & Theming
@@ -326,6 +326,93 @@
 
 ---
 
+### Push-уведомления ✅
+**Статус:** Завершено
+**Механизм:** Expo Push API (отправка с клиента)
+
+**Реализовано:**
+
+#### Фаза 1: Инфраструктура ✅
+- [x] Миграция `012_push_tokens.sql` — таблица токенов + RLS
+- [x] Миграция `013_notification_preferences.sql` — `notif_chat`, `notif_community`, `notif_articles`, `notif_comments`, `last_community_active`
+- [x] Типы `push_tokens` в `supabase.ts`
+- [x] Типы `PushToken`, `NotificationType` в `types/user.ts`
+- [x] `chatStore.ts` — `activeChatScreen` для пропуска push при открытом чате
+
+#### Фаза 2: Сервис ✅
+- [x] `notifications.ts` — registerForPushNotifications, savePushToken, removePushToken
+- [x] `sendPushNotification()` — HTTP POST в Expo Push API
+- [x] `batchSend()` — буферизация 30 сек, проверка `notif_*` и `activeChatScreen`
+- [x] `checkCommunityOffline()` — проверка `last_community_active > 5 мин`
+- [x] `sendImmediatePush()` — для новых статей (без батча)
+- [x] `setupNotificationListeners()` — foreground handler
+
+#### Фаза 3: Авторизация ✅
+- [x] `authStore.ts` — registerToken на login/signup, removeToken на logout
+- [x] `_layout.tsx` — setupNotificationListeners при старте
+
+#### Фаза 4: Настройки ✅
+- [x] `settings.tsx` — 4 отдельных Switch (чат, сообщества, статьи, комментарии)
+- [x] Привязка к `profile.notif_*`, мгновенное обновление в Supabase
+
+#### Фаза 5: Push пользователю ✅
+- [x] `chat.tsx` — batch push автору при отправке сообщения
+- [x] `community.tsx` — batch push всем кроме отправителя, offline > 5 мин
+
+#### Фаза 6: Push админу ✅
+- [x] `admin/chat/[userId].tsx` — batch push пользователю при ответе автора
+- [x] `admin/article-edit.tsx` — immediate push при публикации статьи
+
+#### Логика
+- **Батч:** 30 сек для chat/community, immediate для articles
+- **In-chat:** push пропускается если получатель на экране чата
+- **Community:** push только если `last_community_active > 5 мин`
+- **Настройки:** каждый тип уведомлений включается/выключается отдельно
+
+---
+
 ## Следующие шаги
 1. **Платная подписка** — ЮKassa + Stripe, WebView оплата
 2. **Push-уведомления** — оповещения о новом контенте
+3. **Android сборка** — APK для тестирования на устройстве
+
+---
+
+### Android сборка (EAS Build) 📋
+**Статус:** Запланировано
+**Цель:** APK для тестирования на реальном Android-устройстве
+
+#### Подготовка
+- [ ] Установить `eas-cli` глобально (`npm install -g eas-cli`)
+- [ ] Залогиниться в Expo (`eas login`)
+- [ ] Настроить проект (`eas build:configure`)
+- [ ] Поменять `android.package` в `app.json` с `com.anonymous.pulseraapp` на `ru.pulsera.app`
+
+#### Конфигурация `app.json`
+- [ ] Добавить `expo-notifications` в plugins
+- [ ] Добавить `expo-av` в plugins
+- [ ] Добавить `expo-document-picker` в plugins
+- [ ] Добавить `expo-image-picker` в plugins
+- [ ] Добавить `expo-sharing` в plugins
+- [ ] Добавить `expo-file-system` в plugins
+
+#### Конфигурация `eas.json`
+- [ ] Профиль `preview` — APK для тестирования (без подписи Play Store)
+- [ ] Профиль `production` — AAB для Play Store (будущее)
+
+#### Сборка
+- [ ] Собрать APK: `eas build --platform android --profile preview`
+- [ ] Скачать APK по ссылке из логов
+- [ ] Установить на Android-устройство (включить "Из неизвестных источников")
+- [ ] Протестировать ключевые сценарии:
+  - Авторизация
+  - Контент (статьи, аудио, видео)
+  - Чат с автором
+  - Чат сообщества
+  - Push-уведомления
+  - Офлайн-кэш
+  - Настройки профиля
+
+#### Зависимости
+- Аккаунт на [expo.dev](https://expo.dev) (бесплатный тариф)
+- Android-устройство с USB-отладкой или возможностью установки APK
