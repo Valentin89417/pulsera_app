@@ -373,36 +373,34 @@
 
 ## Следующие шаги
 1. **Платная подписка** — ЮKassa + Stripe, WebView оплата
-2. **Push-уведомления** — оповещения о новом контенте
-3. **Android сборка** — APK для тестирования на устройстве
+2. **Профиль пользователя (расширенный)**
 
 ---
 
-### Android сборка (EAS Build) 📋
-**Статус:** Запланировано
+### Android сборка (EAS Build) ✅
+**Статус:** Завершено
 **Цель:** APK для тестирования на реальном Android-устройстве
 
 #### Подготовка
-- [ ] Установить `eas-cli` глобально (`npm install -g eas-cli`)
-- [ ] Залогиниться в Expo (`eas login`)
-- [ ] Настроить проект (`eas build:configure`)
-- [ ] Поменять `android.package` в `app.json` с `com.anonymous.pulseraapp` на `ru.pulsera.app`
+- [x] Установить `eas-cli` глобально (`npm install -g eas-cli`)
+- [x] Залогиниться в Expo (`eas login`)
+- [x] Настроить проект (`eas build:configure`)
+- [x] Поменять `android.package` в `app.json` на `ru.pulsera.app`
 
 #### Конфигурация `app.json`
-- [ ] Добавить `expo-notifications` в plugins
-- [ ] Добавить `expo-av` в plugins
-- [ ] Добавить `expo-document-picker` в plugins
-- [ ] Добавить `expo-image-picker` в plugins
-- [ ] Добавить `expo-sharing` в plugins
-- [ ] Добавить `expo-file-system` в plugins
+- [x] Добавить `expo-notifications` в plugins
+- [x] Добавить `expo-av` в plugins
+- [x] Добавить `expo-document-picker` в plugins
+- [x] Добавить `expo-image-picker` в plugins
+- [x] Добавить `expo-file-system` в plugins
 
 #### Конфигурация `eas.json`
-- [ ] Профиль `preview` — APK для тестирования (без подписи Play Store)
-- [ ] Профиль `production` — AAB для Play Store (будущее)
+- [x] Профиль `preview` — APK для тестирования (без подписи Play Store)
+- [x] Профиль `production` — AAB для Play Store (будущее)
 
 #### Сборка
-- [ ] Собрать APK: `eas build --platform android --profile preview`
-- [ ] Скачать APK по ссылке из логов
+- [x] Собрать APK: `eas build --platform android --profile preview`
+- [x] Скачать APK по ссылке из логов
 - [ ] Установить на Android-устройство (включить "Из неизвестных источников")
 - [ ] Протестировать ключевые сценарии:
   - Авторизация

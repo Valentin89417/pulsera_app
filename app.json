@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "pulsera-app",
-    "slug": "pulsera-app",
+    "slug": "rupulseraapp",
     "version": "1.0.0",
     "orientation": "portrait",
     "scheme": "pulsera",
@@ -13,8 +13,14 @@
       "adaptiveIcon": {
         "backgroundColor": "#1a1a2e"
       },
-      "softInputMode": "adjustResize",
-      "package": "com.anonymous.pulseraapp"
+      "package": "ru.pulsera.app",
+      "permissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.MODIFY_AUDIO_SETTINGS",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.INTERNET"
+      ]
     },
     "web": {
       "bundler": "metro",
@@ -25,7 +31,19 @@
       "expo-asset",
       "expo-font",
       "expo-web-browser",
-      "expo-video"
-    ]
+      "expo-video",
+      "expo-notifications",
+      "expo-av",
+      "expo-document-picker",
+      "expo-image-picker",
+      "expo-file-system"
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "12453328-e2ed-4aab-82aa-5d76d4c6a805"
+      }
+    },
+    "owner": "pulseraru"
   }
 }
