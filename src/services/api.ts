@@ -1105,6 +1105,7 @@ export interface AdminUser {
   avatar_url: string | null;
   role: string | null;
   subscription_tier: string | null;
+  subscription_expires_at: string | null;
   created_at: string | null;
 }
 
@@ -1131,6 +1132,7 @@ export const getAllUsers = async (): Promise<AdminUser[]> => {
       avatar_url: p.avatar_url,
       role: p.role,
       subscription_tier: p.subscription_tier,
+      subscription_expires_at: p.subscription_expires_at,
       created_at: p.created_at,
     }));
   } catch (error) {
@@ -1165,12 +1167,20 @@ export const updateUserRole = async (
 // Обновить подписку пользователя
 export const updateUserSubscription = async (
   userId: string,
-  tier: 'free' | 'path' | 'awakening'
+  tier: 'free' | 'path' | 'awakening',
+  expiresAt?: string | null
 ): Promise<boolean> => {
   try {
+    const updateData: { subscription_tier: string; subscription_expires_at?: string | null } = {
+      subscription_tier: tier,
+    };
+    if (expiresAt !== undefined) {
+      updateData.subscription_expires_at = expiresAt;
+    }
+
     const { error } = await supabase
       .from('profiles')
-      .update({ subscription_tier: tier })
+      .update(updateData)
       .eq('id', userId);
 
     if (error) {

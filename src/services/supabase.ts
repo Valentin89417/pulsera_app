@@ -40,6 +40,7 @@ export type Database = {
           notif_articles: boolean;
           notif_comments: boolean;
           last_community_active: string;
+          subscription_expires_at: string | null;
           created_at: string;
         };
         Insert: {
@@ -55,6 +56,7 @@ export type Database = {
           notif_articles?: boolean;
           notif_comments?: boolean;
           last_community_active?: string;
+          subscription_expires_at?: string | null;
           created_at?: string;
         };
         Update: {
@@ -70,6 +72,7 @@ export type Database = {
           notif_articles?: boolean;
           notif_comments?: boolean;
           last_community_active?: string;
+          subscription_expires_at?: string | null;
           created_at?: string;
         };
       };

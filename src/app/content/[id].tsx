@@ -432,7 +432,7 @@ export default function ContentDetailScreen() {
             </>
           )}
 
-          {/* Блок "Подписаться" для премиум-контента без доступа */}
+          {/* Блок "Расширенный доступ" для премиум-контента без доступа */}
           {hasPremiumContent && (
             <View style={styles.premiumBlock}>
               <View style={styles.premiumDivider}>
@@ -442,16 +442,10 @@ export default function ContentDetailScreen() {
                 </View>
                 <View style={styles.premiumDividerLine} />
               </View>
-              <Text style={styles.premiumTitle}>Полная версия доступна по подписке</Text>
+              <Text style={styles.premiumTitle}>Полная версия доступна участникам с расширенным доступом</Text>
               <Text style={styles.premiumTier}>
-                Тариф: «{content.subscription_tier === 'awakening' ? 'Пробуждение' : 'Путь'}»
+                Доступ: «{content.subscription_tier === 'awakening' ? 'Пробуждение' : 'Путь'}»
               </Text>
-              <TouchableOpacity
-                style={styles.premiumButton}
-                onPress={() => router.push('/subscription')}
-              >
-                <Text style={styles.premiumButtonText}>Подписаться</Text>
-              </TouchableOpacity>
             </View>
           )}
 

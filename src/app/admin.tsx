@@ -286,9 +286,9 @@ export default function AdminScreen() {
         </View>
 
         <View style={styles.statusRow}>
-          <Text style={styles.statusLabel}>Текущий тариф:</Text>
+          <Text style={styles.statusLabel}>Текущий доступ:</Text>
           <Text style={[styles.statusValue, tier !== 'free' && styles.statusValueActive]}>
-            {tier === 'free' ? 'Бесплатный' : tier === 'path' ? 'Путь' : 'Пробуждение'}
+            {tier === 'free' ? 'Начало' : tier === 'path' ? 'Путь' : 'Пробуждение'}
           </Text>
         </View>
 
@@ -344,20 +344,6 @@ export default function AdminScreen() {
             </View>
           </TouchableOpacity>
         </View>
-      </View>
-
-      <View style={styles.menuSection}>
-        <TouchableOpacity
-          style={styles.menuItem}
-          onPress={() => router.push('/subscription')}
-        >
-          <FontAwesome name="credit-card" size={22} color={colors.primary} style={styles.menuIcon} />
-          <View style={styles.menuContent}>
-            <Text style={styles.menuText}>Экран подписки</Text>
-            <Text style={styles.menuHint}>Просмотреть экран выбора тарифа</Text>
-          </View>
-          <Text style={styles.menuArrow}>›</Text>
-        </TouchableOpacity>
       </View>
     </ScrollView>
   );

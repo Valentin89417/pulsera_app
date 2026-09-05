@@ -39,7 +39,7 @@ export default function ProfileScreen() {
     switch (tier) {
       case 'awakening': return 'Пробуждение';
       case 'path': return 'Путь';
-      default: return 'Бесплатный';
+      default: return 'Начало';
     }
   };
 
@@ -76,18 +76,20 @@ export default function ProfileScreen() {
       {/* Статус подписки */}
       <View style={[styles.subscriptionCard, { backgroundColor: colors.surface, borderColor: colors.cardBorder }]}>
         <View style={styles.subscriptionHeader}>
-          <Text style={[styles.subscriptionLabel, { color: colors.textSecondary }]}>Ваш тариф</Text>
+          <Text style={[styles.subscriptionLabel, { color: colors.textSecondary }]}>Доступ</Text>
           <View style={[styles.tierBadge, { backgroundColor: getTierColor() + '22' }]}>
             <Text style={[styles.tierText, { color: getTierColor() }]}>{getTierLabel()}</Text>
           </View>
         </View>
-        {!isPremium && (
-          <TouchableOpacity
-            style={[styles.upgradeButton, { backgroundColor: colors.primary }]}
-            onPress={() => router.push('/subscription')}
-          >
-            <Text style={[styles.upgradeText, { color: colors.onPrimary }]}>Улучшить подписку</Text>
-          </TouchableOpacity>
+        {isPremium && (
+          <View style={styles.expiryRow}>
+            <Text style={[styles.expiryLabel, { color: colors.textSecondary }]}>Действует до</Text>
+            <Text style={[styles.expiryValue, { color: colors.text }]}>
+              {profile?.subscription_expires_at
+                ? new Date(profile.subscription_expires_at).toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' })
+                : 'Бессрочно'}
+            </Text>
+          </View>
         )}
       </View>
 
@@ -237,13 +239,20 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
   },
-  upgradeButton: {
-    borderRadius: 10,
-    padding: 12,
+  expiryRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
+    marginTop: 8,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
   },
-  upgradeText: {
-    fontSize: 16,
+  expiryLabel: {
+    fontSize: 13,
+  },
+  expiryValue: {
+    fontSize: 13,
     fontWeight: '600',
   },
   menuSection: {

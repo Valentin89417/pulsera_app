@@ -57,7 +57,7 @@ export const SUBSCRIPTION_TIERS = {
 
 // Названия тарифов
 export const TIER_NAMES = {
-  free: 'Бесплатный',
+  free: 'Начало',
   path: 'Путь',
   awakening: 'Пробуждение',
 } as const;

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, View } from 'react-native';
+import { ActivityIndicator, AppState, View } from 'react-native';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import storage from '../utils/storage';
@@ -14,7 +14,7 @@ const ONBOARDING_KEY = '@pulsera_onboarding_done';
 export default function RootLayout() {
   const router = useRouter();
   const segments = useSegments();
-  const { initialize, user, isInitialized, isLoading } = useAuthStore();
+  const { initialize, user, isInitialized, isLoading, refreshProfile } = useAuthStore();
   const { colors, loadTheme } = useThemeStore();
   const { loadDownloads } = useDownloadStore();
   const [onboardingDone, setOnboardingDone] = useState<boolean | null>(null);
@@ -28,6 +28,16 @@ export default function RootLayout() {
     loadDownloads();
     setupNotificationListeners();
   }, []);
+
+  // Обновление профиля при возвращении из фона (проверка подписки)
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', (nextState) => {
+      if (nextState === 'active' && user) {
+        refreshProfile();
+      }
+    });
+    return () => subscription.remove();
+  }, [user]);
 
   const checkOnboarding = async () => {
     try {
@@ -88,7 +98,7 @@ export default function RootLayout() {
         <Stack.Screen name="(auth)" />
         <Stack.Screen name="(tabs)" />
         <Stack.Screen
-          name="subscription"
+          name="accountstatus"
           options={{
             headerShown: false,
             presentation: 'modal',

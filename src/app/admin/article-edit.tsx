@@ -514,7 +514,7 @@ export default function ArticleEditScreen() {
 
         {isPremium && (
           <View style={styles.field}>
-            <Text style={styles.label}>Требуемый тариф</Text>
+            <Text style={styles.label}>Требуемый доступ</Text>
             <View style={styles.chipRow}>
               {TIERS.map((item) => (
                 <TouchableOpacity

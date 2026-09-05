@@ -19,17 +19,18 @@ export function ChatLockedScreen() {
 
         <Text style={styles.title}>Чат с автором</Text>
         <Text style={styles.description}>
-          Чат доступен по подписке «Пробуждение»
+          Доступно участникам уровня «Пробуждение»
         </Text>
         <Text style={styles.hint}>
           Задавайте вопросы, получайте персональные рекомендации и общайтесь напрямую
         </Text>
 
         <TouchableOpacity
-          style={[styles.subscribeButton, { backgroundColor: colors.gold }]}
-          onPress={() => router.push('/subscription')}
+          style={[styles.contactButton, { backgroundColor: colors.primary }]}
+          onPress={() => router.push('/chat')}
         >
-          <Text style={[styles.subscribeText, { color: colors.text }]}>Подписаться</Text>
+          <FontAwesome name="comment-o" size={16} color={colors.onPrimary} />
+          <Text style={[styles.contactText, { color: colors.onPrimary }]}>Написать в чат</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -84,15 +85,18 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     lineHeight: 20,
     marginBottom: 32,
   },
-  subscribeButton: {
+  contactButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
     paddingVertical: 14,
     paddingHorizontal: 32,
     borderRadius: 12,
     width: '100%',
-    alignItems: 'center',
+    justifyContent: 'center',
     marginBottom: 16,
   },
-  subscribeText: {
+  contactText: {
     fontSize: 16,
     fontWeight: '600',
   },

@@ -87,28 +87,81 @@ export default function AdminUsersScreen() {
   const handleToggleSubscription = async (user: AdminUser) => {
     const currentTier = (user.subscription_tier || 'free') as SubscriptionTier;
     const options: { label: string; value: SubscriptionTier }[] = [
-      { label: 'Бесплатный', value: 'free' },
+      { label: 'Начало', value: 'free' },
       { label: 'Путь', value: 'path' },
       { label: 'Пробуждение', value: 'awakening' },
     ];
 
     Alert.alert(
       'Изменить подписку',
-      `Текущий тариф: ${getTierLabel(currentTier)}`,
+      `Текущий доступ: ${getTierLabel(currentTier)}`,
       [
         ...options.map(opt => ({
           text: opt.label,
           onPress: async () => {
-            setUpdatingId(user.id);
-            try {
-              const success = await updateUserSubscription(user.id, opt.value);
-              if (success) {
-                setUsers(prev =>
-                  prev.map(u => u.id === user.id ? { ...u, subscription_tier: opt.value } : u)
-                );
+            if (opt.value === 'free') {
+              // Сбрасываем подписку без даты
+              setUpdatingId(user.id);
+              try {
+                const success = await updateUserSubscription(user.id, opt.value, null);
+                if (success) {
+                  setUsers(prev =>
+                    prev.map(u => u.id === user.id ? { ...u, subscription_tier: opt.value } : u)
+                  );
+                }
+              } finally {
+                setUpdatingId(null);
               }
-            } finally {
-              setUpdatingId(null);
+            } else {
+              // Для платных уровней — спрашиваем дату окончания
+              Alert.prompt(
+                'Дата окончания',
+                'Введите дату окончания (ДД.ММ.ГГГГ) или оставьте пустым для бессрочного',
+                [
+                  { text: 'Отмена', style: 'cancel' },
+                  {
+                    text: 'Бессрочно',
+                    onPress: async () => {
+                      setUpdatingId(user.id);
+                      try {
+                        const success = await updateUserSubscription(user.id, opt.value, null);
+                        if (success) {
+                          setUsers(prev =>
+                            prev.map(u => u.id === user.id ? { ...u, subscription_tier: opt.value } : u)
+                          );
+                        }
+                      } finally {
+                        setUpdatingId(null);
+                      }
+                    },
+                  },
+                  {
+                    text: 'Сохранить',
+                    onPress: async (dateStr?: string) => {
+                      let expiresAt: string | null = null;
+                      if (dateStr) {
+                        const parts = dateStr.split('.');
+                        if (parts.length === 3) {
+                          const [day, month, year] = parts;
+                          expiresAt = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}T00:00:00`;
+                        }
+                      }
+                      setUpdatingId(user.id);
+                      try {
+                        const success = await updateUserSubscription(user.id, opt.value, expiresAt);
+                        if (success) {
+                          setUsers(prev =>
+                            prev.map(u => u.id === user.id ? { ...u, subscription_tier: opt.value } : u)
+                          );
+                        }
+                      } finally {
+                        setUpdatingId(null);
+                      }
+                    },
+                  },
+                ],
+                'plain-text'
+              );
             }
           },
         })),
@@ -121,7 +174,7 @@ export default function AdminUsersScreen() {
     switch (tier) {
       case 'awakening': return 'Пробуждение';
       case 'path': return 'Путь';
-      default: return 'Бесплатный';
+      default: return 'Начало';
     }
   };
 
@@ -256,6 +309,11 @@ export default function AdminUsersScreen() {
                           </Text>
                           <FontAwesome name="chevron-down" size={10} color={colors.textMuted} />
                         </View>
+                        {tier !== 'free' && item.subscription_expires_at && (
+                          <Text style={[styles.controlExpiry, { color: colors.textMuted }]}>
+                            до {formatDate(item.subscription_expires_at)}
+                          </Text>
+                        )}
                       </>
                     )}
                   </TouchableOpacity>
@@ -430,5 +488,9 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   controlValueText: {
     fontSize: 14,
     fontWeight: '600',
+  },
+  controlExpiry: {
+    fontSize: 10,
+    marginTop: 2,
   },
 });

@@ -12,14 +12,14 @@ interface PremiumGateProps {
 }
 
 const tierNames: Record<string, string> = {
-  free: 'Бесплатный',
+  free: 'Начало',
   path: 'Путь',
   awakening: 'Пробуждение',
 };
 
 const tierDescriptions: Record<string, string> = {
-  path: 'Доступ ко всему платному контенту',
-  awakening: 'Платный контент + разборы + чат с автором',
+  path: 'Доступно участникам с расширенным доступом',
+  awakening: 'Доступно участникам уровня «Пробуждение»',
 };
 
 export function PremiumGate({ children, requiredTier, contentTitle }: PremiumGateProps) {
@@ -52,19 +52,19 @@ export function PremiumGate({ children, requiredTier, contentTitle }: PremiumGat
           <View style={styles.lockContainer}>
             <FontAwesome name="lock" size={48} color={colors.primary} />
             <Text style={styles.title}>
-              {contentTitle || 'Премиум-контент'}
+              {contentTitle || 'Расширенный контент'}
             </Text>
             <Text style={styles.description}>
-              {tierDescriptions[requiredTier] || 'Доступно по подписке'}
+              {tierDescriptions[requiredTier] || 'Доступно по запросу'}
             </Text>
             <Text style={styles.tierName}>
-              Тариф: «{tierNames[requiredTier]}»
+              Доступ: «{tierNames[requiredTier]}»
             </Text>
             <TouchableOpacity
-              style={styles.subscribeButton}
-              onPress={() => router.push('/subscription')}
+              style={styles.backButton}
+              onPress={() => router.back()}
             >
-              <Text style={styles.subscribeButtonText}>Подписаться</Text>
+              <Text style={styles.backButtonText}>Назад</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -136,17 +136,17 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     marginBottom: 20,
     textAlign: 'center',
   },
-  subscribeButton: {
-    backgroundColor: colors.primary,
+  backButton: {
+    backgroundColor: colors.primaryAlpha20,
     paddingVertical: 14,
     paddingHorizontal: 32,
     borderRadius: 12,
     width: '100%',
   },
-  subscribeButtonText: {
-    color: colors.onPrimary,
+  backButtonText: {
+    color: colors.text,
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: '600',
     textAlign: 'center',
   },
 });

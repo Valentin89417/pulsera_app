@@ -27,6 +27,7 @@ export interface AuthState {
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ error: string | null }>;
   updateProfile: (updates: Partial<UserProfile>) => Promise<{ error: string | null }>;
+  refreshProfile: () => Promise<void>;
 }
 
 // Данные для регистрации

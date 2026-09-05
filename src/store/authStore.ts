@@ -197,4 +197,16 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       return { error: 'Неожиданная ошибка при обновлении профиля' };
     }
   },
+
+  // Обновление профиля при возвращении из фона
+  refreshProfile: async () => {
+    const { user } = get();
+    if (!user) return;
+    try {
+      const profile = await getProfile(user.id);
+      set({ profile });
+    } catch (error) {
+      console.error('Ошибка обновления профиля:', error);
+    }
+  },
 }));
