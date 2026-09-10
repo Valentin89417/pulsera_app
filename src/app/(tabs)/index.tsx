@@ -16,6 +16,7 @@ import { getContent, getCategories } from '../../services/api';
 import { ContentItem } from '../../types';
 import { DownloadButton } from '../../components/DownloadButton';
 import { AfishaSlider } from '../../components/AfishaSlider';
+import { WeekCalendar } from '../../components/WeekCalendar';
 import { useTheme } from '../../hooks/useTheme';
 import { ThemeColors } from '../../utils/themeColors';
 
@@ -322,6 +323,7 @@ export default function HomeScreen() {
         columnWrapperStyle={styles.row}
         contentContainerStyle={styles.list}
         ListHeaderComponent={renderHeader}
+        ListFooterComponent={<WeekCalendar />}
         ListEmptyComponent={renderEmpty}
         refreshControl={
           <RefreshControl

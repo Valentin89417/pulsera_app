@@ -100,8 +100,47 @@
 
 ---
 
+### Календарь на главной ✅
+**Статус:** Завершено
+
+**Описание:**
+- Блок «Расписание на неделю» на главной странице (после ленты контента)
+- Горизонтальный выбор дня (7 дней от текущего)
+- События загружаются из публичного Google Calendar по iCal URL
+- Цвета событий определяются по CATEGORIES в iCal
+- Пустые дни показывают «Нет событий»
+- URL календаря настраивается в админ-панели
+
+**Реализация:**
+- Библиотека: `ical.js` (RFC 5545, zero deps, совместим с React Native)
+- Хранение URL: таблица `app_settings` (key-value, RLS только для админа)
+- Админ-экран: `admin/calendar-settings.tsx` — ввод URL + инструкция
+
+**Цвета категорий:**
+| Категория | Цвет |
+|-----------|------|
+| Встреча / meeting | 🟢 Зелёный (#4caf50) |
+| Пост / post / Публикация | 🔵 Синий (#2196f3) |
+| Медитация / meditation | 🟣 Фиолетовый (#9c27b0) |
+| Практика / practice | 🟠 Оранжевый (#ff9800) |
+| Вебинар / webinar | 🔴 Розовый (#e91e63) |
+| Разбор / consultation | 🔵 Бирюзовый (#00bcd4) |
+| Другое | ⚪ Серый (#78909c) |
+
+**Файлы:**
+- `supabase/migrations/016_app_settings.sql` — миграция
+- `src/utils/calendar.ts` — парсинг iCal, форматирование
+- `src/components/WeekCalendar.tsx` — компонент
+- `src/app/admin/calendar-settings.tsx` — настройки
+- `src/app/admin.tsx` — пункт меню
+- `src/app/(tabs)/index.tsx` — интеграция
+- `src/services/api.ts` — getSetting/setSetting
+- `src/services/supabase.ts` — тип app_settings
+
+---
+
 ## Технические заметки
-- **Миграции pending**: 009, 010, 011, 012, 013, 014, 015 — нужно выполнить в Supabase Dashboard SQL Editor
+- **Миграции pending**: 009, 010, 011, 012, 013, 014, 015, 016 — нужно выполнить в Supabase Dashboard SQL Editor
 - **Темы**: useTheme() хук возвращает colors из Zustand store, persists в AsyncStorage
 - **Палитра**: ThemeColors тип с ~30 токенами (background, surface, primary, text, border, alpha-варианты)
 - **Иконки**: FontAwesome (`@expo/vector-icons`) — все UI-иконки заменены с эмодзи на FontAwesome

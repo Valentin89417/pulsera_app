@@ -116,6 +116,7 @@ D:\pulsera_app\
 │       ├── storage.ts                 # Платформенный адаптер (localStorage / AsyncStorage)
 │       ├── offlineCache.ts            # Скачивание/чтение контента (expo-file-system)
 │       ├── notifications.ts           # Push-уведомления (register, send, batch)
+│       ├── calendar.ts                # Парсинг iCal, форматирование дат
 │       └── markdownStyles.ts          # Стили Markdown + processCheckboxes()
 │
 └── supabase/
@@ -247,6 +248,17 @@ D:\pulsera_app\
 - RLS: SELECT публичный, INSERT/UPDATE/DELETE только админ
 - Админка: CRUD + reorder (вверх/вниз)
 
+### Календарь (расписание на неделю)
+- Компонент: `WeekCalendar.tsx` — горизонтальный выбор дня + список событий
+- Расположение: внизу главной страницы (после ленты контента)
+- Горизонтальный скролл дней (7 дней от текущего)
+- Сегодня выделен цветом `primary`
+- Цвета событий определяются по CATEGORIES в iCal
+- Парсинг: `ical.js` (RFC 5545, zero deps)
+- Хранение URL: таблица `app_settings` (key-value, RLS admin-only)
+- Админка: `admin/calendar-settings.tsx` — ввод URL + инструкция
+- Если URL пустой — блок не отображается
+
 ### Чат сообщества
 - Telegram-стиль: аватар, имя автора, группировка сообщений
 - Доступ: все авторизованные пользователи
@@ -310,7 +322,8 @@ RootLayout
         └── Админ-панель → /admin
             ├── Управление статьями → /admin/articles
             ├── Комментарии → /admin/comments
-            ├── Афиша → /admin/afisha
-            ├── Чат с пользователями → /admin/chat
+        ├── Афиша → /admin/afisha
+        ├── Календарь → /admin/calendar-settings
+        ├── Чат с пользователями → /admin/chat
             └── Пользователи → /admin/users
 ```

@@ -1502,3 +1502,47 @@ export const reorderAfishaBanners = async (ids: string[]): Promise<boolean> => {
     return false;
   }
 };
+
+// ============================================
+// НАСТРОЙКИ ПРИЛОЖЕНИЯ
+// ============================================
+
+// Получить настройку по ключу
+export const getSetting = async (key: string): Promise<string | null> => {
+  try {
+    const { data, error } = await supabase
+      .from('app_settings')
+      .select('value')
+      .eq('key', key)
+      .maybeSingle();
+
+    if (error) {
+      console.error('Ошибка получения настройки:', error.message);
+      return null;
+    }
+
+    return data?.value ?? null;
+  } catch (error) {
+    console.error('Неожиданная ошибка при получении настройки:', error);
+    return null;
+  }
+};
+
+// Установить настройку (admin only)
+export const setSetting = async (key: string, value: string): Promise<boolean> => {
+  try {
+    const { error } = await supabase
+      .from('app_settings')
+      .upsert({ key, value, updated_at: new Date().toISOString() }, { onConflict: 'key' });
+
+    if (error) {
+      console.error('Ошибка сохранения настройки:', error.message);
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Неожиданная ошибка при сохранении настройки:', error);
+    return false;
+  }
+};
