@@ -34,10 +34,13 @@ export function CommunityChatBubble({
 
   const parts = parseMessageWithArticles(message);
 
-  const time = new Date(createdAt).toLocaleTimeString('ru-RU', {
-    hour: '2-digit',
-    minute: '2-digit',
-  });
+  const date = new Date(createdAt);
+  const hours = date.getHours().toString().padStart(2, '0');
+  const minutes = date.getMinutes().toString().padStart(2, '0');
+  const day = date.getDate().toString().padStart(2, '0');
+  const month = (date.getMonth() + 1).toString().padStart(2, '0');
+  const yearShort = date.getFullYear().toString().slice(-2);
+  const time = `${hours}:${minutes} ${day}.${month}.${yearShort}г.`;
 
   const displayName = authorName || 'Аноним';
   const avatarLetter = displayName.charAt(0).toUpperCase();

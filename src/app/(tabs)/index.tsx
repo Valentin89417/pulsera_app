@@ -12,9 +12,10 @@ import { useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
 import { FontAwesome } from '@expo/vector-icons';
 import { useAuthStore } from '../../store/authStore';
-import { getContent } from '../../services/api';
+import { getContent, getCategories } from '../../services/api';
 import { ContentItem } from '../../types';
 import { DownloadButton } from '../../components/DownloadButton';
+import { AfishaSlider } from '../../components/AfishaSlider';
 import { useTheme } from '../../hooks/useTheme';
 import { ThemeColors } from '../../utils/themeColors';
 
@@ -132,6 +133,39 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
   },
+  categoriesSection: {
+    marginBottom: 20,
+  },
+  categoriesSectionTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: colors.text,
+    paddingHorizontal: 20,
+    marginBottom: 12,
+  },
+  categoriesList: {
+    paddingHorizontal: 16,
+    gap: 8,
+  },
+  categoryChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.primaryAlpha13,
+    borderRadius: 20,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    gap: 6,
+  },
+  categoryChipText: {
+    color: colors.primary,
+    fontSize: 13,
+    fontWeight: '500',
+  },
+  categoryChipCount: {
+    color: colors.primary,
+    fontSize: 11,
+    fontWeight: '600',
+  },
 });
 
 // Главный экран — лента контента
@@ -142,6 +176,7 @@ export default function HomeScreen() {
   const styles = createStyles(colors);
 
   const [content, setContent] = useState<ContentItem[]>([]);
+  const [categories, setCategories] = useState<{ name: string; count: number }[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -164,9 +199,15 @@ export default function HomeScreen() {
     }
   };
 
+  const loadCategories = async () => {
+    const data = await getCategories();
+    setCategories(data.slice(0, 25));
+  };
+
   useFocusEffect(
     useCallback(() => {
       loadContent();
+      loadCategories();
     }, [])
   );
 
@@ -207,6 +248,36 @@ export default function HomeScreen() {
         </View>
       </View>
     </TouchableOpacity>
+  );
+
+  // Рендер заголовка: афиша + категории
+  const renderHeader = () => (
+    <>
+      <AfishaSlider />
+      {categories.length > 0 && (
+        <View style={styles.categoriesSection}>
+          <Text style={styles.categoriesSectionTitle}>Популярные категории</Text>
+        <FlatList
+          data={categories}
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.categoriesList}
+          keyExtractor={(item) => item.name}
+          renderItem={({ item }) => (
+            <TouchableOpacity
+              style={styles.categoryChip}
+              onPress={() => router.push({ pathname: '/(tabs)/catalog', params: { category: item.name } })}
+              activeOpacity={0.7}
+            >
+              <FontAwesome name="tag" size={12} color={colors.primary} />
+              <Text style={styles.categoryChipText}>{item.name}</Text>
+              <Text style={styles.categoryChipCount}>{item.count}</Text>
+            </TouchableOpacity>
+          )}
+        />
+      </View>
+      )}
+    </>
   );
 
   // Пустой список
@@ -250,6 +321,7 @@ export default function HomeScreen() {
         numColumns={2}
         columnWrapperStyle={styles.row}
         contentContainerStyle={styles.list}
+        ListHeaderComponent={renderHeader}
         ListEmptyComponent={renderEmpty}
         refreshControl={
           <RefreshControl

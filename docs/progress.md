@@ -322,6 +322,80 @@
 
 ---
 
+### Фильтр по категориям в каталоге + блок на главной ✅
+**Статус:** Завершено
+
+**Реализовано:**
+
+#### Каталог — фильтр по категориям ✅
+- [x] Загрузка категорий через `getCategories()` (топ-25 по популярности)
+- [x] Второй горизонтальный слайдер pill-кнопок под фильтром типов
+- [x] Кнопка «Все категории» для сброса
+- [x] Читает URL param `category` — при переходе с главной автоматически выбирает категорию
+- [x] Фильтрация контента по выбранной категории + типу
+
+#### Главная — блок «Популярные категории» ✅
+- [x] Загрузка топ-25 категорий через `getCategories()`
+- [x] Горизонтальный слайдер pill-кнопок над лентой контента
+- [x] Иконка `tag` + название + счётчик статей
+- [x] По клику → переход на `/catalog` с param `category`
+- [x] Стилизация: `primaryAlpha13` фон, pill-кнопки
+
+#### Файлы
+- `src/app/(tabs)/catalog.tsx` — +useLocalSearchParams, +categories state, +второй фильтр
+- `src/app/(tabs)/index.tsx` — +categories state, +renderCategories, +ListHeaderComponent
+
+---
+
+### Афиша на главной странице ✅
+**Статус:** Завершено
+**Цель:** Слайдер баннеров (16:9) на главной + управление в админке
+
+#### Миграция БД
+- [x] Миграция `015_afisha_banners.sql` — таблица `afisha_banners` (image_url, image_filename, title, link_url, sort_order, is_active)
+- [x] RLS: SELECT публичный, INSERT/UPDATE/DELETE только админ
+- [ ] Выполнить миграцию в Supabase Dashboard SQL Editor
+
+#### Типы и API
+- [x] Типы `AfishaBanner`, `AfishaBannerInsert`, `AfishaBannerUpdate` в `types/content.ts`
+- [x] Таблица `afisha_banners` в `supabase.ts` Database типы
+- [x] `getActiveBanners()` — активные баннеры для главной
+- [x] `getAllBanners()` — все баннеры для админки
+- [x] `createAfishaBanner()`, `updateAfishaBanner()`, `deleteAfishaBanner()`
+- [x] `reorderAfishaBanners()` — массовое обновление порядка
+
+#### Компонент слайдера
+- [x] `AfishaSlider.tsx` — горизонтальный FlatList с pagingEnabled
+- [x] Полная ширина экрана, aspectRatio 16:9
+- [x] Точки-индикаторы (активная заполнена, неактивные пустые)
+- [x] Автопрокрутка каждые 5 секунд
+- [x] Заголовок поверх изображения (градиент снизу)
+- [x] Навигация при клике (внутренняя / внешняя ссылка)
+
+#### Главная страница
+- [x] AfishaSlider в `index.tsx` — первый блок после заголовка
+- [x] Блок «Популярные категории» под афишей
+
+#### Админка
+- [x] `admin/afisha.tsx` — управление баннерами (CRUD + reorder)
+- [x] Загрузка изображений через WordPress Media Library
+- [x] Превью баннеров (缩略图 80x45)
+- [x] Toggle вкл/выкл, кнопки вверх/вниз для порядка
+- [x] Модалка редактирования заголовка и ссылки
+- [x] Пункт «Афиша» в `admin.tsx` (меню админки)
+
+#### Файлы
+- `supabase/migrations/015_afisha_banners.sql` — миграция
+- `src/services/supabase.ts` — типы afisha_banners
+- `src/types/content.ts` — экспорт AfishaBanner
+- `src/services/api.ts` — 6 функций для афиши
+- `src/components/AfishaSlider.tsx` — компонент слайдера
+- `src/app/(tabs)/index.tsx` — подключение слайдера
+- `src/app/admin.tsx` — пункт меню «Афиша»
+- `src/app/admin/afisha.tsx` — экран управления
+
+---
+
 ## Следующие шаги
 1. **Поддержка** — отдельный чат поддержки (несколько админов)
 2. **Профиль пользователя (расширенный)**

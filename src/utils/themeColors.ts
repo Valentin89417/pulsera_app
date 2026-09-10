@@ -57,7 +57,7 @@ export const darkColors: ThemeColors = {
   cardBorder: '#333333',
   cardIconBg: '#1a1a2e',
   cardIconColor: '#6c63ff',
-  inputBg: '#16213e',
+  inputBg: '#1e2d4a',
 
   text: '#ffffff',
   textSecondary: '#999999',
@@ -95,7 +95,7 @@ export const lightColors: ThemeColors = {
   cardBorder: '#a5593b',
   cardIconBg: '#a5593b',
   cardIconColor: '#fbf9d5',
-  inputBg: '#fffee0',
+  inputBg: 'rgba(1, 73, 96, 0.13)',
 
   text: '#10242b',
   textSecondary: '#4d4d4d',

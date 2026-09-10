@@ -272,6 +272,38 @@ export type Database = {
           expires_at?: string;
         };
       };
+      afisha_banners: {
+        Row: {
+          id: string;
+          image_url: string;
+          image_filename: string | null;
+          title: string | null;
+          link_url: string | null;
+          sort_order: number;
+          is_active: boolean;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          image_url: string;
+          image_filename?: string | null;
+          title?: string | null;
+          link_url?: string | null;
+          sort_order?: number;
+          is_active?: boolean;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          image_url?: string;
+          image_filename?: string | null;
+          title?: string | null;
+          link_url?: string | null;
+          sort_order?: number;
+          is_active?: boolean;
+          created_at?: string;
+        };
+      };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;

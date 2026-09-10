@@ -372,20 +372,6 @@ export default function SettingsScreen() {
             </View>
           </View>
         </View>
-
-        {/* О приложении */}
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>О приложении</Text>
-          <View style={[styles.card, { backgroundColor: colors.surface }]}>
-            <View style={styles.field}>
-              <View style={styles.fieldLeft}>
-                <FontAwesome name="info-circle" size={18} color={colors.primary} style={styles.fieldIcon} />
-                <Text style={[styles.fieldLabel, { color: colors.text }]}>Версия</Text>
-              </View>
-              <Text style={[styles.fieldValue, { color: colors.textMuted }]}>1.0.0</Text>
-            </View>
-          </View>
-        </View>
       </ScrollView>
     </View>
   );
@@ -500,7 +486,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   fieldLabel: {
     fontSize: 14,
-    width: 80,
+    flexShrink: 1,
   },
   fieldInput: {
     flex: 1,

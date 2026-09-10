@@ -41,6 +41,11 @@ export interface CommentWithAuthor extends Comment {
   parent_text?: string | null; // Текст родительского комментария (для ответов)
 }
 
+// Баннер афиши
+export type AfishaBanner = Database['public']['Tables']['afisha_banners']['Row'];
+export type AfishaBannerInsert = Database['public']['Tables']['afisha_banners']['Insert'];
+export type AfishaBannerUpdate = Database['public']['Tables']['afisha_banners']['Update'];
+
 // Параметры фильтрации контента
 export interface ContentFilter {
   type?: ContentType;

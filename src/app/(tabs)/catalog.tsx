@@ -9,10 +9,10 @@ import {
   ActivityIndicator,
   Image,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
 import { FontAwesome } from '@expo/vector-icons';
-import { getContent } from '../../services/api';
+import { getContent, getCategories } from '../../services/api';
 import { ContentItem, ContentType } from '../../types';
 import { DownloadButton } from '../../components/DownloadButton';
 import { BookmarkButton } from '../../components/BookmarkButton';
@@ -75,6 +75,40 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     fontWeight: '500',
   },
   filterTextActive: {
+    color: colors.onPrimary,
+  },
+  categoryFiltersContainer: {
+    marginBottom: 16,
+  },
+  categoryFiltersList: {
+    paddingHorizontal: 20,
+    gap: 8,
+  },
+  categoryButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.primaryAlpha13,
+    borderRadius: 20,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    gap: 6,
+  },
+  categoryButtonActive: {
+    backgroundColor: colors.primary,
+  },
+  categoryText: {
+    color: colors.primary,
+    fontSize: 13,
+    fontWeight: '500',
+  },
+  categoryTextActive: {
+    color: colors.onPrimary,
+  },
+  categoryCount: {
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  categoryCountActive: {
     color: colors.onPrimary,
   },
   list: {
@@ -281,6 +315,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
 
 export default function CatalogScreen() {
   const router = useRouter();
+  const params = useLocalSearchParams<{ category?: string }>();
   const { colors } = useTheme();
   const styles = createStyles(colors);
 
@@ -288,7 +323,14 @@ export default function CatalogScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [activeFilter, setActiveFilter] = useState<ContentType | 'all'>('all');
+  const [activeCategory, setActiveCategory] = useState<string | null>(params.category || null);
+  const [categories, setCategories] = useState<{ name: string; count: number }[]>([]);
   const [error, setError] = useState<string | null>(null);
+
+  const loadCategories = async () => {
+    const data = await getCategories();
+    setCategories(data.slice(0, 25));
+  };
 
   const loadContent = async (isRefresh = false) => {
     try {
@@ -298,6 +340,9 @@ export default function CatalogScreen() {
       const options: Parameters<typeof getContent>[0] = { limit: 50 };
       if (activeFilter !== 'all') {
         options.type = activeFilter;
+      }
+      if (activeCategory) {
+        options.category = activeCategory;
       }
 
       const data = await getContent(options);
@@ -314,8 +359,17 @@ export default function CatalogScreen() {
 
   useFocusEffect(
     useCallback(() => {
+      if (params.category) {
+        setActiveCategory(params.category);
+      }
+      loadCategories();
+    }, [params.category])
+  );
+
+  useFocusEffect(
+    useCallback(() => {
       loadContent();
-    }, [activeFilter])
+    }, [activeFilter, activeCategory])
   );
 
   const getTypeIcon = (type: ContentItem['type']) => {
@@ -480,6 +534,55 @@ export default function CatalogScreen() {
           )}
         />
       </View>
+
+      {categories.length > 0 && (
+        <View style={styles.categoryFiltersContainer}>
+          <FlatList
+            data={[{ name: null, count: 0 }, ...categories]}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.categoryFiltersList}
+            keyExtractor={(item) => item.name || 'all'}
+            renderItem={({ item }) => {
+              const isActive = item.name === activeCategory;
+              return (
+                <TouchableOpacity
+                  style={[
+                    styles.categoryButton,
+                    isActive && styles.categoryButtonActive,
+                  ]}
+                  onPress={() => setActiveCategory(isActive ? null : item.name)}
+                >
+                  <FontAwesome
+                    name={item.name ? 'tag' : 'times'}
+                    size={12}
+                    color={isActive ? colors.onPrimary : colors.primary}
+                  />
+                  <Text
+                    style={[
+                      styles.categoryText,
+                      isActive && styles.categoryTextActive,
+                    ]}
+                  >
+                    {item.name || 'Все категории'}
+                  </Text>
+                  {item.name && (
+                    <Text
+                      style={[
+                        styles.categoryCount,
+                        isActive && styles.categoryCountActive,
+                        { color: isActive ? colors.onPrimary : colors.primary },
+                      ]}
+                    >
+                      {item.count}
+                    </Text>
+                  )}
+                </TouchableOpacity>
+              );
+            }}
+          />
+        </View>
+      )}
 
       <FlatList
         data={content}

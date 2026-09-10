@@ -1,5 +1,5 @@
 import { supabase, Database } from './supabase';
-import { CommentWithAuthor } from '../types/content';
+import { CommentWithAuthor, AfishaBanner, AfishaBannerInsert, AfishaBannerUpdate } from '../types/content';
 import { deleteContentFiles } from '../utils/upload';
 import { removeDownload } from '../utils/offlineCache';
 
@@ -1373,5 +1373,132 @@ export const getCommentAuthorId = async (commentId: string): Promise<string | nu
   } catch (error) {
     console.error('Неожиданная ошибка при получении автора комментария:', error);
     return null;
+  }
+};
+
+// ==================== АФИША ====================
+
+// Получить активные баннеры афиши (для главной)
+export const getActiveBanners = async (): Promise<AfishaBanner[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('afisha_banners')
+      .select('*')
+      .eq('is_active', true)
+      .order('sort_order', { ascending: true });
+
+    if (error) {
+      console.error('Ошибка получения баннеров афиши:', error.message);
+      return [];
+    }
+
+    return data || [];
+  } catch (error) {
+    console.error('Неожиданная ошибка при получении баннеров афиши:', error);
+    return [];
+  }
+};
+
+// Получить все баннеры афиши (для админки)
+export const getAllBanners = async (): Promise<AfishaBanner[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('afisha_banners')
+      .select('*')
+      .order('sort_order', { ascending: true });
+
+    if (error) {
+      console.error('Ошибка получения баннеров:', error.message);
+      return [];
+    }
+
+    return data || [];
+  } catch (error) {
+    console.error('Неожиданная ошибка при получении баннеров:', error);
+    return [];
+  }
+};
+
+// Создать баннер афиши
+export const createAfishaBanner = async (
+  banner: AfishaBannerInsert
+): Promise<AfishaBanner | null> => {
+  try {
+    const { data, error } = await supabase
+      .from('afisha_banners')
+      .insert(banner)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Ошибка создания баннера:', error.message);
+      return null;
+    }
+
+    return data;
+  } catch (error) {
+    console.error('Неожиданная ошибка при создании баннера:', error);
+    return null;
+  }
+};
+
+// Обновить баннер афиши
+export const updateAfishaBanner = async (
+  id: string,
+  updates: AfishaBannerUpdate
+): Promise<boolean> => {
+  try {
+    const { error } = await supabase
+      .from('afisha_banners')
+      .update(updates)
+      .eq('id', id);
+
+    if (error) {
+      console.error('Ошибка обновления баннера:', error.message);
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Неожиданная ошибка при обновлении баннера:', error);
+    return false;
+  }
+};
+
+// Удалить баннер афиши
+export const deleteAfishaBanner = async (id: string): Promise<boolean> => {
+  try {
+    const { error } = await supabase
+      .from('afisha_banners')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      console.error('Ошибка удаления баннера:', error.message);
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Неожиданная ошибка при удалении баннера:', error);
+    return false;
+  }
+};
+
+// Обновить порядок баннеров
+export const reorderAfishaBanners = async (ids: string[]): Promise<boolean> => {
+  try {
+    const updates = ids.map((id, index) =>
+      supabase
+        .from('afisha_banners')
+        .update({ sort_order: index })
+        .eq('id', id)
+    );
+
+    await Promise.all(updates);
+    return true;
+  } catch (error) {
+    console.error('Неожиданная ошибка при сортировке баннеров:', error);
+    return false;
   }
 };

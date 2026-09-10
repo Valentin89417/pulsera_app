@@ -10,6 +10,7 @@ import {
   Platform,
   ActivityIndicator,
   Image,
+  Keyboard,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { FontAwesome } from '@expo/vector-icons';
@@ -43,6 +44,7 @@ export default function ChatScreen() {
   const [editingMessage, setEditingMessage] = useState<ChatMessage | null>(null);
   const [authorAvatarUrl, setAuthorAvatarUrl] = useState<string | null>(null);
   const [authorUserId, setAuthorUserId] = useState<string | null>(null);
+  const [keyboardOpen, setKeyboardOpen] = useState(false);
 
   const flatListRef = useRef<FlatList>(null);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
@@ -53,6 +55,19 @@ export default function ChatScreen() {
   useEffect(() => {
     setActiveChatScreen('chat');
     return () => setActiveChatScreen(null);
+  }, []);
+
+  // Отслеживание клавиатуры
+  useEffect(() => {
+    const showSub = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
+      () => setKeyboardOpen(true)
+    );
+    const hideSub = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
+      () => setKeyboardOpen(false)
+    );
+    return () => { showSub.remove(); hideSub.remove(); };
   }, []);
 
   // Загрузка профиля автора (админа)
@@ -297,7 +312,7 @@ export default function ChatScreen() {
       />
 
       {/* Поле ввода */}
-      <View style={[styles.inputContainer, { backgroundColor: colors.surface, borderTopColor: colors.border, paddingBottom: insets.bottom + 8 }]}>
+      <View style={[styles.inputContainer, { backgroundColor: colors.surface, borderTopColor: colors.border }]}>
         {editingMessage && (
           <View style={[styles.editBar, { backgroundColor: colors.primary + '15' }]}>
             <FontAwesome name="pencil" size={12} color={colors.primary} />
@@ -397,7 +412,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   inputContainer: {
     paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingVertical: 6,
     borderTopWidth: 1,
   },
   editBar: {

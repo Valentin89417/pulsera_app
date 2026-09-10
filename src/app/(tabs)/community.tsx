@@ -9,6 +9,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
+  Keyboard,
 } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -32,6 +33,23 @@ import { useChatStore } from '../../store/chatStore';
 import { CommunityChatBubble } from '../../components/CommunityChatBubble';
 import { ArticleAutocomplete } from '../../components/ArticleAutocomplete';
 
+function formatDateSeparator(dateStr: string): string {
+  const date = new Date(dateStr);
+  const now = new Date();
+  const day = date.getDate().toString().padStart(2, '0');
+  const month = (date.getMonth() + 1).toString().padStart(2, '0');
+  const year = date.getFullYear();
+  const nowYear = now.getFullYear();
+  const isToday = date.toDateString() === now.toDateString();
+  const yesterday = new Date(now);
+  yesterday.setDate(now.getDate() - 1);
+  const isYesterday = date.toDateString() === yesterday.toDateString();
+  if (isToday) return 'Сегодня';
+  if (isYesterday) return 'Вчера';
+  if (year === nowYear) return `${day}.${month}`;
+  return `${day}.${month}.${year}`;
+}
+
 export default function CommunityScreen() {
   const { user, profile } = useAuthStore();
   const { colors } = useTheme();
@@ -45,6 +63,7 @@ export default function CommunityScreen() {
   const [showAutocomplete, setShowAutocomplete] = useState(false);
   const [autocompleteQuery, setAutocompleteQuery] = useState('');
   const [editingMessage, setEditingMessage] = useState<CommunityMessageWithProfile | null>(null);
+  const [keyboardOpen, setKeyboardOpen] = useState(false);
 
   const flatListRef = useRef<FlatList>(null);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
@@ -102,6 +121,19 @@ export default function CommunityScreen() {
         channelRef.current = null;
       }
     };
+  }, []);
+
+  // Отслеживание клавиатуры
+  useEffect(() => {
+    const showSub = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
+      () => setKeyboardOpen(true)
+    );
+    const hideSub = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
+      () => setKeyboardOpen(false)
+    );
+    return () => { showSub.remove(); hideSub.remove(); };
   }, []);
 
   // Автоскролл вниз при новых сообщениях
@@ -230,18 +262,33 @@ export default function CommunityScreen() {
             const prevMessage = index > 0 ? messages[index - 1] : null;
             const isConsecutive = prevMessage?.user_id === item.user_id;
             const isOwn = item.user_id === user?.id;
+
+            // Показываем разделитель даты при смене дня
+            const prevDate = prevMessage ? new Date(prevMessage.created_at).toDateString() : null;
+            const curDate = new Date(item.created_at).toDateString();
+            const showDateSeparator = !prevDate || prevDate !== curDate;
+
             return (
-              <CommunityChatBubble
-                message={item.message}
-                authorName={item.profiles?.display_name}
-                authorAvatarUrl={item.profiles?.avatar_url}
-                createdAt={item.created_at}
-                isOwn={isOwn}
-                isConsecutive={isConsecutive}
-                edited={item.edited}
-                onEdit={() => handleEdit(item)}
-                onDelete={() => handleDelete(item)}
-              />
+              <>
+                {showDateSeparator && (
+                  <View style={styles.dateSeparator}>
+                    <Text style={[styles.dateSeparatorText, { color: colors.textMuted, backgroundColor: colors.surface }]}>
+                      {formatDateSeparator(item.created_at)}
+                    </Text>
+                  </View>
+                )}
+                <CommunityChatBubble
+                  message={item.message}
+                  authorName={item.profiles?.display_name}
+                  authorAvatarUrl={item.profiles?.avatar_url}
+                  createdAt={item.created_at}
+                  isOwn={isOwn}
+                  isConsecutive={isConsecutive}
+                  edited={item.edited}
+                  onEdit={() => handleEdit(item)}
+                  onDelete={() => handleDelete(item)}
+                />
+              </>
             );
           }}
           contentContainerStyle={styles.messagesList}
@@ -257,7 +304,7 @@ export default function CommunityScreen() {
       />
 
       {/* Поле ввода */}
-      <View style={[styles.inputContainer, { backgroundColor: colors.surface, borderTopColor: colors.border, paddingBottom: insets.bottom + 8 }]}>
+      <View style={[styles.inputContainer, { backgroundColor: colors.surface, borderTopColor: colors.border }]}>
         {editingMessage && (
           <View style={[styles.editBar, { backgroundColor: colors.primary + '15' }]}>
             <FontAwesome name="pencil" size={12} color={colors.primary} />
@@ -320,7 +367,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   inputContainer: {
     paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingVertical: 6,
     borderTopWidth: 1,
   },
   editBar: {
@@ -346,7 +393,8 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 10,
     fontSize: 15,
-    maxHeight: 100,
+    minHeight: 44,
+    maxHeight: 120,
   },
   sendButton: {
     width: 40,
@@ -355,5 +403,19 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginLeft: 8,
+  },
+  dateSeparator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginVertical: 12,
+    marginHorizontal: 12,
+  },
+  dateSeparatorText: {
+    fontSize: 12,
+    fontWeight: '500',
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 10,
   },
 });

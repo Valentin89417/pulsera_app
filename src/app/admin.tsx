@@ -217,6 +217,18 @@ export default function AdminScreen() {
 
         <TouchableOpacity
           style={styles.menuItem}
+          onPress={() => router.push('/admin/afisha')}
+        >
+          <FontAwesome name="image" size={22} color={colors.primary} style={styles.menuIcon} />
+          <View style={styles.menuContent}>
+            <Text style={styles.menuText}>Афиша</Text>
+            <Text style={styles.menuHint}>Баннеры на главной странице</Text>
+          </View>
+          <Text style={styles.menuArrow}>›</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.menuItem}
           onPress={() => router.push('/admin/comments')}
         >
           <FontAwesome name="comment-o" size={22} color={colors.primary} style={styles.menuIcon} />
