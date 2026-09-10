@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ScrollView, ActivityIndicator, Image, Switch } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ScrollView, ActivityIndicator, Image } from 'react-native';
 import { useRouter } from 'expo-router';
 import { FontAwesome } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
@@ -67,7 +67,7 @@ const dbDateToDisplay = (dbDate: string | null): string => {
 export default function SettingsScreen() {
   const router = useRouter();
   const { profile, user, updateProfile: updateStoreProfile } = useAuthStore();
-  const { mode, colors, toggleTheme } = useTheme();
+  const { colors } = useTheme();
   const styles = createStyles(colors);
 
   const [displayName, setDisplayName] = useState(profile?.display_name || '');
@@ -292,25 +292,6 @@ export default function SettingsScreen() {
             <View style={styles.field}>
               <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Email</Text>
               <Text style={[styles.fieldValue, { color: colors.textMuted }]}>{user?.email}</Text>
-            </View>
-          </View>
-        </View>
-
-        {/* Внешний вид */}
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Внешний вид</Text>
-          <View style={[styles.card, { backgroundColor: colors.surface }]}>
-            <View style={[styles.field, { borderBottomColor: colors.border }]}>
-              <View style={styles.fieldLeft}>
-                <FontAwesome name="paint-brush" size={18} color={colors.primary} style={styles.fieldIcon} />
-                <Text style={[styles.fieldLabel, { color: colors.text }]}>Тёмная тема</Text>
-              </View>
-              <Switch
-                value={mode === 'dark'}
-                onValueChange={toggleTheme}
-                trackColor={{ false: colors.border, true: colors.primary }}
-                thumbColor={mode === 'dark' ? colors.text : colors.textSecondary}
-              />
             </View>
           </View>
         </View>

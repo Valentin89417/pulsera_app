@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, Switch } from 'react-native';
 import { useRouter } from 'expo-router';
 import { FontAwesome } from '@expo/vector-icons';
 import { useAdmin, useSubscription } from '../hooks/useAuth';
@@ -10,7 +10,7 @@ export default function AdminScreen() {
   const router = useRouter();
   const { isAdmin } = useAdmin();
   const { tier, activateSubscription, deactivateSubscription } = useSubscription();
-  const { colors } = useTheme();
+  const { colors, mode, toggleTheme } = useTheme();
 
   const createStyles = (colors: ThemeColors) => StyleSheet.create({
     container: {
@@ -379,6 +379,25 @@ export default function AdminScreen() {
               <Text style={[styles.toggleButtonText, tier === 'free' && styles.toggleButtonTextActive]}>Выкл</Text>
             </View>
           </TouchableOpacity>
+        </View>
+      </View>
+
+      <View style={styles.menuSection}>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Настройки</Text>
+        </View>
+
+        <View style={styles.statusRow}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+            <FontAwesome name="moon-o" size={18} color={colors.primary} />
+            <Text style={styles.statusLabel}>Тёмная тема</Text>
+          </View>
+          <Switch
+            value={mode === 'dark'}
+            onValueChange={toggleTheme}
+            trackColor={{ false: colors.border, true: colors.primary }}
+            thumbColor={mode === 'dark' ? colors.text : colors.textSecondary}
+          />
         </View>
       </View>
     </ScrollView>
