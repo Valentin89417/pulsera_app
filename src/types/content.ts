@@ -46,6 +46,15 @@ export type AfishaBanner = Database['public']['Tables']['afisha_banners']['Row']
 export type AfishaBannerInsert = Database['public']['Tables']['afisha_banners']['Insert'];
 export type AfishaBannerUpdate = Database['public']['Tables']['afisha_banners']['Update'];
 
+// Карточка «Слово стаи»
+export type DailyCard = Database['public']['Tables']['daily_cards']['Row'];
+export type DailyCardInsert = Database['public']['Tables']['daily_cards']['Insert'];
+export type DailyCardUpdate = Database['public']['Tables']['daily_cards']['Update'];
+
+// Ответ на карточку
+export type DailyCardResponse = Database['public']['Tables']['daily_card_responses']['Row'];
+export type DailyCardResponseInsert = Database['public']['Tables']['daily_card_responses']['Insert'];
+
 // Параметры фильтрации контента
 export interface ContentFilter {
   type?: ContentType;

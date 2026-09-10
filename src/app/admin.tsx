@@ -241,6 +241,18 @@ export default function AdminScreen() {
 
         <TouchableOpacity
           style={styles.menuItem}
+          onPress={() => router.push('/admin/daily-cards')}
+        >
+          <FontAwesome name="puzzle-piece" size={22} color={colors.primary} style={styles.menuIcon} />
+          <View style={styles.menuContent}>
+            <Text style={styles.menuText}>Слово стаи</Text>
+            <Text style={styles.menuHint}>Ежедневные карточки для главной</Text>
+          </View>
+          <Text style={styles.menuArrow}>›</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.menuItem}
           onPress={() => router.push('/admin/comments')}
         >
           <FontAwesome name="comment-o" size={22} color={colors.primary} style={styles.menuIcon} />

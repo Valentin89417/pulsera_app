@@ -321,6 +321,73 @@ export type Database = {
           updated_at?: string;
         };
       };
+      daily_cards: {
+        Row: {
+          id: string;
+          title: string;
+          image_url: string;
+          image_filename: string | null;
+          photo_question: string;
+          summary_questions: string[];
+          audio_url: string | null;
+          audio_filename: string | null;
+          card_date: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          title: string;
+          image_url: string;
+          image_filename?: string | null;
+          photo_question: string;
+          summary_questions?: string[];
+          audio_url?: string | null;
+          audio_filename?: string | null;
+          card_date: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          title?: string;
+          image_url?: string;
+          image_filename?: string | null;
+          photo_question?: string;
+          summary_questions?: string[];
+          audio_url?: string | null;
+          audio_filename?: string | null;
+          card_date?: string;
+          created_at?: string;
+        };
+      };
+      daily_card_responses: {
+        Row: {
+          id: string;
+          user_id: string;
+          card_id: string;
+          response_type: string;
+          question_index: number | null;
+          answer: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          card_id: string;
+          response_type: string;
+          question_index?: number | null;
+          answer: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          card_id?: string;
+          response_type?: string;
+          question_index?: number | null;
+          answer?: string;
+          created_at?: string;
+        };
+      };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;

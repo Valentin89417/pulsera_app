@@ -1,5 +1,14 @@
 import { supabase, Database } from './supabase';
-import { CommentWithAuthor, AfishaBanner, AfishaBannerInsert, AfishaBannerUpdate } from '../types/content';
+import {
+  CommentWithAuthor,
+  AfishaBanner,
+  AfishaBannerInsert,
+  AfishaBannerUpdate,
+  DailyCard,
+  DailyCardInsert,
+  DailyCardResponse,
+  DailyCardResponseInsert,
+} from '../types/content';
 import { deleteContentFiles } from '../utils/upload';
 import { removeDownload } from '../utils/offlineCache';
 
@@ -1544,5 +1553,241 @@ export const setSetting = async (key: string, value: string): Promise<boolean> =
   } catch (error) {
     console.error('Неожиданная ошибка при сохранении настройки:', error);
     return false;
+  }
+};
+
+// ============================================
+// СЛОВО СТАИ — ежедневные карточки
+// ============================================
+
+// Получить карточку дня (по месяцу+дню, цикличность по годам)
+export const getTodaysCard = async (): Promise<DailyCard | null> => {
+  try {
+    const now = new Date();
+    const targetMonth = now.getMonth() + 1; // 1-12
+    const targetDay = now.getDate(); // 1-31
+
+    // Загружаем все карточки и фильтруем на клиенте
+    // (PostgREST не поддерживает EXTRACT в фильтрах)
+    const { data, error } = await supabase
+      .from('daily_cards')
+      .select('*')
+      .order('card_date', { ascending: false });
+
+    if (error) {
+      console.error('Ошибка получения карточки дня:', error.message);
+      return null;
+    }
+
+    if (!data || data.length === 0) return null;
+
+    // Находим карточку с совпадающим месяцом+днём
+    const match = data.find((card) => {
+      const [y, m, d] = card.card_date.split('-').map(Number);
+      return m === targetMonth && d === targetDay;
+    });
+
+    return match || null;
+  } catch (error) {
+    console.error('Неожиданная ошибка при получении карточки дня:', error);
+    return null;
+  }
+};
+
+// Получить все карточки (для админки)
+export const getAllDailyCards = async (): Promise<DailyCard[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('daily_cards')
+      .select('*')
+      .order('card_date', { ascending: false });
+
+    if (error) {
+      console.error('Ошибка получения карточек:', error.message);
+      return [];
+    }
+
+    return data || [];
+  } catch (error) {
+    console.error('Неожиданная ошибка при получении карточек:', error);
+    return [];
+  }
+};
+
+// Создать карточку
+export const createDailyCard = async (card: DailyCardInsert): Promise<DailyCard | null> => {
+  try {
+    const { data, error } = await supabase
+      .from('daily_cards')
+      .insert(card)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Ошибка создания карточки:', error.message);
+      return null;
+    }
+
+    return data;
+  } catch (error) {
+    console.error('Неожиданная ошибка при создании карточки:', error);
+    return null;
+  }
+};
+
+// Обновить карточку
+export const updateDailyCard = async (
+  id: string,
+  updates: Partial<Pick<DailyCard, 'title' | 'image_url' | 'image_filename' | 'photo_question' | 'summary_questions' | 'audio_url' | 'audio_filename' | 'card_date'>>
+): Promise<boolean> => {
+  try {
+    const { error } = await supabase
+      .from('daily_cards')
+      .update(updates)
+      .eq('id', id);
+
+    if (error) {
+      console.error('Ошибка обновления карточки:', error.message);
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Неожиданная ошибка при обновлении карточки:', error);
+    return false;
+  }
+};
+
+// Удалить карточку
+export const deleteDailyCard = async (id: string): Promise<boolean> => {
+  try {
+    const { error } = await supabase
+      .from('daily_cards')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      console.error('Ошибка удаления карточки:', error.message);
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Неожиданная ошибка при удалении карточки:', error);
+    return false;
+  }
+};
+
+// ============================================
+// ОТВЕТЫ НА КАРТОЧКИ
+// ============================================
+
+// Проверить, отвечал ли пользователь
+export const getUserCardResponse = async (
+  userId: string,
+  cardId: string,
+  responseType: 'photo' | 'summary',
+  questionIndex?: number
+): Promise<DailyCardResponse | null> => {
+  try {
+    let query = supabase
+      .from('daily_card_responses')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('card_id', cardId)
+      .eq('response_type', responseType);
+
+    if (responseType === 'summary' && questionIndex !== undefined) {
+      query = query.eq('question_index', questionIndex);
+    } else if (responseType === 'photo') {
+      query = query.is('question_index', null);
+    }
+
+    const { data, error } = await query.maybeSingle();
+
+    if (error) {
+      console.error('Ошибка проверки ответа:', error.message);
+      return null;
+    }
+
+    return data;
+  } catch (error) {
+    console.error('Неожиданная ошибка при проверке ответа:', error);
+    return null;
+  }
+};
+
+// Создать ответ
+export const createDailyCardResponse = async (
+  response: DailyCardResponseInsert
+): Promise<DailyCardResponse | null> => {
+  try {
+    const { data, error } = await supabase
+      .from('daily_card_responses')
+      .insert(response)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Ошибка создания ответа:', error.message);
+      return null;
+    }
+
+    return data;
+  } catch (error) {
+    console.error('Неожиданная ошибка при создании ответа:', error);
+    return null;
+  }
+};
+
+// Получить записи дневника пользователя
+export const getUserDiaryEntries = async (
+  userId: string
+): Promise<{ card: DailyCard; responses: DailyCardResponse[] }[]> => {
+  try {
+    // Получаем все ответы пользователя с карточками
+    const { data: responses, error } = await supabase
+      .from('daily_card_responses')
+      .select('*, daily_cards(*)')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Ошибка получения дневника:', error.message);
+      return [];
+    }
+
+    if (!responses || responses.length === 0) {
+      return [];
+    }
+
+    // Группируем по card_id
+    const grouped = new Map<string, { card: DailyCard; responses: DailyCardResponse[] }>();
+
+    for (const response of responses) {
+      const card = response.daily_cards as unknown as DailyCard;
+      const cardId = response.card_id;
+
+      if (!grouped.has(cardId)) {
+        grouped.set(cardId, { card, responses: [] });
+      }
+      grouped.get(cardId)!.responses.push({
+        id: response.id,
+        user_id: response.user_id,
+        card_id: response.card_id,
+        response_type: response.response_type,
+        question_index: response.question_index,
+        answer: response.answer,
+        created_at: response.created_at,
+      });
+    }
+
+    // Сортируем по дате карточки (новые сверху)
+    return Array.from(grouped.values()).sort(
+      (a, b) => new Date(b.card.card_date).getTime() - new Date(a.card.card_date).getTime()
+    );
+  } catch (error) {
+    console.error('Неожиданная ошибка при получении дневника:', error);
+    return [];
   }
 };
