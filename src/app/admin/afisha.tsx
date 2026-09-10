@@ -12,7 +12,7 @@ import {
   TextInput,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect } from 'expo-router/react-navigation';
 import { FontAwesome } from '@expo/vector-icons';
 import { useAdmin } from '../../hooks/useAuth';
 import { useTheme } from '../../hooks/useTheme';
@@ -58,6 +58,7 @@ export default function AfishaAdminScreen() {
   const handleUpload = async () => {
     try {
       const file = await pickFile('image');
+      if (!file) return;
       setUploading(true);
       setUploadProgress(0);
       const result: UploadResult = await uploadFile(file, 'image', setUploadProgress);
@@ -474,7 +475,11 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   // Модалка
   modalOverlay: {
-    ...StyleSheet.absoluteFillObject,
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
     backgroundColor: 'rgba(0,0,0,0.5)',
     justifyContent: 'center',
     alignItems: 'center',

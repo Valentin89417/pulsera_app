@@ -8,7 +8,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect } from 'expo-router/react-navigation';
 import { useTheme } from '../hooks/useTheme';
 import { ThemeColors } from '../utils/themeColors';
 import { getSetting } from '../services/api';

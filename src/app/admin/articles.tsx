@@ -9,7 +9,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect } from 'expo-router/react-navigation';
 import { FontAwesome } from '@expo/vector-icons';
 import { getContent, deleteContent } from '../../services/api';
 import { ContentItem } from '../../types';

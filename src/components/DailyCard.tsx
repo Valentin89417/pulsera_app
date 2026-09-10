@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { FontAwesome } from '@expo/vector-icons';
-import { Audio } from 'expo-av';
+import { useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
 import { useAuthStore } from '../store/authStore';
 import { useTheme } from '../hooks/useTheme';
 import { ThemeColors } from '../utils/themeColors';
@@ -37,8 +37,8 @@ export function DailyCard() {
   const [summaryAnswers, setSummaryAnswers] = useState<string[]>([]);
   const [summaryResponded, setSummaryResponded] = useState<boolean[]>([]);
   const [submitting, setSubmitting] = useState(false);
-  const [sound, setSound] = useState<Audio.Sound | null>(null);
-  const [isPlaying, setIsPlaying] = useState(false);
+  const player = useAudioPlayer(null);
+  const audioStatus = useAudioPlayerStatus(player);
 
   const loadCard = useCallback(async () => {
     try {
@@ -78,36 +78,19 @@ export function DailyCard() {
 
   useEffect(() => {
     loadCard();
-    return () => {
-      if (sound) {
-        sound.unloadAsync();
-      }
-    };
   }, [loadCard]);
 
   const handlePlayAudio = async () => {
     if (!card?.audio_url) return;
 
     try {
-      if (sound && isPlaying) {
-        await sound.pauseAsync();
-        setIsPlaying(false);
-      } else if (sound && !isPlaying) {
-        await sound.playAsync();
-        setIsPlaying(true);
+      if (audioStatus?.playing) {
+        player.pause();
+      } else if (audioStatus?.isLoaded) {
+        player.play();
       } else {
-        const { sound: newSound } = await Audio.Sound.createAsync(
-          { uri: card.audio_url },
-          { shouldPlay: true }
-        );
-        setSound(newSound);
-        setIsPlaying(true);
-
-        newSound.setOnPlaybackStatusUpdate((status) => {
-          if (status.isLoaded && status.didJustFinish) {
-            setIsPlaying(false);
-          }
-        });
+        player.replace(card.audio_url);
+        player.play();
       }
     } catch (error) {
       console.error('Ошибка воспроизведения аудио:', error);
@@ -130,14 +113,6 @@ export function DailyCard() {
       if (response) {
         setPhotoResponded(true);
         setPhotoAnswer('');
-        Alert.alert(
-          'Ответ сохранён',
-          'Хотите открыть дневник?',
-          [
-            { text: 'Остаться', style: 'cancel' },
-            { text: 'Дневник', onPress: () => router.push('/diary') },
-          ]
-        );
       }
     } catch (error) {
       console.error('Ошибка отправки ответа:', error);
@@ -147,37 +122,37 @@ export function DailyCard() {
     }
   };
 
-  const handleSummarySubmit = async (index: number) => {
-    if (!user || !card || !summaryAnswers[index].trim()) return;
+  const handleSummarySubmit = async () => {
+    if (!user || !card) return;
+
+    const filledIndices = summaryAnswers
+      .map((answer, i) => ({ answer: answer.trim(), index: i }))
+      .filter(item => item.answer.length > 0 && !summaryResponded[item.index]);
+
+    if (filledIndices.length === 0) return;
 
     setSubmitting(true);
     try {
-      const response = await createDailyCardResponse({
-        user_id: user.id,
-        card_id: card.id,
-        response_type: 'summary',
-        question_index: index,
-        answer: summaryAnswers[index].trim(),
-      });
-
-      if (response) {
-        const newResponded = [...summaryResponded];
-        newResponded[index] = true;
-        setSummaryResponded(newResponded);
-
-        const newAnswers = [...summaryAnswers];
-        newAnswers[index] = '';
-        setSummaryAnswers(newAnswers);
-
-        Alert.alert(
-          'Ответ сохранён',
-          'Хотите открыть дневник?',
-          [
-            { text: 'Остаться', style: 'cancel' },
-            { text: 'Дневник', onPress: () => router.push('/diary') },
-          ]
-        );
+      for (const item of filledIndices) {
+        await createDailyCardResponse({
+          user_id: user.id,
+          card_id: card.id,
+          response_type: 'summary',
+          question_index: item.index,
+          answer: item.answer,
+        });
       }
+
+      const newResponded = [...summaryResponded];
+      for (const item of filledIndices) {
+        newResponded[item.index] = true;
+      }
+      setSummaryResponded(newResponded);
+
+      const newAnswers = summaryAnswers.map((a, i) =>
+        summaryResponded[i] ? a : ''
+      );
+      setSummaryAnswers(newAnswers);
     } catch (error) {
       console.error('Ошибка отправки ответа:', error);
       Alert.alert('Ошибка', 'Не удалось сохранить ответ');
@@ -200,6 +175,7 @@ export function DailyCard() {
 
   const showSummary = shouldShowSummary();
   const hasSummary = card.summary_questions.length > 0;
+  const allSummaryAnswered = hasSummary && summaryResponded.every(Boolean);
 
   return (
     <View style={styles.container}>
@@ -214,7 +190,7 @@ export function DailyCard() {
         {card.audio_url && (
           <TouchableOpacity style={styles.audioButton} onPress={handlePlayAudio}>
             <FontAwesome
-              name={isPlaying ? 'pause' : 'play'}
+              name={audioStatus?.playing ? 'pause' : 'play'}
               size={18}
               color={colors.onPrimary}
             />
@@ -268,44 +244,53 @@ export function DailyCard() {
               <Text style={styles.summaryQuestion}>{question}</Text>
 
               {summaryResponded[index] ? (
-                <TouchableOpacity style={styles.diaryButton} onPress={() => router.push('/diary')}>
-                  <FontAwesome name="book" size={14} color={colors.primary} />
-                  <Text style={styles.diaryButtonText}>Мой дневник</Text>
-                  <FontAwesome name="arrow-right" size={12} color={colors.primary} />
-                </TouchableOpacity>
-              ) : (
-                <View style={styles.inputContainer}>
-                  <TextInput
-                    style={styles.input}
-                    value={summaryAnswers[index]}
-                    onChangeText={(v) => {
-                      const newAnswers = [...summaryAnswers];
-                      newAnswers[index] = v;
-                      setSummaryAnswers(newAnswers);
-                    }}
-                    placeholder="Ваш ответ..."
-                    placeholderTextColor={colors.textMuted}
-                    multiline
-                    editable={!submitting}
-                  />
-                  <TouchableOpacity
-                    style={[
-                      styles.submitButton,
-                      (!summaryAnswers[index].trim() || submitting) && styles.submitButtonDisabled,
-                    ]}
-                    onPress={() => handleSummarySubmit(index)}
-                    disabled={!summaryAnswers[index].trim() || submitting}
-                  >
-                    {submitting ? (
-                      <ActivityIndicator size="small" color={colors.onPrimary} />
-                    ) : (
-                      <Text style={styles.submitButtonText}>Ответить</Text>
-                    )}
+                allSummaryAnswered ? null : (
+                  <TouchableOpacity style={styles.diaryButton} onPress={() => router.push('/diary')}>
+                    <FontAwesome name="book" size={14} color={colors.primary} />
+                    <Text style={styles.diaryButtonText}>Мой дневник</Text>
+                    <FontAwesome name="arrow-right" size={12} color={colors.primary} />
                   </TouchableOpacity>
-                </View>
+                )
+              ) : (
+                <TextInput
+                  style={styles.input}
+                  value={summaryAnswers[index]}
+                  onChangeText={(v) => {
+                    const newAnswers = [...summaryAnswers];
+                    newAnswers[index] = v;
+                    setSummaryAnswers(newAnswers);
+                  }}
+                  placeholder="Ваш ответ..."
+                  placeholderTextColor={colors.textMuted}
+                  multiline
+                  editable={!submitting}
+                />
               )}
             </View>
           ))}
+
+          {allSummaryAnswered ? (
+            <TouchableOpacity style={styles.diaryButton} onPress={() => router.push('/diary')}>
+              <FontAwesome name="book" size={14} color={colors.primary} />
+              <Text style={styles.diaryButtonText}>Мой дневник</Text>
+              <FontAwesome name="arrow-right" size={12} color={colors.primary} />
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity
+              style={[
+                styles.submitButton,
+                (!summaryAnswers.some((a, i) => a.trim() && !summaryResponded[i]) || submitting) && styles.submitButtonDisabled,
+              ]}
+              onPress={handleSummarySubmit}
+              disabled={!summaryAnswers.some((a, i) => a.trim() && !summaryResponded[i]) || submitting}
+            >
+              {submitting ? (
+                <ActivityIndicator size="small" color={colors.onPrimary} />
+              ) : (
+                <Text style={styles.submitButtonText}>Ответить</Text>
+              )}
+            </TouchableOpacity>
+          )}
         </View>
       )}
     </View>

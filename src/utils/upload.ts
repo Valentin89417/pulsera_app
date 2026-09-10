@@ -204,7 +204,7 @@ export const deleteFile = async (mediaIdOrUrl: string | number): Promise<boolean
       }
 
       if (!media) {
-        console.warn('Media не найден для удаления:', mediaUrl, '| filename:', filename);
+        console.log('Media файл не найден:', mediaUrl, '| filename: ', filename);
         return false;
       }
 

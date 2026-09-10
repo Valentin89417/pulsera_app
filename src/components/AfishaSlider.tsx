@@ -10,7 +10,7 @@ import {
   Linking,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect } from 'expo-router/react-navigation';
 import { FontAwesome } from '@expo/vector-icons';
 import { getActiveBanners } from '../services/api';
 import { AfishaBanner } from '../types/content';

@@ -1,8 +1,38 @@
 # Прогресс разработки Pulsera App
 
+## Expo SDK 54 → 57 Upgrade ✅
+**Статус:** Завершено
+**Дата:** 10.09.2026
+
+### Миграция
+- [x] **expo-av → expo-audio** — миграция AudioPlayer.tsx и DailyCard.tsx на новый API (`useAudioPlayer`, `useAudioPlayerStatus`, методы в секундах)
+- [x] **useFocusEffect** — замена импорта `@react-navigation/native` → `expo-router/react-navigation` (8 файлов)
+- [x] **StyleSheet.absoluteFillObject** → инлайн-стили (RN 0.86 удалил `absoluteFillObject`)
+- [x] **NodeJS.Timeout** → `ReturnType<typeof setTimeout>` (TypeScript 6.0)
+- [x] **@expo/vector-icons** — добавлен как явная зависимость
+- [x] **react-native-worklets@0.12.2** — установлена для совместимости с reanimated 4.6
+- [x] **babel.config.js** — создан с `babel-preset-expo`
+
+### Версии после апгрейда
+| Пакет | Было | Стало |
+|---|---|---|
+| expo | ~54.0.37 | ^57.0.0 |
+| react | ^19.1.0 | 19.2.3 |
+| react-native | 0.81.5 | 0.86.3 |
+| typescript | ~5.9.2 | ~6.0.3 |
+| expo-av | ~16.0.8 | удалён |
+| expo-audio | — | ~57.0.4 |
+| react-native-reanimated | — | 4.6.0 (через expo-router) |
+
+### Проверка
+- [x] `npx expo-doctor` — 21/21 checks passed
+- [x] `npx tsc --noEmit` — 0 ошибок
+
+---
+
 ## Phase 1: Foundation ✅
 - [x] Структура папок (src/app, components, hooks, services, store, utils, types)
-- [x] Инициализация проекта (Expo SDK 54 + Expo Router)
+- [x] Инициализация проекта (Expo SDK 57 + Expo Router)
 - [x] Supabase клиент + типы Database
 - [x] Auth Store (Zustand) + хуки useAuth/useAdmin
 - [x] Навигация: auth flow, табы (Home, Catalog, Community, Profile)
@@ -15,7 +45,7 @@
 - [x] Каталог с фильтрами по типу
 - [x] Детальный экран контента (`/content/[id]`)
 - [x] Навигация из карточек (главная + каталог → контент)
-- [x] Аудио-плеер (expo-av, play/pause, ±15s, прогресс-бар)
+- [x] Аудио-плеер (expo-audio, play/pause, ±15s, прогресс-бар)
 - [x] Видео-плеер (expo-video на нативе, HTML5 на веб, контроль качества)
 
 ## Phase 3: Premium Features ✅
