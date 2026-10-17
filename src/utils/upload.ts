@@ -1,5 +1,4 @@
 import * as DocumentPicker from 'expo-document-picker';
-import { readAsStringAsync, EncodingType } from 'expo-file-system/legacy';
 import { WP_API_BASE, CONFIG } from '../config';
 
 // Типы загружаемых файлов
@@ -99,32 +98,32 @@ export const uploadFile = async (
 
     onProgress?.(10);
 
-    // Читаем файл как base64
-    const fileContent = await readAsStringAsync(file.uri, {
-      encoding: EncodingType.Base64,
-    });
-
-    onProgress?.(30);
+    // Проверяем размер файла — слишком большой вызовет OOM на устройстве
+    const MAX_SIZE = 1024 * 1024 * 1024; // 1 ГБ
+    if (file.size && file.size > MAX_SIZE) {
+      throw new Error('Файл слишком большой (максимум 1 ГБ). Сожмите видео перед загрузкой.');
+    }
 
     // Генерируем имя файла
     const ext = getExtension(file.mimeType || 'application/octet-stream');
     const timestamp = Date.now();
     const randomStr = Math.random().toString(36).substring(2, 8);
     const filename = `${type}_${timestamp}_${randomStr}.${ext}`;
+    const mimeType = getMimeType(ext);
 
-    onProgress?.(50);
+    onProgress?.(30);
 
-    // Конвертируем base64 в бинарные данные
-    const binaryString = atob(fileContent);
-    const bytes = new Uint8Array(binaryString.length);
-    for (let i = 0; i < binaryString.length; i++) {
-      bytes[i] = binaryString.charCodeAt(i);
+    // Читаем файл через fetch → Blob: данные потоково уходят из нативного слоя,
+    // JS-хип не загружается целиком (fix OutOfMemoryError на больших видео)
+    const fileResponse = await fetch(file.uri);
+    if (!fileResponse.ok) {
+      throw new Error('Не удалось прочитать выбранный файл');
     }
+    const blob = await fileResponse.blob();
 
     onProgress?.(70);
 
     // Загружаем в WordPress Media Library
-    const mimeType = getMimeType(ext);
     const response = await fetch(`${WP_API_BASE}/media`, {
       method: 'POST',
       headers: {
@@ -132,7 +131,7 @@ export const uploadFile = async (
         'Content-Disposition': `attachment; filename="${filename}"`,
         'Content-Type': mimeType,
       },
-      body: bytes,
+      body: blob,
     });
 
     if (!response.ok) {

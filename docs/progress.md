@@ -498,7 +498,7 @@
 #### Миграция БД
 - [x] Миграция `014_subscription_expires_at.sql` — поле `subscription_expires_at` в `profiles`
 - [x] Типы `supabase.ts` обновлены (Row, Insert, Update)
-- [ ] Выполнить миграцию в Supabase Dashboard SQL Editor
+- [x] Выполнить миграцию в Supabase Dashboard SQL Editor
 
 #### Переименование тарифов
 - [x] `Бесплатный` → `Начало` (без намёка на покупку)
