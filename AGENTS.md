@@ -6,7 +6,7 @@ Content: spiritual practices, art therapy, meditations.
 Free + premium subscription content.
 
 ## TECH STACK
-- React Native + Expo SDK 54
+- React Native + Expo SDK 58 (RN 0.88, React 19.3)
 - Expo Router (file-based routing)
 - TypeScript (strict mode)
 - Zustand (state management)
