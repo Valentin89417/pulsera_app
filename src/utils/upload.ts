@@ -1,4 +1,8 @@
 import * as DocumentPicker from 'expo-document-picker';
+import {
+  createUploadTask,
+  FileSystemUploadType,
+} from 'expo-file-system/legacy';
 import { WP_API_BASE, CONFIG } from '../config';
 
 // Типы загружаемых файлов
@@ -96,9 +100,9 @@ export const uploadFile = async (
       throw new Error('WordPress не настроен. Проверьте EXPO_PUBLIC_WP_URL, EXPO_PUBLIC_WP_USER и EXPO_PUBLIC_WP_APP_PASSWORD в .env');
     }
 
-    onProgress?.(10);
+    onProgress?.(0);
 
-    // Проверяем размер файла — слишком большой вызовет OOM на устройстве
+    // Проверяем размер файла — слишком большой вызовет OOM/отказ сервера
     const MAX_SIZE = 1024 * 1024 * 1024; // 1 ГБ
     if (file.size && file.size > MAX_SIZE) {
       throw new Error('Файл слишком большой (максимум 1 ГБ). Сожмите видео перед загрузкой.');
@@ -111,37 +115,59 @@ export const uploadFile = async (
     const filename = `${type}_${timestamp}_${randomStr}.${ext}`;
     const mimeType = getMimeType(ext);
 
-    onProgress?.(30);
-
-    // Читаем файл через fetch → Blob: данные потоково уходят из нативного слоя,
-    // JS-хип не загружается целиком (fix OutOfMemoryError на больших видео)
-    const fileResponse = await fetch(file.uri);
-    if (!fileResponse.ok) {
-      throw new Error('Не удалось прочитать выбранный файл');
-    }
-    const blob = await fileResponse.blob();
-
-    onProgress?.(70);
-
-    // Загружаем в WordPress Media Library
-    const response = await fetch(`${WP_API_BASE}/media`, {
-      method: 'POST',
-      headers: {
-        'Authorization': getAuthHeader(),
-        'Content-Disposition': `attachment; filename="${filename}"`,
-        'Content-Type': mimeType,
+    // Нативный потоковый upload: файл читается с диска в нативном слое (OkHttp),
+    // JS-хип не копируется вообще — fix OOM на больших видео (120 МБ+).
+    // Прогресс приходит в реальном времени по байтам.
+    const uploadTask = createUploadTask(
+      `${WP_API_BASE}/media`,
+      file.uri,
+      {
+        httpMethod: 'POST',
+        headers: {
+          'Authorization': getAuthHeader(),
+          'Content-Disposition': `attachment; filename="${filename}"`,
+          'Content-Type': mimeType,
+        },
+        uploadType: FileSystemUploadType.BINARY_CONTENT,
       },
-      body: blob,
-    });
+      (progress: { totalBytesSent: number; totalBytesExpectedToSend: number }) => {
+        if (progress.totalBytesExpectedToSend > 0) {
+          const percent = Math.round(
+            (progress.totalBytesSent / progress.totalBytesExpectedToSend) * 100
+          );
+          onProgress?.(Math.min(percent, 99));
+        }
+      }
+    );
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      const errorMessage = errorData?.message || `HTTP ${response.status}`;
-      console.error('Ошибка загрузки в WordPress:', errorMessage);
-      throw new Error('Не удалось загрузить файл: ' + errorMessage);
+    const result = await uploadTask.uploadAsync();
+    if (!result) {
+      throw new Error('Загрузка прервалась. Проверьте соединение и повторите.');
     }
 
-    const data = await response.json();
+    if (result.status < 200 || result.status >= 300) {
+      let serverMessage = '';
+      try {
+        const parsed = JSON.parse(result.body);
+        serverMessage = parsed?.message || '';
+      } catch {
+        // ответ не JSON — игнорируем
+      }
+      console.error(
+        `Ошибка загрузки в WordPress: HTTP ${result.status}`,
+        result.body?.slice(0, 500)
+      );
+      if (result.status === 413) {
+        throw new Error(
+          'Файл слишком большой для сервера. Нужно увеличить client_max_body_size в Nginx.'
+        );
+      }
+      throw new Error(
+        `Не удалось загрузить файл (HTTP ${result.status})${serverMessage ? ': ' + serverMessage : ''}`
+      );
+    }
+
+    const data = JSON.parse(result.body);
 
     onProgress?.(100);
 
@@ -153,6 +179,9 @@ export const uploadFile = async (
     };
   } catch (error) {
     console.error('Ошибка загрузки файла:', error);
+    if (error instanceof TypeError || String(error).includes('Network request failed')) {
+      throw new Error('Нет соединения с сервером. Проверьте интернет и повторите.');
+    }
     throw error;
   }
 };

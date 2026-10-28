@@ -207,7 +207,14 @@ export const downloadContent = async (
   contentId: string,
   title: string,
   type: string,
-  data: { body?: string; audio_url?: string; video_url?: string; image_url?: string },
+  data: {
+    body?: string;
+    audio_url?: string;
+    video_url?: string;
+    image_url?: string;
+    premium_audio_url?: string;
+    premium_video_url?: string;
+  },
   onProgress?: (progress: number) => void
 ): Promise<boolean> => {
   try {
@@ -226,11 +233,15 @@ export const downloadContent = async (
       // Сохраняем тело с локальными путями
       const filePath = await downloadArticle(contentId, finalBody);
       filename = filePath.split('/').pop() || `${contentId}.txt`;
-    } else if (type === 'audio' && data.audio_url) {
-      const filePath = await downloadMedia(contentId, data.audio_url, 'audio', onProgress);
+    } else if (type === 'audio' && (data.audio_url || data.premium_audio_url)) {
+      // Приоритет: полная (премиум) версия, иначе бесплатная
+      const audioSource = data.premium_audio_url || data.audio_url!;
+      const filePath = await downloadMedia(contentId, audioSource, 'audio', onProgress);
       filename = filePath.split('/').pop() || `${contentId}.mp3`;
-    } else if (type === 'video' && data.video_url) {
-      const filePath = await downloadMedia(contentId, data.video_url, 'video', onProgress);
+    } else if (type === 'video' && (data.video_url || data.premium_video_url)) {
+      // Приоритет: полная (премиум) версия, иначе бесплатная
+      const videoSource = data.premium_video_url || data.video_url!;
+      const filePath = await downloadMedia(contentId, videoSource, 'video', onProgress);
       filename = filePath.split('/').pop() || `${contentId}.mp4`;
     } else {
       return false;

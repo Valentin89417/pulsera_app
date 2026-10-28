@@ -20,6 +20,7 @@ import { DownloadButton } from '../../components/DownloadButton';
 import { CommentsSection } from '../../components/CommentsSection';
 import { useSubscription } from '../../hooks/useAuth';
 import { readDownloadedArticle, getDownloadedMediaUri } from '../../utils/offlineCache';
+import { useDownloadStore } from '../../store/downloadStore';
 import { useTheme } from '../../hooks/useTheme';
 import { ThemeColors } from '../../utils/themeColors';
 import { getMarkdownStyles } from '../../utils/markdownStyles';
@@ -216,6 +217,8 @@ export default function ContentDetailScreen() {
   const [offlineBody, setOfflineBody] = useState<string | null>(null);
   const [offlineMediaUri, setOfflineMediaUri] = useState<string | null>(null);
   const { hasAccess } = useSubscription();
+  // Подписка на скачанное: обновляем локальный медиа-файл после скачивания прямо на экране
+  const downloadedIds = useDownloadStore((s) => s.downloadedIds);
   const { colors } = useTheme();
   const styles = createStyles(colors);
   const markdownStyles = getMarkdownStyles(colors);
@@ -233,6 +236,20 @@ export default function ContentDetailScreen() {
   useEffect(() => {
     loadContent();
   }, [id]);
+
+  // После скачивания/удаления прямо на экране — обновляем локальный медиа-файл
+  useEffect(() => {
+    if (!id || !content) return;
+    const refreshOfflineMedia = async () => {
+      if (downloadedIds.has(id) && (content.type === 'video' || content.type === 'audio')) {
+        const localUri = await getDownloadedMediaUri(id, content.type);
+        setOfflineMediaUri(localUri);
+      } else if (!downloadedIds.has(id)) {
+        setOfflineMediaUri(null);
+      }
+    };
+    refreshOfflineMedia();
+  }, [downloadedIds, id, content?.type]);
 
   const loadContent = async () => {
     if (!id) return;
@@ -336,18 +353,22 @@ export default function ContentDetailScreen() {
   }
 
   const body = offlineBody || (content.content_data as { body?: string })?.body || '';
-  const audioUrl = offlineMediaUri || (content.content_data as { audio_url?: string })?.audio_url;
-  const videoUrl = offlineMediaUri || (content.content_data as { video_url?: string })?.video_url;
 
-  // Премиум-контент
+  // Локальный файл недоступен для премиум-поста без подписки (защита полной версии)
+  const hasAccessToPremium = content.is_premium && hasAccess(content.subscription_tier || 'path');
+  const effectiveOfflineUri = content.is_premium && !hasAccessToPremium ? null : offlineMediaUri;
+
+  const audioUrl = effectiveOfflineUri || (content.content_data as { audio_url?: string })?.audio_url;
+  const videoUrl = effectiveOfflineUri || (content.content_data as { video_url?: string })?.video_url;
+
+  // Премиум-контент (с офлайн-поддержкой: локальный файл приоритетнее онлайн-URL)
   const cd = content.content_data as Record<string, any>;
   const premiumBody = cd?.premium_body || '';
-  const premiumAudioUrl = cd?.premium_audio_url || '';
-  const premiumVideoUrl = cd?.premium_video_url || '';
+  const premiumAudioUrl = effectiveOfflineUri || cd?.premium_audio_url || '';
+  const premiumVideoUrl = effectiveOfflineUri || cd?.premium_video_url || '';
 
   const isAudioContent = content.type === 'audio' && audioUrl;
   const isVideoContent = content.type === 'video' && videoUrl;
-  const hasAccessToPremium = content.is_premium && hasAccess(content.subscription_tier || 'path');
   const hasPremiumContent = content.is_premium && !hasAccessToPremium;
 
   return (

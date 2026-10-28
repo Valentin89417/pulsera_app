@@ -89,6 +89,8 @@ export const useDownloadStore = create<DownloadState>((set, get) => ({
         audio_url?: string;
         video_url?: string;
         image_url?: string;
+        premium_audio_url?: string;
+        premium_video_url?: string;
       };
 
       const success = await downloadContent(
