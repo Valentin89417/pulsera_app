@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -24,7 +24,12 @@ const shouldShowSummary = (): boolean => {
   return hour >= 17 || hour < 4;
 };
 
-export function DailyCard() {
+interface DailyCardProps {
+  // Родитель запоминает сфокусированный блок и прокручивает ленту к нему
+  onInputFocus?: (node: View | null) => void;
+}
+
+export function DailyCard({ onInputFocus }: DailyCardProps) {
   const router = useRouter();
   const { user } = useAuthStore();
   const { colors } = useTheme();
@@ -39,6 +44,10 @@ export function DailyCard() {
   const [submitting, setSubmitting] = useState(false);
   const player = useAudioPlayer(null);
   const audioStatus = useAudioPlayerStatus(player);
+
+  // Ref-ы блоков с полями ввода — для прокрутки ленты при фокусе (клавиатура)
+  const photoInputBlockRef = useRef<View>(null);
+  const summaryInputBlockRefs = useRef<(View | null)[]>([]);
 
   const loadCard = useCallback(async () => {
     try {
@@ -209,7 +218,7 @@ export function DailyCard() {
           <FontAwesome name="arrow-right" size={12} color={colors.primary} />
         </TouchableOpacity>
       ) : (
-        <View style={styles.inputContainer}>
+        <View style={styles.inputContainer} ref={photoInputBlockRef}>
           <TextInput
             style={styles.input}
             value={photoAnswer}
@@ -218,6 +227,7 @@ export function DailyCard() {
             placeholderTextColor={colors.textMuted}
             multiline
             editable={!submitting}
+            onFocus={() => onInputFocus?.(photoInputBlockRef.current)}
           />
           <TouchableOpacity
             style={[styles.submitButton, (!photoAnswer.trim() || submitting) && styles.submitButtonDisabled]}
@@ -240,7 +250,13 @@ export function DailyCard() {
           <Text style={styles.summaryTitle}>Вопросы для подведения итогов</Text>
 
           {card.summary_questions.map((question, index) => (
-            <View key={index} style={styles.summaryItem}>
+            <View
+              key={index}
+              style={styles.summaryItem}
+              ref={(node) => {
+                summaryInputBlockRefs.current[index] = node;
+              }}
+            >
               <Text style={styles.summaryQuestion}>{question}</Text>
 
               {summaryResponded[index] ? (
@@ -264,6 +280,7 @@ export function DailyCard() {
                   placeholderTextColor={colors.textMuted}
                   multiline
                   editable={!submitting}
+                  onFocus={() => onInputFocus?.(summaryInputBlockRefs.current[index] ?? null)}
                 />
               )}
             </View>

@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -7,6 +7,8 @@ import {
   TouchableOpacity,
   RefreshControl,
   ActivityIndicator,
+  Platform,
+  Keyboard,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useFocusEffect } from 'expo-router/react-navigation';
@@ -184,6 +186,68 @@ export default function HomeScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Прокрутка ленты к сфокусированному полю ввода (DailyCard в футере)
+  const listRef = useRef<FlatList<ContentItem>>(null);
+  const containerRef = useRef<View>(null);
+  const focusedNodeRef = useRef<View | null>(null);
+  const keyboardTopRef = useRef<number | null>(null);
+  const contentOffsetRef = useRef(0);
+
+  // Прокрутить ленту так, чтобы блок с полем ввода был виден над клавиатурой
+  const scrollFocusedInputIntoView = useCallback(() => {
+    const node = focusedNodeRef.current;
+    const container = containerRef.current;
+    if (!node || !container) return;
+
+    node.measureInWindow((_nx, nodeY, _nw, nodeH) => {
+      container.measureInWindow((_cx, containerY, _cw, containerH) => {
+        // Нижняя граница видимой области: дно экрана или верх клавиатуры
+        let visibleBottom = containerY + containerH;
+        if (keyboardTopRef.current != null) {
+          visibleBottom = Math.min(visibleBottom, keyboardTopRef.current);
+        }
+        const MARGIN = 24;
+        const delta = nodeY + nodeH + MARGIN - visibleBottom;
+        if (delta > 0) {
+          listRef.current?.scrollToOffset({
+            offset: contentOffsetRef.current + delta,
+            animated: true,
+          });
+        }
+      });
+    });
+  }, []);
+
+  // Фокус на поле ввода внутри DailyCard: запоминаем блок и прокручиваем
+  const handleInputFocus = useCallback(
+    (node: View | null) => {
+      focusedNodeRef.current = node;
+      if (node) scrollFocusedInputIntoView();
+    },
+    [scrollFocusedInputIntoView]
+  );
+
+  // После показа клавиатуры — прокрутка с учётом её верхней границы
+  useEffect(() => {
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+
+    const showSub = Keyboard.addListener(showEvent, (event) => {
+      keyboardTopRef.current = event.endCoordinates.screenY;
+      // Даём кадр на ресайз окна (Android adjustResize) перед замером
+      requestAnimationFrame(() => scrollFocusedInputIntoView());
+    });
+    const hideSub = Keyboard.addListener(hideEvent, () => {
+      keyboardTopRef.current = null;
+      focusedNodeRef.current = null;
+    });
+
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, [scrollFocusedInputIntoView]);
+
   // Загрузка контента
   const loadContent = async (isRefresh = false) => {
     try {
@@ -310,7 +374,7 @@ export default function HomeScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={styles.container} ref={containerRef}>
       {/* Заголовок */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>PULSERA | Стая</Text>
@@ -319,6 +383,7 @@ export default function HomeScreen() {
 
       {/* Лента */}
       <FlatList
+        ref={listRef}
         data={content}
         renderItem={renderContentCard}
         keyExtractor={(item) => item.id}
@@ -329,10 +394,15 @@ export default function HomeScreen() {
         ListFooterComponent={() => (
           <>
             <WeekCalendar />
-            <DailyCard />
+            <DailyCard onInputFocus={handleInputFocus} />
           </>
         )}
         ListEmptyComponent={renderEmpty}
+        keyboardShouldPersistTaps="handled"
+        onScroll={(event) => {
+          contentOffsetRef.current = event.nativeEvent.contentOffset.y;
+        }}
+        scrollEventThrottle={16}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
