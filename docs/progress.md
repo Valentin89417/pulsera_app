@@ -170,7 +170,7 @@
 ---
 
 ## Технические заметки
-- **Миграции pending**: 009, 010, 011, 012, 013, 014, 015, 016 — нужно выполнить в Supabase Dashboard SQL Editor
+- **Миграции**: все применены (001–016) в Supabase Dashboard SQL Editor ✅
 - **Темы**: useTheme() хук возвращает colors из Zustand store, persists в AsyncStorage
 - **Палитра**: ThemeColors тип с ~30 токенами (background, surface, primary, text, border, alpha-варианты)
 - **Иконки**: FontAwesome (`@expo/vector-icons`) — все UI-иконки заменены с эмодзи на FontAwesome
@@ -430,7 +430,7 @@
 #### Миграция БД
 - [x] Миграция `015_afisha_banners.sql` — таблица `afisha_banners` (image_url, image_filename, title, link_url, sort_order, is_active)
 - [x] RLS: SELECT публичный, INSERT/UPDATE/DELETE только админ
-- [ ] Выполнить миграцию в Supabase Dashboard SQL Editor
+- [x] Выполнить миграцию в Supabase Dashboard SQL Editor
 
 #### Типы и API
 - [x] Типы `AfishaBanner`, `AfishaBannerInsert`, `AfishaBannerUpdate` в `types/content.ts`
@@ -489,10 +489,9 @@
 ---
 
 ## Следующие шаги
-1. **Применить миграции** — 009-015 в Supabase Dashboard SQL Editor
-2. **Поддержка** — отдельный чат поддержки (несколько админов)
-3. **Профиль пользователя (расширенный)**
-4. **Собрать новый APK** — `eas build --platform android --profile preview`**
+1. **Поддержка** — отдельный чат поддержки (несколько админов)
+2. **Профиль пользователя (расширенный)**
+3. **Собрать новый APK** — `eas build --platform android --profile preview`**
 
 ---
 

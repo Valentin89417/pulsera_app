@@ -80,6 +80,7 @@ Free + premium subscription content.
 - Follow Expo best practices
 - Use functional programming patterns
 - **COMMITS: Only commit and push to Git when the user explicitly asks for it**
+- **COMMITS: Messages in Russian (subject + body), follow conventional commits style (feat/fix/docs/refactor)**
 
 ## IMPORTANT
 - Always check existing code before creating new files
