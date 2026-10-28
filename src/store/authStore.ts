@@ -4,6 +4,7 @@ import { supabase } from '../services/supabase';
 import { getProfile } from '../services/api';
 import { registerForPushNotifications, savePushToken, removePushToken } from '../services/notifications';
 import { AuthState, UserProfile } from '../types';
+import { friendlyAuthError, isNetworkError, NETWORK_MESSAGE } from '../utils/networkError';
 
 // Регистрация push-токена для текущего пользователя
 const registerPushToken = async (userId: string) => {
@@ -88,7 +89,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
       if (error) {
         set({ isLoading: false });
-        return { error: error.message };
+        return { error: friendlyAuthError(error.message) };
       }
 
       // Если пользователь создан, загружаем профиль и регистрируем токен
@@ -102,7 +103,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       return { error: null };
     } catch (error) {
       set({ isLoading: false });
-      return { error: 'Неожиданная ошибка при регистрации' };
+      return { error: isNetworkError(String(error)) ? NETWORK_MESSAGE : 'Неожиданная ошибка при регистрации' };
     }
   },
 
@@ -118,7 +119,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
       if (error) {
         set({ isLoading: false });
-        return { error: error.message };
+        return { error: friendlyAuthError(error.message) };
       }
 
       // Загружаем профиль и регистрируем токен
@@ -132,7 +133,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       return { error: null };
     } catch (error) {
       set({ isLoading: false });
-      return { error: 'Неожиданная ошибка при входе' };
+      return { error: isNetworkError(String(error)) ? NETWORK_MESSAGE : 'Неожиданная ошибка при входе' };
     }
   },
 
@@ -162,12 +163,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       });
 
       if (error) {
-        return { error: error.message };
+        return { error: friendlyAuthError(error.message) };
       }
 
       return { error: null };
     } catch (error) {
-      return { error: 'Неожиданная ошибка при сбросе пароля' };
+      return { error: isNetworkError(String(error)) ? NETWORK_MESSAGE : 'Неожиданная ошибка при сбросе пароля' };
     }
   },
 
