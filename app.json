@@ -7,11 +7,6 @@
     "icon": "./assets/icon.png",
     "scheme": "pulsera",
     "userInterfaceStyle": "dark",
-    "splash": {
-      "image": "./assets/splash.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#fffee0"
-    },
     "ios": {
       "supportsTablet": true
     },
@@ -46,7 +41,14 @@
       "expo-image-picker",
       "expo-file-system",
       "expo-sharing",
-      "expo-splash-screen",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash.png",
+          "resizeMode": "contain",
+          "backgroundColor": "#fffee0"
+        }
+      ],
       "expo-status-bar"
     ],
     "extra": {

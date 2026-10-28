@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
   Platform,
   Keyboard,
+  ViewInstance,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useFocusEffect } from 'expo-router/react-navigation';
@@ -188,8 +189,8 @@ export default function HomeScreen() {
 
   // Прокрутка ленты к сфокусированному полю ввода (DailyCard в футере)
   const listRef = useRef<FlatList<ContentItem>>(null);
-  const containerRef = useRef<View>(null);
-  const focusedNodeRef = useRef<View | null>(null);
+  const containerRef = useRef<ViewInstance>(null);
+  const focusedNodeRef = useRef<ViewInstance | null>(null);
   const keyboardTopRef = useRef<number | null>(null);
   const contentOffsetRef = useRef(0);
 
@@ -220,7 +221,7 @@ export default function HomeScreen() {
 
   // Фокус на поле ввода внутри DailyCard: запоминаем блок и прокручиваем
   const handleInputFocus = useCallback(
-    (node: View | null) => {
+    (node: ViewInstance | null) => {
       focusedNodeRef.current = node;
       if (node) scrollFocusedInputIntoView();
     },

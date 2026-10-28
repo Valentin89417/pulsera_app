@@ -22,11 +22,10 @@ const loadNotificationsModule = async (): Promise<typeof import('expo-notificati
   moduleLoadAttempted = true;
 
   try {
-    // Проверяем, работаем ли мы в Expo Go (нет нативного модуля)
-    const { default: Constants } = await import('expo-constants');
-    const executionEnvironment = Constants?.executionEnvironment;
+    // Проверяем, работаем ли мы в Expo Go (нативные модули ограничены)
+    const { isRunningInExpoGo } = await import('expo');
 
-    if (executionEnvironment === 'storeClient') {
+    if (isRunningInExpoGo()) {
       // Expo Go — push не работают, возвращаем null
       console.log('[Notifications] Expo Go detected — push disabled');
       return null;
@@ -34,6 +33,14 @@ const loadNotificationsModule = async (): Promise<typeof import('expo-notificati
 
     // Development build или production — загружаем модуль
     NotificationsModule = await import('expo-notifications');
+
+    // Защита от частично загруженного модуля (старый нативный билд без нужных модулей):
+    // Metro может зарезолвить импорт объектом с undefined-полями вместо throw
+    if (typeof NotificationsModule?.setNotificationHandler !== 'function') {
+      console.log('[Notifications] Module loaded partially (outdated native build) — push disabled');
+      NotificationsModule = null;
+    }
+
     return NotificationsModule;
   } catch (error) {
     console.log('[Notifications] Module not available:', error);
@@ -301,19 +308,23 @@ const flushBatch = async (targetUserId: string): Promise<void> => {
 
 // Настройка обработчика foreground-уведомлений
 export const setupNotificationListeners = async () => {
-  const Notifications = await loadNotificationsModule();
-  if (!Notifications) return; // Expo Go — пропускаем
+  try {
+    const Notifications = await loadNotificationsModule();
+    if (!Notifications) return; // Expo Go — пропускаем
 
-  // Когда приложение открыто — показываем уведомление в-app
-  Notifications.setNotificationHandler({
-    handleNotification: async () => ({
-      shouldShowAlert: true,
-      shouldPlaySound: true,
-      shouldSetBadge: false,
-      shouldShowBanner: true,
-      shouldShowList: true,
-    }),
-  });
+    // Когда приложение открыто — показываем уведомление в-app
+    Notifications.setNotificationHandler({
+      handleNotification: async () => ({
+        shouldShowAlert: true,
+        shouldPlaySound: true,
+        shouldSetBadge: false,
+        shouldShowBanner: true,
+        shouldShowList: true,
+      }),
+    });
+  } catch (error) {
+    console.log('[Notifications] Failed to setup listeners:', error);
+  }
 };
 
 // ============================================

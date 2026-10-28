@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   Image,
   TextInput,
+  ViewInstance,
   Alert,
   ActivityIndicator,
 } from 'react-native';
@@ -26,7 +27,7 @@ const shouldShowSummary = (): boolean => {
 
 interface DailyCardProps {
   // Родитель запоминает сфокусированный блок и прокручивает ленту к нему
-  onInputFocus?: (node: View | null) => void;
+  onInputFocus?: (node: ViewInstance | null) => void;
 }
 
 export function DailyCard({ onInputFocus }: DailyCardProps) {
@@ -46,8 +47,8 @@ export function DailyCard({ onInputFocus }: DailyCardProps) {
   const audioStatus = useAudioPlayerStatus(player);
 
   // Ref-ы блоков с полями ввода — для прокрутки ленты при фокусе (клавиатура)
-  const photoInputBlockRef = useRef<View>(null);
-  const summaryInputBlockRefs = useRef<(View | null)[]>([]);
+  const photoInputBlockRef = useRef<ViewInstance>(null);
+  const summaryInputBlockRefs = useRef<(ViewInstance | null)[]>([]);
 
   const loadCard = useCallback(async () => {
     try {

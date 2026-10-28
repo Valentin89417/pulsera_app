@@ -6,8 +6,8 @@ import {
   StyleSheet,
   TouchableOpacity,
   ActivityIndicator,
-  NativeSyntheticEvent,
-  TextInputSelectionChangeEventData,
+  TextInputSelectionChangeEvent,
+  TextInputInstance,
   Alert,
 } from 'react-native';
 import Markdown from 'react-native-markdown-display';
@@ -54,7 +54,7 @@ export function MarkdownEditor({ value, onChangeText, placeholder }: MarkdownEdi
   const { colors } = useTheme();
   const [preview, setPreview] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
-  const inputRef = useRef<TextInput>(null);
+  const inputRef = useRef<TextInputInstance>(null);
   const [selection, setSelection] = useState<{ start: number; end: number }>({ start: 0, end: 0 });
   const styles = createStyles(colors);
   const markdownStyles = getMarkdownStyles(colors);
@@ -69,7 +69,7 @@ export function MarkdownEditor({ value, onChangeText, placeholder }: MarkdownEdi
   };
 
   const handleSelectionChange = useCallback(
-    (e: NativeSyntheticEvent<TextInputSelectionChangeEventData>) => {
+    (e: TextInputSelectionChangeEvent) => {
       setSelection(e.nativeEvent.selection);
     },
     [],

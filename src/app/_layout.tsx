@@ -26,7 +26,7 @@ export default function RootLayout() {
     checkOnboarding();
     loadTheme();
     loadDownloads();
-    setupNotificationListeners();
+    setupNotificationListeners().catch(() => {});
   }, []);
 
   // Обновление профиля при возвращении из фона (проверка подписки)

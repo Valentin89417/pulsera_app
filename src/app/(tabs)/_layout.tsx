@@ -29,7 +29,7 @@ export default function TabsLayout() {
         options={{
           title: 'Главная',
           tabBarIcon: ({ color }) => (
-            <FontAwesome name="home" size={22} color={color} />
+            <FontAwesome name="home" size={22} color={color as string} />
           ),
         }}
       />
@@ -38,7 +38,7 @@ export default function TabsLayout() {
         options={{
           title: 'Каталог',
           tabBarIcon: ({ color }) => (
-            <FontAwesome name="book" size={22} color={color} />
+            <FontAwesome name="book" size={22} color={color as string} />
           ),
         }}
       />
@@ -47,7 +47,7 @@ export default function TabsLayout() {
         options={{
           title: 'Сообщество',
           tabBarIcon: ({ color }) => (
-            <FontAwesome name="users" size={22} color={color} />
+            <FontAwesome name="users" size={22} color={color as string} />
           ),
         }}
       />
@@ -56,7 +56,7 @@ export default function TabsLayout() {
         options={{
           title: 'Профиль',
           tabBarIcon: ({ color }) => (
-            <FontAwesome name="user" size={22} color={color} />
+            <FontAwesome name="user" size={22} color={color as string} />
           ),
         }}
       />
