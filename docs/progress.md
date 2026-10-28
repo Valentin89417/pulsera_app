@@ -30,6 +30,42 @@
 
 ---
 
+## Expo SDK 57 → 58 Upgrade ✅
+**Статус:** Завершено
+**Дата:** 28.10.2026
+**Причина:** Expo Go обновился до SDK 58 — проект перестал запускаться в Expo Go
+
+### Миграция
+- [x] **Пакеты** — `npm install expo@^58` + `npx expo install --fix` (25 пакетов). `expo upgrade` в локальном CLI не поддерживается
+- [x] **Peer-конфликт** — `npm install --legacy-peer-deps` (expo-router ↔ опциональный `@expo/ui`)
+- [x] **app.json: splash** — корневой блок `splash` удалён из схемы SDK 58, перенесён в плагин `["expo-splash-screen", { image, resizeMode, backgroundColor }]`
+- [x] **RN 0.88: типы рефов** — `useRef<View>` → `useRef<ViewInstance>`, `useRef<TextInput>` → `useRef<TextInputInstance>` (index.tsx, DailyCard.tsx, MarkdownEditor.tsx)
+- [x] **RN 0.88: событие selection** — `TextInputSelectionChangeEventData` → `TextInputSelectionChangeEvent`
+- [x] **RN 0.88: цвет иконки таба** — `color` из `tabBarIcon` теперь `ColorValue`, приведение к `string`
+- [x] **expo-notifications в Expo Go** — `expo-notifications` 58.x при импорте требует нативный модуль `ExpoTopicSubscriptionModule` (нет в Expo Go) → детекция через `isRunningInExpoGo()`, защита от частично загруженного модуля, `setupNotificationListeners().catch()` в `_layout.tsx`
+
+### Версии после апгрейда
+| Пакет | Было | Стало |
+|---|---|---|
+| expo | ^57.0.0 | ^58.0.20 |
+| react | 19.2.3 | 19.3.0 |
+| react-dom | 19.2.3 | 19.3.0 |
+| react-native | 0.86.3 | 0.88.0 |
+| expo-router | ~57.0.20 | ~58.0.27 |
+| expo-notifications | ~57.0.17 | ~58.1.6 |
+| @types/react | 19.2.18 | ~19.3.0 |
+
+### Проверка
+- [x] `npx expo-doctor` — 20/20 checks passed
+- [x] `npx tsc --noEmit` — 0 ошибок
+- [x] `npx expo export --platform android` — бандл собирается (1559 модулей)
+- [x] Запуск в Expo Go SDK 58 — ошибок нет
+
+### Проверить при сборке APK
+- [ ] **Push-уведомления** — в Expo Go не работают по определению (`isRunningInExpoGo()` отключает модуль). После `eas build --platform android --profile preview` проверить: запрос разрешения, получение Expo Push Token, сохранение в `push_tokens`, приход push в foreground/background, навигация по тапу
+
+---
+
 ## Phase 1: Foundation ✅
 - [x] Структура папок (src/app, components, hooks, services, store, utils, types)
 - [x] Инициализация проекта (Expo SDK 57 + Expo Router)
@@ -492,6 +528,7 @@
 1. **Поддержка** — отдельный чат поддержки (несколько админов)
 2. **Профиль пользователя (расширенный)**
 3. **Собрать новый APK** — `eas build --platform android --profile preview`**
+4. **Проверить Push-уведомления при создании APK** — в Expo Go не работают; проверить в собранном APK: разрешение, Expo Push Token, сохранение в `push_tokens`, приход push в foreground/background и переход по тапу
 
 ---
 
