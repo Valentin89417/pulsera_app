@@ -11,7 +11,6 @@ import {
 import { useRouter } from 'expo-router';
 import { useFocusEffect } from 'expo-router/react-navigation';
 import { FontAwesome } from '@expo/vector-icons';
-import { useAuthStore } from '../../store/authStore';
 import { getContent, getCategories } from '../../services/api';
 import { ContentItem } from '../../types';
 import { DownloadButton } from '../../components/DownloadButton';
@@ -31,15 +30,18 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     paddingHorizontal: 20,
     paddingBottom: 16,
   },
-  greeting: {
-    fontSize: 14,
-    color: colors.textSecondary,
-    marginBottom: 4,
-  },
   headerTitle: {
     fontSize: 24,
     fontWeight: 'bold',
     color: colors.text,
+    textAlign: 'center',
+  },
+  headerSubtitle: {
+    fontSize: 12,
+    letterSpacing: 1.5,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    marginTop: 6,
   },
   list: {
     paddingHorizontal: 16,
@@ -173,7 +175,6 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
 // Главный экран — лента контента
 export default function HomeScreen() {
   const router = useRouter();
-  const { profile } = useAuthStore();
   const { colors } = useTheme();
   const styles = createStyles(colors);
 
@@ -189,7 +190,8 @@ export default function HomeScreen() {
       if (isRefresh) setRefreshing(true);
       else setLoading(true);
 
-      const data = await getContent({ limit: 20 });
+      // Последние 4 материала — остальное в каталоге
+      const data = await getContent({ limit: 4 });
       setContent(data);
       setError(null);
     } catch (err) {
@@ -311,8 +313,8 @@ export default function HomeScreen() {
     <View style={styles.container}>
       {/* Заголовок */}
       <View style={styles.header}>
-        <Text style={styles.greeting}>Привет, {profile?.display_name || 'Путник'} 👋</Text>
-        <Text style={styles.headerTitle}>Что нового сегодня?</Text>
+        <Text style={styles.headerTitle}>PULSERA | Стая</Text>
+        <Text style={styles.headerSubtitle}>Путь к себе, среди своих.</Text>
       </View>
 
       {/* Лента */}
