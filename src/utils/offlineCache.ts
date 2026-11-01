@@ -10,6 +10,8 @@ import {
   createDownloadResumable,
 } from 'expo-file-system/legacy';
 import storage from './storage';
+import { GalleryImage } from '../types/content';
+import { GalleryScope, parseGalleryImages } from './gallery';
 
 // Директория для скачанного контента
 const DOWNLOADS_DIR = `${documentDirectory}downloads/`;
@@ -25,6 +27,9 @@ export interface DownloadMeta {
   // Локальные файлы изображений (для удаления)
   previewImage?: string;
   bodyImages?: string[];
+  // Фото галереи статьи (карусель) — порядок важен
+  galleryImages?: string[];
+  galleryScope?: GalleryScope;
 }
 
 // Получение расширения файла по типу контента
@@ -58,6 +63,11 @@ const getPreviewImagePath = (contentId: string, ext: string): string => {
 // Путь к изображению из тела статьи
 const getBodyImagePath = (contentId: string, index: number, ext: string): string => {
   return `${DOWNLOADS_DIR}${contentId}_img_${index}${ext}`;
+};
+
+// Путь к фото галереи статьи (карусель)
+const getGalleryImagePath = (contentId: string, index: number, ext: string): string => {
+  return `${DOWNLOADS_DIR}${contentId}_gallery_${index}${ext}`;
 };
 
 // Определение расширения по URL
@@ -165,6 +175,37 @@ const downloadPreviewImage = async (
   return filePath;
 };
 
+// Скачивание фото галереи статьи. Если хотя бы одно не скачалось —
+// возвращаем пустой массив: на экране покажется сетевой набор целиком,
+// а не «дырявая» карусель. Порядок слайдов сохраняется.
+const downloadGallery = async (
+  contentId: string,
+  images: GalleryImage[]
+): Promise<string[]> => {
+  const paths: string[] = [];
+
+  for (let i = 0; i < images.length; i++) {
+    try {
+      await ensureDownloadsDir();
+      const ext = getExtFromUrl(images[i].url);
+      const filePath = getGalleryImagePath(contentId, i, ext);
+      await downloadSingleImage(images[i].url, filePath);
+      paths.push(filePath);
+    } catch (error) {
+      console.error(`Ошибка скачивания фото галереи ${images[i].url}:`, error);
+      // Удаляем уже скачанные файлы — кэш галереи должен быть полным
+      for (const path of paths) {
+        try {
+          await deleteAsync(path);
+        } catch {}
+      }
+      return [];
+    }
+  }
+
+  return paths;
+};
+
 // Скачивание изображений из тела статьи + перезапись URL в body
 const downloadBodyImages = async (
   contentId: string,
@@ -214,6 +255,8 @@ export const downloadContent = async (
     image_url?: string;
     premium_audio_url?: string;
     premium_video_url?: string;
+    images?: GalleryImage[];
+    premium_images?: GalleryImage[];
   },
   onProgress?: (progress: number) => void
 ): Promise<boolean> => {
@@ -221,6 +264,8 @@ export const downloadContent = async (
     let filename = '';
     let previewImage: string | undefined;
     let bodyImages: string[] | undefined;
+    let galleryImages: string[] | undefined;
+    let galleryScope: GalleryScope | undefined;
 
     // 1. Текст сохраняем для любого типа контента (статья, видео, аудио, курс)
     if (data.body) {
@@ -247,8 +292,21 @@ export const downloadContent = async (
       filename = filePath.split('/').pop() || `${contentId}.mp4`;
     }
 
-    // Ничего скачивать не нужно (нет ни текста, ни медиа)
-    if (!filename) return false;
+    // 3. Фото галереи статьи — качаем набор, который видит владелец полного доступа
+    const premiumGallery = parseGalleryImages(data.premium_images);
+    const publicGallery = parseGalleryImages(data.images);
+    const galleryToDownload = premiumGallery.length > 0 ? premiumGallery : publicGallery;
+
+    if (galleryToDownload.length > 0) {
+      const downloaded = await downloadGallery(contentId, galleryToDownload);
+      if (downloaded.length > 0) {
+        galleryImages = downloaded;
+        galleryScope = premiumGallery.length > 0 ? 'premium' : 'public';
+      }
+    }
+
+    // Ничего скачивать не нужно (нет ни текста, ни медиа, ни фото галереи)
+    if (!filename && !galleryImages) return false;
 
     // Скачиваем превью-изображение (для всех типов)
     if (data.image_url) {
@@ -271,6 +329,7 @@ export const downloadContent = async (
       downloadedAt: new Date().toISOString(),
       ...(previewImage && { previewImage }),
       ...(bodyImages && { bodyImages }),
+      ...(galleryImages && { galleryImages, galleryScope }),
     };
 
     if (existing >= 0) {
@@ -331,6 +390,18 @@ export const removeDownload = async (contentId: string): Promise<boolean> => {
           } catch {}
         }
       }
+
+      // Удаляем фото галереи статьи
+      if (entry.galleryImages && entry.galleryImages.length > 0) {
+        for (const imgPath of entry.galleryImages) {
+          try {
+            const imgInfo = await getInfoAsync(imgPath);
+            if (imgInfo.exists) {
+              await deleteAsync(imgPath);
+            }
+          } catch {}
+        }
+      }
     }
 
     const updated = meta.filter((d) => d.id !== contentId);
@@ -377,6 +448,34 @@ export const getDownloadedPreviewUri = async (contentId: string): Promise<string
     const fileInfo = await getInfoAsync(entry.previewImage);
     if (!fileInfo.exists) return null;
     return fileInfo.uri;
+  } catch {
+    return null;
+  }
+};
+
+// Локальная галерея статьи: URI в порядке слайдов + к какому набору она относится
+export interface DownloadedGallery {
+  uris: string[];
+  scope: GalleryScope;
+}
+
+export const getDownloadedGallery = async (
+  contentId: string
+): Promise<DownloadedGallery | null> => {
+  try {
+    const meta = await getDownloadsMeta();
+    const entry = meta.find((d) => d.id === contentId);
+    if (!entry?.galleryImages || entry.galleryImages.length === 0) return null;
+
+    const uris: string[] = [];
+    for (const imagePath of entry.galleryImages) {
+      const fileInfo = await getInfoAsync(imagePath);
+      // Кэш галереи используем только целиком — иначе порядок/состав поедет
+      if (!fileInfo.exists) return null;
+      uris.push(fileInfo.uri);
+    }
+
+    return { uris, scope: entry.galleryScope || 'public' };
   } catch {
     return null;
   }

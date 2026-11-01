@@ -14,6 +14,12 @@ export type ContentUpdate = Database['public']['Tables']['content']['Update'];
 // Типы контента
 export type ContentType = 'article' | 'video' | 'audio' | 'course';
 
+// Фото галереи статьи (карусель)
+export interface GalleryImage {
+  url: string;
+  filename?: string;
+}
+
 // Категории контента
 export type ContentCategory = 
   | 'meditation'

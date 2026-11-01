@@ -164,6 +164,31 @@ export const pickFile = async (type: UploadFileType): Promise<DocumentPicker.Doc
   }
 };
 
+// Выбрать несколько изображений сразу (для фотокарусели статьи)
+export const pickImageFiles = async (): Promise<DocumentPicker.DocumentPickerAsset[]> => {
+  try {
+    const result = await DocumentPicker.getDocumentAsync({
+      type: ALLOWED_MIME_TYPES.image,
+      copyToCacheDirectory: Platform.OS !== 'android',
+      multiple: true,
+    });
+
+    if (result.canceled || !result.assets || result.assets.length === 0) {
+      return [];
+    }
+
+    const prepared: DocumentPicker.DocumentPickerAsset[] = [];
+    for (const asset of result.assets) {
+      prepared.push(await prepareAssetForUpload(asset));
+    }
+
+    return prepared;
+  } catch (error) {
+    console.error('Ошибка выбора изображений:', error);
+    throw error;
+  }
+};
+
 // Загрузить файл в WordPress Media Library
 export const uploadFile = async (
   file: DocumentPicker.DocumentPickerAsset,
@@ -371,6 +396,20 @@ export const deleteContentFiles = async (contentData: Record<string, unknown>): 
   // Превью-изображение (обложка статьи)
   const imageUrl = contentData?.image_url as string;
   if (imageUrl && isWpMediaUrl(imageUrl)) urlsToDelete.push(imageUrl);
+
+  // Фото галереи статьи (обычная и платная карусель)
+  const addGalleryUrls = (value: unknown) => {
+    if (!Array.isArray(value)) return;
+    for (const item of value) {
+      const url =
+        typeof item === 'string'
+          ? item
+          : (item as { url?: string } | null)?.url;
+      if (url && isWpMediaUrl(url)) urlsToDelete.push(url);
+    }
+  };
+  addGalleryUrls(contentData?.images);
+  addGalleryUrls(contentData?.premium_images);
 
   // Тело статьи (изображения в markdown)
   const body = contentData?.body as string;

@@ -19,13 +19,15 @@ import { BookmarkButton } from '../../components/BookmarkButton';
 import { DownloadButton } from '../../components/DownloadButton';
 import { CommentsSection } from '../../components/CommentsSection';
 import { useSubscription } from '../../hooks/useAuth';
-import { readDownloadedArticle, getDownloadedMediaUri } from '../../utils/offlineCache';
+import { readDownloadedArticle, getDownloadedMediaUri, getDownloadedGallery } from '../../utils/offlineCache';
 import { useDownloadStore } from '../../store/downloadStore';
 import { useTheme } from '../../hooks/useTheme';
 import { ThemeColors } from '../../utils/themeColors';
 import { getMarkdownStyles } from '../../utils/markdownStyles';
 import { processCheckboxes } from '../../utils/markdownStyles';
 import { MarkdownImage } from '../../components/MarkdownImage';
+import { PhotoCarousel } from '../../components/PhotoCarousel';
+import { GalleryScope, getVisibleGallery } from '../../utils/gallery';
 
 const createStyles = (colors: ThemeColors) => StyleSheet.create({
   safeArea: {
@@ -216,6 +218,11 @@ export default function ContentDetailScreen() {
   const [error, setError] = useState<string | null>(null);
   const [offlineBody, setOfflineBody] = useState<string | null>(null);
   const [offlineMediaUri, setOfflineMediaUri] = useState<string | null>(null);
+  // Локальная галерея статьи (если скачана)
+  const [offlineGallery, setOfflineGallery] = useState<{
+    uris: string[];
+    scope: GalleryScope;
+  } | null>(null);
   const { hasAccess } = useSubscription();
   // Подписка на скачанное: обновляем локальный медиа-файл после скачивания прямо на экране
   const downloadedIds = useDownloadStore((s) => s.downloadedIds);
@@ -254,6 +261,16 @@ export default function ContentDetailScreen() {
       } else if (!downloadedIds.has(id)) {
         setOfflineMediaUri(null);
       }
+
+      // Галерея статьи: локальные фото после скачивания, сетевые после удаления
+      if (content.type === 'article') {
+        if (downloadedIds.has(id)) {
+          const localGallery = await getDownloadedGallery(id);
+          setOfflineGallery(localGallery);
+        } else {
+          setOfflineGallery(null);
+        }
+      }
     };
     refreshOfflineMedia();
   }, [downloadedIds, id, content?.type]);
@@ -262,6 +279,11 @@ export default function ContentDetailScreen() {
     if (!id) return;
     try {
       setLoading(true);
+      // Сбрасываем офлайн-данные предыдущего контента
+      setOfflineBody(null);
+      setOfflineMediaUri(null);
+      setOfflineGallery(null);
+
       const data = await getContentById(id);
       if (data) {
         setContent(data);
@@ -283,6 +305,14 @@ export default function ContentDetailScreen() {
           const localUri = await getDownloadedMediaUri(data.id, 'video');
           if (localUri) {
             setOfflineMediaUri(localUri);
+          }
+        }
+
+        // Галерея статьи: если фото скачаны — показываем локальные файлы
+        if (data.type === 'article') {
+          const localGallery = await getDownloadedGallery(data.id);
+          if (localGallery) {
+            setOfflineGallery(localGallery);
           }
         }
       } else {
@@ -373,6 +403,17 @@ export default function ContentDetailScreen() {
   const isVideoContent = content.type === 'video' && videoUrl;
   const hasPremiumContent = content.is_premium && !hasAccessToPremium;
 
+  // Фотокарусель — только для статей. Подписчик видит платный набор, если он заполнен
+  const visibleGallery =
+    content.type === 'article'
+      ? getVisibleGallery(cd, hasAccessToPremium)
+      : { images: [], scope: 'public' as GalleryScope };
+  // Локальный кэш используем только для того же набора, что видит пользователь
+  const galleryUris =
+    offlineGallery && offlineGallery.scope === visibleGallery.scope
+      ? offlineGallery.uris
+      : visibleGallery.images.map((image) => image.url);
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
@@ -417,6 +458,9 @@ export default function ContentDetailScreen() {
 
           <View style={styles.divider} />
 
+          {/* Фотокарусель статьи: под датой, перед текстом */}
+          {galleryUris.length > 0 && <PhotoCarousel uris={galleryUris} />}
+
           {/* Контент: премиум-пользователь видит ТОЛЬКО полную версию */}
           {content.is_premium && hasAccessToPremium ? (
             <>
@@ -428,7 +472,7 @@ export default function ContentDetailScreen() {
               ) : null}
               {/* Платный текст приоритетнее, иначе показываем общий текст */}
               {premiumBody || body ? renderBody(premiumBody || body) : null}
-              {!premiumBody && !body && !premiumVideoUrl && !premiumAudioUrl && (
+              {!premiumBody && !body && !premiumVideoUrl && !premiumAudioUrl && galleryUris.length === 0 && (
                 <View style={styles.noContent}>
                   <FontAwesome name="envelope-o" size={48} color={colors.primary} />
                   <Text style={styles.noContentText}>Контент пока не добавлен</Text>
@@ -445,7 +489,7 @@ export default function ContentDetailScreen() {
                 <AudioPlayer uri={audioUrl!} title={content.title} />
               ) : null}
               {body ? renderBody(body) : null}
-              {!isVideoContent && !isAudioContent && !body && (
+              {!isVideoContent && !isAudioContent && !body && galleryUris.length === 0 && (
                 <View style={styles.noContent}>
                   <FontAwesome name="envelope-o" size={48} color={colors.primary} />
                   <Text style={styles.noContentText}>Контент пока не добавлен</Text>

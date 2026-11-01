@@ -52,6 +52,14 @@
 // article — текстовый контент
 { "body": "Текст статьи в Markdown...", "image_url": "https://...", "image_filename": "cover.jpg" }
 
+// Фотокарусель статьи (только article) — порядок слайдов = порядок в массиве
+{
+  "images": [
+    { "url": "https://.../1.jpg", "filename": "gallery_1.jpg" },
+    { "url": "https://.../2.jpg", "filename": "gallery_2.jpg" }
+  ]
+}
+
 // audio
 { "audio_url": "https://...", "audio_filename": "meditation.mp3", "body": "Текст под плеером (опционально)" }
 
@@ -60,6 +68,9 @@
 
 // Премиум-поля (is_premium = true) — доступны для любого типа
 { "premium_body": "Платный текст в Markdown...", "premium_audio_url": "https://...", "premium_video_url": "https://..." }
+
+// Платная фотокарусель статьи (article) — видит только пользователь с доступом
+{ "premium_images": [{ "url": "https://.../1.jpg", "filename": "premium_1.jpg" }] }
 ```
 
 ### user_content_progress

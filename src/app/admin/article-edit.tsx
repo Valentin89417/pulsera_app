@@ -8,16 +8,18 @@ import {
   TouchableOpacity,
   Alert,
   ActivityIndicator,
+  Image,
   Switch,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { FontAwesome } from '@expo/vector-icons';
 import { getContentById, createContent, updateContent, getAllUserIds, getUserNotificationPrefs } from '../../services/api';
 import { sendImmediatePush } from '../../services/notifications';
-import { ContentItem, ContentType } from '../../types';
-import { pickFile, uploadFile, UploadFileType } from '../../utils/upload';
+import { ContentItem, ContentType, GalleryImage } from '../../types';
+import { pickFile, pickImageFiles, uploadFile, UploadFileType } from '../../utils/upload';
 import { MarkdownEditor } from '../../components/MarkdownEditor';
 import { CategoryInput } from '../../components/CategoryInput';
+import { parseGalleryImages, toStoredGallery } from '../../utils/gallery';
 import { useTheme } from '../../hooks/useTheme';
 import { ThemeColors } from '../../utils/themeColors';
 
@@ -49,6 +51,10 @@ export default function ArticleEditScreen() {
   const [audioFilename, setAudioFilename] = useState('');
   const [videoUrl, setVideoUrl] = useState('');
   const [videoFilename, setVideoFilename] = useState('');
+  // Фотокарусель статьи (обычная и платная)
+  const [galleryImages, setGalleryImages] = useState<GalleryImage[]>([]);
+  const [premiumGalleryImages, setPremiumGalleryImages] = useState<GalleryImage[]>([]);
+  const [galleryUpload, setGalleryUpload] = useState<{ current: number; total: number } | null>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [type, setType] = useState<ContentType>('article');
@@ -97,6 +103,10 @@ export default function ArticleEditScreen() {
         setPremiumAudioFilename(cd?.premium_audio_filename || '');
         setPremiumVideoUrl(cd?.premium_video_url || '');
         setPremiumVideoFilename(cd?.premium_video_filename || '');
+
+        // Фотокарусель статьи
+        setGalleryImages(parseGalleryImages(cd?.images));
+        setPremiumGalleryImages(parseGalleryImages(cd?.premium_images));
       }
     } catch (error) {
       console.error('Ошибка загрузки статьи:', error);
@@ -187,6 +197,79 @@ export default function ArticleEditScreen() {
     }
   };
 
+  // ----- Фотокарусель статьи -----
+  type GalleryTarget = 'public' | 'premium';
+
+  const setGalleryByTarget = (
+    target: GalleryTarget,
+    updater: (prev: GalleryImage[]) => GalleryImage[]
+  ) => {
+    if (target === 'public') {
+      setGalleryImages(updater);
+    } else {
+      setPremiumGalleryImages(updater);
+    }
+  };
+
+  // Выбор пачкой, загрузка по очереди — ошибка одного файла не отменяет остальные
+  const handleAddGalleryImages = async (target: GalleryTarget) => {
+    try {
+      const files = await pickImageFiles();
+      if (files.length === 0) return;
+
+      setUploading(true);
+      setUploadProgress(0);
+      setGalleryUpload({ current: 0, total: files.length });
+
+      const uploaded: GalleryImage[] = [];
+      let failed = 0;
+
+      for (let i = 0; i < files.length; i++) {
+        setGalleryUpload({ current: i + 1, total: files.length });
+        try {
+          const result = await uploadFile(files[i], 'image', setUploadProgress);
+          uploaded.push({ url: result.url, filename: result.filename });
+        } catch (error) {
+          console.error('Ошибка загрузки фото галереи:', error);
+          failed += 1;
+        }
+      }
+
+      if (uploaded.length > 0) {
+        setGalleryByTarget(target, (prev) => [...prev, ...uploaded]);
+      }
+
+      if (failed > 0) {
+        Alert.alert(
+          'Загрузка завершена',
+          `Не удалось загрузить ${failed} из ${files.length} файлов. Остальные добавлены в карусель.`
+        );
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Не удалось загрузить изображения';
+      Alert.alert('Ошибка', message);
+    } finally {
+      setUploading(false);
+      setUploadProgress(0);
+      setGalleryUpload(null);
+    }
+  };
+
+  const handleRemoveGalleryImage = (target: GalleryTarget, index: number) => {
+    setGalleryByTarget(target, (prev) => prev.filter((_, i) => i !== index));
+  };
+
+  // Порядок фото в редакторе = порядок слайдов в карусели
+  const handleMoveGalleryImage = (target: GalleryTarget, index: number, direction: -1 | 1) => {
+    setGalleryByTarget(target, (prev) => {
+      const nextIndex = index + direction;
+      if (nextIndex < 0 || nextIndex >= prev.length) return prev;
+      const next = [...prev];
+      [next[index], next[nextIndex]] = [next[nextIndex], next[index]];
+      return next;
+    });
+  };
+
   const handleSave = async () => {
     if (!title.trim()) {
       Alert.alert('Ошибка', 'Введите заголовок');
@@ -211,6 +294,11 @@ export default function ArticleEditScreen() {
         contentData.body = body.trim();
       }
 
+      // Фотокарусель статьи (обычный набор)
+      if (galleryImages.length > 0) {
+        contentData.images = toStoredGallery(galleryImages);
+      }
+
       if (type === 'audio') {
         contentData.audio_url = audioUrl.trim();
         contentData.audio_filename = audioFilename;
@@ -224,6 +312,11 @@ export default function ArticleEditScreen() {
         // Платный текст — для любого типа контента
         if (premiumBody.trim()) {
           contentData.premium_body = premiumBody.trim();
+        }
+
+        // Платная фотокарусель статьи
+        if (premiumGalleryImages.length > 0) {
+          contentData.premium_images = toStoredGallery(premiumGalleryImages);
         }
 
         if (type === 'audio' && premiumAudioUrl.trim()) {
@@ -301,6 +394,91 @@ export default function ArticleEditScreen() {
   };
 
   const styles = createStyles(colors);
+
+  // Блок управления фотокаруселью (обычной или платной)
+  const renderGalleryEditor = (
+    target: GalleryTarget,
+    title: string,
+    hint: string,
+    images: GalleryImage[],
+    premium = false
+  ) => (
+    <View style={styles.field}>
+      {premium ? (
+        <View style={styles.premiumSectionHeader}>
+          <FontAwesome name="lock" size={14} color={colors.primary} />
+          <Text style={styles.premiumSectionTitle}>{title}</Text>
+        </View>
+      ) : (
+        <Text style={styles.label}>{title}</Text>
+      )}
+      <Text style={styles.hint}>{hint}</Text>
+
+      {images.length > 0 && (
+        <View style={styles.galleryGrid}>
+          {images.map((image, index) => (
+            <View key={`${image.url}-${index}`} style={styles.galleryItem}>
+              <Image
+                source={{ uri: image.url }}
+                style={styles.galleryThumb}
+                resizeMode="cover"
+              />
+              <View style={styles.galleryItemActions}>
+                <TouchableOpacity
+                  style={[
+                    styles.galleryIconButton,
+                    (index === 0 || uploading) && styles.galleryIconButtonDisabled,
+                  ]}
+                  onPress={() => handleMoveGalleryImage(target, index, -1)}
+                  disabled={index === 0 || uploading}
+                >
+                  <FontAwesome name="chevron-left" size={10} color={colors.primary} />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.galleryIconButton, uploading && styles.galleryIconButtonDisabled]}
+                  onPress={() => handleRemoveGalleryImage(target, index)}
+                  disabled={uploading}
+                >
+                  <FontAwesome name="times" size={11} color={colors.error} />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.galleryIconButton,
+                    (index === images.length - 1 || uploading) && styles.galleryIconButtonDisabled,
+                  ]}
+                  onPress={() => handleMoveGalleryImage(target, index, 1)}
+                  disabled={index === images.length - 1 || uploading}
+                >
+                  <FontAwesome name="chevron-right" size={10} color={colors.primary} />
+                </TouchableOpacity>
+              </View>
+            </View>
+          ))}
+        </View>
+      )}
+
+      <TouchableOpacity
+        style={[styles.uploadButton, uploading && styles.uploadButtonDisabled]}
+        onPress={() => handleAddGalleryImages(target)}
+        disabled={uploading}
+      >
+        {uploading && galleryUpload ? (
+          <View style={styles.uploadingContainer}>
+            <ActivityIndicator color={colors.primary} size="small" />
+            <Text style={styles.uploadingText}>
+              {galleryUpload.current}/{galleryUpload.total} · {uploadProgress}%
+            </Text>
+          </View>
+        ) : (
+          <>
+            <FontAwesome name="plus" size={18} color={colors.primary} />
+            <Text style={styles.uploadText}>Добавить фото</Text>
+            <Text style={styles.uploadHint}>Можно выбрать несколько сразу</Text>
+          </>
+        )}
+      </TouchableOpacity>
+    </View>
+  );
 
   if (loading) {
     return (
@@ -412,6 +590,24 @@ export default function ArticleEditScreen() {
             ))}
           </View>
         </View>
+
+        {type === 'article' &&
+          renderGalleryEditor(
+            'public',
+            'Фотографии статьи (карусель)',
+            'Показываются в начале статьи, перед текстом. Первое фото — первый слайд. Фото не обрезаются, высота кадра одинаковая.',
+            galleryImages
+          )}
+
+        {type === 'article' &&
+          isPremium &&
+          renderGalleryEditor(
+            'premium',
+            'Платные фотографии статьи',
+            'Видят только участники с доступом. Если не заполнено — показывается обычная карусель.',
+            premiumGalleryImages,
+            true
+          )}
 
         {type === 'audio' && (
           <View style={styles.field}>
@@ -830,6 +1026,38 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     fontSize: 14,
     color: colors.text,
     flex: 1,
+  },
+  galleryGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+  },
+  galleryItem: {
+    width: 96,
+  },
+  galleryThumb: {
+    width: 96,
+    height: 96,
+    borderRadius: 10,
+    backgroundColor: colors.surfaceLight,
+    borderWidth: 1,
+    borderColor: colors.cardBorder,
+  },
+  galleryItemActions: {
+    flexDirection: 'row',
+    gap: 4,
+    marginTop: 4,
+  },
+  galleryIconButton: {
+    flex: 1,
+    paddingVertical: 4,
+    borderRadius: 6,
+    backgroundColor: colors.primaryAlpha13,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  galleryIconButtonDisabled: {
+    opacity: 0.3,
   },
   removeFileButton: {
     backgroundColor: colors.primaryAlpha13,

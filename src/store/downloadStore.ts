@@ -5,7 +5,7 @@ import {
   removeDownload,
   DownloadMeta,
 } from '../utils/offlineCache';
-import { ContentItem } from '../types';
+import { ContentItem, GalleryImage } from '../types';
 import { getExistingContentIds } from '../services/api';
 
 // Состояние store скачанного
@@ -91,6 +91,8 @@ export const useDownloadStore = create<DownloadState>((set, get) => ({
         image_url?: string;
         premium_audio_url?: string;
         premium_video_url?: string;
+        images?: GalleryImage[];
+        premium_images?: GalleryImage[];
       };
 
       const success = await downloadContent(

@@ -154,15 +154,28 @@ D:\pulsera_app\
 - Текст → .txt файлы (для любого типа контента: статья, видео, аудио, курс)
 - Аудио → .mp3 файлы
 - Видео → .mp4 файлы
+- Фотокарусель статьи → отдельные файлы `{id}_gallery_N.jpg` (+ порядок слайдов в метаданных)
 - Хранение: `{documentDirectory}downloads/`
 - Метаданные: AsyncStorage key `@pulsera_downloads`
 - **Приоритет**: локальный файл → сетевой URL
+- Кэш галереи используется только целиком и только для того набора (`public` / `premium`), который видит пользователь
 
 ### Модель контента
 - Тип (`type`) определяет основной медиа-формат: статья, видео, аудио, курс
 - `content_data.body` — Markdown-текст, доступен **для всех типов** (у видео и аудио выводится под плеером)
 - `content_data.premium_body` — платный текст, доступен **для всех типов** при `is_premium = true`; подписчик видит только премиум-версию (медиа + текст)
 - Премиум-медиа: `premium_audio_url`, `premium_video_url`
+- `content_data.images` — фотокарусель статьи (только `type === 'article'`), массив `{ url, filename }`
+- `content_data.premium_images` — платная фотокарусель; подписчик видит только её, при пустом наборе — фолбэк на `images` (как `premium_body` → `body`)
+- Обложка карточки каталога (`image_url`) в карусель не входит
+
+### Фотокарусель статьи
+- Компонент `src/components/PhotoCarousel.tsx`, только для статей
+- Кадр **4:3**: ширина — во всю карточку (экран − 40), высота одинаковая для всех слайдов — при пролистывании экран не прыгает
+- `resizeMode="contain"`: фото не обрезаются, вертикальные центрируются, поля по бокам на цвете `surfaceLight`
+- Горизонтальный `ScrollView` + `pagingEnabled`/`snapToInterval`; на вебе RNW превращает это в CSS scroll-snap
+- Под кадром — точки: количество слайдов и активная позиция
+- Источник фото: локальные файлы при скачанном контенте (если совпадает набор), иначе сетевые URL
 
 ### Видеоплеер (платформенный сплит)
 - **Натив**: expo-video (`VideoView` + `useVideoPlayer`)
@@ -188,6 +201,8 @@ D:\pulsera_app\
 - URL формат: `https://pulsera.ru/wp-content/uploads/YYYY/MM/filename.ext`
 - Конфигурация: `src/config.ts` (WP_URL, WP_USER, WP_APP_PASSWORD из .env)
 - Загрузка/удаление: `src/utils/upload.ts`
+- Нативный потоковый upload (`createUploadTask`, `expo-file-system/legacy`): файл читается с диска в OkHttp, JS-хип не нагружается (большие видео)
+- **Expo Go (Android):** файл из `expo-document-picker` лежит в системном кэше Expo Go вне песочницы опыта — нативный upload его не читает. Поэтому `copyToCacheDirectory: false` (получаем `content://`) + `copyAsync` в `{cacheDirectory}pulsera-uploads/`; временная копия удаляется после успешной загрузки
 - Supabase используется ТОЛЬКО для базы данных и аутентификации (не для хранения файлов)
 - Удаление контента также удаляет связанные файлы из WordPress Media Library
 
