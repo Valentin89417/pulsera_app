@@ -205,9 +205,13 @@ export default function ArticleEditScreen() {
         contentData.image_url = imageUrl.trim();
         contentData.image_filename = imageFilename;
       }
-      if (type === 'article') {
+
+      // Текст — для любого типа контента (статья, видео, аудио, курс)
+      if (body.trim()) {
         contentData.body = body.trim();
-      } else if (type === 'audio') {
+      }
+
+      if (type === 'audio') {
         contentData.audio_url = audioUrl.trim();
         contentData.audio_filename = audioFilename;
       } else if (type === 'video') {
@@ -217,9 +221,12 @@ export default function ArticleEditScreen() {
 
       // Премиум-контент
       if (isPremium) {
-        if (type === 'article' && premiumBody.trim()) {
+        // Платный текст — для любого типа контента
+        if (premiumBody.trim()) {
           contentData.premium_body = premiumBody.trim();
-        } else if (type === 'audio' && premiumAudioUrl.trim()) {
+        }
+
+        if (type === 'audio' && premiumAudioUrl.trim()) {
           contentData.premium_audio_url = premiumAudioUrl.trim();
           contentData.premium_audio_filename = premiumAudioFilename;
         } else if (type === 'video' && premiumVideoUrl.trim()) {
@@ -488,19 +495,21 @@ export default function ArticleEditScreen() {
           </View>
         )}
 
-        {type === 'article' && (
-          <View style={styles.field}>
-            <Text style={styles.label}>Текст статьи (Markdown)</Text>
-            <MarkdownEditor
-              value={body}
-              onChangeText={setBody}
-              placeholder="Пишите текст в формате Markdown..."
-            />
-            <Text style={styles.hint}>
-              **жирный** _курсив_ ~~зачёркивание~~ ## заголовки - списки {'>'} цитаты `код` [ссылки](url) ![картинки](url)
-            </Text>
-          </View>
-        )}
+        {/* Текст доступен для любого типа контента: статья, видео, аудио, курс */}
+        <View style={styles.field}>
+          <Text style={styles.label}>Текст статьи (Markdown)</Text>
+          <MarkdownEditor
+            value={body}
+            onChangeText={setBody}
+            placeholder="Пишите текст в формате Markdown..."
+          />
+          <Text style={styles.hint}>
+            Необязательно: текст можно добавить к любому типу контента — у видео и аудио он покажется под плеером.
+          </Text>
+          <Text style={styles.hint}>
+            **жирный** _курсив_ ~~зачёркивание~~ ## заголовки - списки {'>'} цитаты `код` [ссылки](url) ![картинки](url)
+          </Text>
+        </View>
 
         <View style={styles.switchRow}>
           <Text style={styles.label}>Платный контент</Text>
@@ -531,7 +540,7 @@ export default function ArticleEditScreen() {
           </View>
         )}
 
-        {isPremium && type === 'article' && (
+        {isPremium && (
           <View style={styles.field}>
             <View style={styles.premiumSectionHeader}>
               <FontAwesome name="lock" size={14} color={colors.primary} />

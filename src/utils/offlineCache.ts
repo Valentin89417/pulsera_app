@@ -221,19 +221,21 @@ export const downloadContent = async (
     let filename = '';
     let previewImage: string | undefined;
     let bodyImages: string[] | undefined;
-    let finalBody = data.body;
 
-    if (type === 'article' && data.body) {
+    // 1. Текст сохраняем для любого типа контента (статья, видео, аудио, курс)
+    if (data.body) {
       // Скачиваем изображения из тела и перезаписываем URL
       const result = await downloadBodyImages(contentId, data.body);
-      finalBody = result.body;
       if (result.imageFiles.length > 0) {
         bodyImages = result.imageFiles;
       }
       // Сохраняем тело с локальными путями
-      const filePath = await downloadArticle(contentId, finalBody);
+      const filePath = await downloadArticle(contentId, result.body);
       filename = filePath.split('/').pop() || `${contentId}.txt`;
-    } else if (type === 'audio' && (data.audio_url || data.premium_audio_url)) {
+    }
+
+    // 2. Медиа — основной файл (перекрывает имя текстового файла в метаданных)
+    if (type === 'audio' && (data.audio_url || data.premium_audio_url)) {
       // Приоритет: полная (премиум) версия, иначе бесплатная
       const audioSource = data.premium_audio_url || data.audio_url!;
       const filePath = await downloadMedia(contentId, audioSource, 'audio', onProgress);
@@ -243,9 +245,10 @@ export const downloadContent = async (
       const videoSource = data.premium_video_url || data.video_url!;
       const filePath = await downloadMedia(contentId, videoSource, 'video', onProgress);
       filename = filePath.split('/').pop() || `${contentId}.mp4`;
-    } else {
-      return false;
     }
+
+    // Ничего скачивать не нужно (нет ни текста, ни медиа)
+    if (!filename) return false;
 
     // Скачиваем превью-изображение (для всех типов)
     if (data.image_url) {
@@ -296,6 +299,15 @@ export const removeDownload = async (contentId: string): Promise<boolean> => {
       const fileInfo = await getInfoAsync(filePath);
       if (fileInfo.exists) {
         await deleteAsync(filePath);
+      }
+
+      // Удаляем кэш текста (может быть у любого типа контента)
+      const textPath = getLocalPath(contentId, 'article');
+      if (textPath !== filePath) {
+        const textInfo = await getInfoAsync(textPath);
+        if (textInfo.exists) {
+          await deleteAsync(textPath);
+        }
       }
 
       // Удаляем превью

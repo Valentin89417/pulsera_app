@@ -46,14 +46,20 @@
 
 **content_data JSONB:**
 ```json
-// article
-{ "body": "Текст статьи в Markdown..." }
+// Текст (body) — необязателен и доступен для любого типа контента
+{ "body": "Текст в Markdown..." }
+
+// article — текстовый контент
+{ "body": "Текст статьи в Markdown...", "image_url": "https://...", "image_filename": "cover.jpg" }
 
 // audio
-{ "audio_url": "https://...", "audio_filename": "meditation.mp3" }
+{ "audio_url": "https://...", "audio_filename": "meditation.mp3", "body": "Текст под плеером (опционально)" }
 
 // video
-{ "video_url": "https://...", "video_filename": "practice.mp4" }
+{ "video_url": "https://...", "video_filename": "practice.mp4", "body": "Текст под плеером (опционально)" }
+
+// Премиум-поля (is_premium = true) — доступны для любого типа
+{ "premium_body": "Платный текст в Markdown...", "premium_audio_url": "https://...", "premium_video_url": "https://..." }
 ```
 
 ### user_content_progress

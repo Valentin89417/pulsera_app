@@ -233,6 +233,13 @@ export default function ContentDetailScreen() {
     },
   };
 
+  // Текст показывается для любого типа контента (статья, видео, аудио)
+  const renderBody = (text: string) => (
+    <View style={styles.bodyContainer}>
+      <Markdown style={markdownStyles} rules={markdownRules}>{processCheckboxes(text)}</Markdown>
+    </View>
+  );
+
   useEffect(() => {
     loadContent();
   }, [id]);
@@ -259,16 +266,11 @@ export default function ContentDetailScreen() {
       if (data) {
         setContent(data);
 
-        // Проверяем офлайн-кэш для контента
-        const body = (data.content_data as { body?: string })?.body;
-        const audioUrl = (data.content_data as { audio_url?: string })?.audio_url;
-        const videoUrl = (data.content_data as { video_url?: string })?.video_url;
+        // Текст кэшируется для любого типа контента
+        const cached = await readDownloadedArticle(data.id);
+        if (cached) setOfflineBody(cached);
 
         // Проверяем офлайн-кэш: если файл скачан — используем локальный
-        if (data.type === 'article') {
-          const cached = await readDownloadedArticle(data.id);
-          if (cached) setOfflineBody(cached);
-        }
 
         if (data.type === 'audio') {
           const localUri = await getDownloadedMediaUri(data.id, 'audio');
@@ -418,15 +420,15 @@ export default function ContentDetailScreen() {
           {/* Контент: премиум-пользователь видит ТОЛЬКО полную версию */}
           {content.is_premium && hasAccessToPremium ? (
             <>
-              {content.type === 'article' && premiumBody ? (
-                <View style={styles.bodyContainer}>
-                  <Markdown style={markdownStyles} rules={markdownRules}>{processCheckboxes(premiumBody)}</Markdown>
-                </View>
-              ) : content.type === 'audio' && premiumAudioUrl ? (
-                <AudioPlayer uri={premiumAudioUrl} title={content.title} />
-              ) : content.type === 'video' && premiumVideoUrl ? (
+              {content.type === 'video' && premiumVideoUrl ? (
                 <VideoPlayer uri={premiumVideoUrl} title={content.title} />
-              ) : (
+              ) : null}
+              {content.type === 'audio' && premiumAudioUrl ? (
+                <AudioPlayer uri={premiumAudioUrl} title={content.title} />
+              ) : null}
+              {/* Платный текст приоритетнее, иначе показываем общий текст */}
+              {premiumBody || body ? renderBody(premiumBody || body) : null}
+              {!premiumBody && !body && !premiumVideoUrl && !premiumAudioUrl && (
                 <View style={styles.noContent}>
                   <FontAwesome name="envelope-o" size={48} color={colors.primary} />
                   <Text style={styles.noContentText}>Контент пока не добавлен</Text>
@@ -438,13 +440,12 @@ export default function ContentDetailScreen() {
             <>
               {isVideoContent ? (
                 <VideoPlayer uri={videoUrl!} title={content.title} />
-              ) : isAudioContent ? (
+              ) : null}
+              {!isVideoContent && isAudioContent ? (
                 <AudioPlayer uri={audioUrl!} title={content.title} />
-              ) : body ? (
-                <View style={styles.bodyContainer}>
-                  <Markdown style={markdownStyles} rules={markdownRules}>{processCheckboxes(body)}</Markdown>
-                </View>
-              ) : (
+              ) : null}
+              {body ? renderBody(body) : null}
+              {!isVideoContent && !isAudioContent && !body && (
                 <View style={styles.noContent}>
                   <FontAwesome name="envelope-o" size={48} color={colors.primary} />
                   <Text style={styles.noContentText}>Контент пока не добавлен</Text>
