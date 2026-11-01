@@ -244,6 +244,13 @@ export function DailyCard({ onInputFocus }: DailyCardProps) {
         </View>
       )}
 
+      {/* Подсказка: блок итогов откроется вечером */}
+      {!showSummary && hasSummary && (
+        <Text style={styles.summaryHint}>
+          Вопросы для подведения итогов появятся после 17:00
+        </Text>
+      )}
+
       {/* Блок итогов (после 17:00 до 04:00) */}
       {showSummary && hasSummary && (
         <View style={styles.summarySection}>
@@ -410,6 +417,12 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   summarySection: {
     marginTop: 8,
+  },
+  summaryHint: {
+    marginTop: 12,
+    fontSize: 12,
+    lineHeight: 16,
+    color: colors.textMuted,
   },
   summaryDivider: {
     height: 1,
