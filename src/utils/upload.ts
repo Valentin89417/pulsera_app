@@ -1,7 +1,13 @@
 import * as DocumentPicker from 'expo-document-picker';
+import { Platform } from 'react-native';
 import {
+  cacheDirectory,
+  copyAsync,
   createUploadTask,
+  deleteAsync,
   FileSystemUploadType,
+  getInfoAsync,
+  makeDirectoryAsync,
 } from 'expo-file-system/legacy';
 import { WP_API_BASE, CONFIG } from '../config';
 
@@ -61,6 +67,73 @@ const getMimeType = (ext: string): string => {
   return map[ext] || 'application/octet-stream';
 };
 
+// Папка для файлов, подготовленных к загрузке (внутри песочницы приложения)
+const UPLOAD_TEMP_DIR = `${cacheDirectory ?? ''}pulsera-uploads/`;
+
+// Создать папку для временных файлов загрузки
+const ensureUploadTempDir = async (): Promise<void> => {
+  const info = await getInfoAsync(UPLOAD_TEMP_DIR);
+  if (!info.exists) {
+    await makeDirectoryAsync(UPLOAD_TEMP_DIR, { intermediates: true });
+  }
+};
+
+// Расширение по MIME-типу, с фолбэком на имя файла (бывает mimeType = null)
+const resolveExtension = (asset: DocumentPicker.DocumentPickerAsset): string => {
+  if (asset.mimeType) {
+    const byMime = getExtension(asset.mimeType);
+    if (byMime !== 'bin') return byMime;
+  }
+  const fromName = (asset.name || '').split('.').pop()?.toLowerCase() || '';
+  return /^[a-z0-9]{2,5}$/.test(fromName) ? fromName : 'bin';
+};
+
+/**
+ * Подготовка выбранного файла к нативному upload.
+ *
+ * На Android `expo-document-picker` копирует файл в системный кэш Expo Go
+ * (`/data/user/0/host.exp.exponent/cache/DocumentPicker/...`), а он лежит вне
+ * песочницы опыта — `uploadTaskStartAsync` не может его прочитать
+ * («Location ... isn't readable»). Поэтому берём исходный `content://`
+ * (copyToCacheDirectory: false) и копируем его сами в собственный кэш.
+ */
+const prepareAssetForUpload = async (
+  asset: DocumentPicker.DocumentPickerAsset
+): Promise<DocumentPicker.DocumentPickerAsset> => {
+  if (Platform.OS !== 'android') return asset;
+  // Файл уже в нашей песочнице
+  if (asset.uri.startsWith(UPLOAD_TEMP_DIR)) return asset;
+
+  await ensureUploadTempDir();
+
+  const unique = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+  const target = `${UPLOAD_TEMP_DIR}${unique}.${resolveExtension(asset)}`;
+
+  // content:// читается через contentResolver, file:// из кэша Expo Go — нет
+  await copyAsync({ from: asset.uri, to: target });
+
+  const info = await getInfoAsync(target);
+  if (!info.exists) {
+    throw new Error('Не удалось подготовить файл к загрузке. Попробуйте выбрать его ещё раз.');
+  }
+
+  return {
+    ...asset,
+    uri: target,
+    size: info.size ?? asset.size,
+  };
+};
+
+// Удалить временную копию, созданную prepareAssetForUpload
+const removeTempCopy = async (uri: string): Promise<void> => {
+  if (!uri.startsWith(UPLOAD_TEMP_DIR)) return;
+  try {
+    await deleteAsync(uri);
+  } catch {
+    // кэш системы всё равно чистится — ошибка удаления не критична
+  }
+};
+
 // Генерация Basic Auth заголовка для WordPress
 const getAuthHeader = (): string => {
   const credentials = `${CONFIG.WP_USER}:${CONFIG.WP_APP_PASSWORD}`;
@@ -74,7 +147,9 @@ export const pickFile = async (type: UploadFileType): Promise<DocumentPicker.Doc
   try {
     const result = await DocumentPicker.getDocumentAsync({
       type: ALLOWED_MIME_TYPES[type],
-      copyToCacheDirectory: true,
+      // На Android кэш DocumentPicker вне песочницы опыта (Expo Go) — берём
+      // content:// и копируем сами, на iOS кэш свой и читается
+      copyToCacheDirectory: Platform.OS !== 'android',
       multiple: false,
     });
 
@@ -82,7 +157,7 @@ export const pickFile = async (type: UploadFileType): Promise<DocumentPicker.Doc
       return null;
     }
 
-    return result.assets[0];
+    return await prepareAssetForUpload(result.assets[0]);
   } catch (error) {
     console.error('Ошибка выбора файла:', error);
     throw error;
@@ -109,7 +184,7 @@ export const uploadFile = async (
     }
 
     // Генерируем имя файла
-    const ext = getExtension(file.mimeType || 'application/octet-stream');
+    const ext = resolveExtension(file);
     const timestamp = Date.now();
     const randomStr = Math.random().toString(36).substring(2, 8);
     const filename = `${type}_${timestamp}_${randomStr}.${ext}`;
@@ -170,6 +245,9 @@ export const uploadFile = async (
     const data = JSON.parse(result.body);
 
     onProgress?.(100);
+
+    // Временная копия больше не нужна
+    await removeTempCopy(file.uri);
 
     return {
       url: data.source_url,
