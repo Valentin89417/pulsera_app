@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 
 // Какой экран чата сейчас открыт (для пропуска push-уведомлений)
-// Значения: 'chat', 'community', 'admin-chat-<userId>', null
+// Значения: 'chat', 'slet-chat', 'admin-chat-<userId>', null
 interface ChatState {
   activeChatScreen: string | null;
   setActiveChatScreen: (screen: string | null) => void;

@@ -194,7 +194,7 @@ const isInChat = (screenKey: string): boolean => {
   return activeChatScreen === screenKey;
 };
 
-// Проверка: пользователь offline в community > 5 мин?
+// Проверка: пользователь offline в «Пожужжиме» > 5 мин?
 const checkCommunityOffline = async (userId: string): Promise<boolean> => {
   try {
     const { data, error } = await supabase
@@ -238,9 +238,9 @@ export const batchSend = async (
 
     // Проверяем: активен ли получатель на соответствующем экране?
     if (type === 'chat' && isInChat('chat')) return;
-    if (type === 'community' && isInChat('community')) return;
+    if (type === 'community' && isInChat('slet-chat')) return;
 
-    // Для community: проверяем offline > 5 мин
+    // Для «Пожужжима»: проверяем offline > 5 мин
     if (type === 'community') {
       const isOffline = await checkCommunityOffline(targetUserId);
       if (!isOffline) return; // Пользователь активен — push не нужен

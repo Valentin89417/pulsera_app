@@ -43,11 +43,11 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
-        name="community"
+        name="slet"
         options={{
-          title: 'Сообщество',
+          title: 'Слёт',
           tabBarIcon: ({ color }) => (
-            <FontAwesome name="users" size={22} color={color as string} />
+            <FontAwesome name="fire" size={22} color={color as string} />
           ),
         }}
       />

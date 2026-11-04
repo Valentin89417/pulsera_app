@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+﻿import { useState, useEffect, useRef, useCallback } from 'react';
 import {
   View,
   Text,
@@ -9,8 +9,8 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
-  Keyboard,
 } from 'react-native';
+import { useRouter } from 'expo-router';
 import { FontAwesome } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuthStore } from '../../store/authStore';
@@ -22,8 +22,6 @@ import {
   sendCommunityMessage,
   editCommunityMessage,
   deleteCommunityMessage,
-  getPopularArticles,
-  searchArticles,
   ArticleMention,
   CommunityMessageWithProfile,
   getAllUserIds,
@@ -50,7 +48,9 @@ function formatDateSeparator(dateStr: string): string {
   return `${day}.${month}.${year}`;
 }
 
-export default function CommunityScreen() {
+// Чат «Пожужжим» — бывший чат сообщества, теперь раздел «Слёта»
+export default function PozhuzhimScreen() {
+  const router = useRouter();
   const { user, profile } = useAuthStore();
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
@@ -63,15 +63,14 @@ export default function CommunityScreen() {
   const [showAutocomplete, setShowAutocomplete] = useState(false);
   const [autocompleteQuery, setAutocompleteQuery] = useState('');
   const [editingMessage, setEditingMessage] = useState<CommunityMessageWithProfile | null>(null);
-  const [keyboardOpen, setKeyboardOpen] = useState(false);
 
   const flatListRef = useRef<FlatList>(null);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const loadMessagesRef = useRef<(() => Promise<void>) | null>(null);
 
-  // Установка активного экрана community + обновление timestamp активности
+  // Установка активного экрана «Пожужжим» + обновление timestamp активности
   useEffect(() => {
-    setActiveChatScreen('community');
+    setActiveChatScreen('slet-chat');
     if (user) {
       updateLastCommunityActive(user.id);
     }
@@ -84,7 +83,7 @@ export default function CommunityScreen() {
       const data = await getCommunityMessages(100);
       setMessages(data);
     } catch (error) {
-      console.error('Ошибка загрузки сообщений сообщества:', error);
+      console.error('Ошибка загрузки сообщений «Пожужжим»:', error);
     } finally {
       setLoading(false);
     }
@@ -121,19 +120,6 @@ export default function CommunityScreen() {
         channelRef.current = null;
       }
     };
-  }, []);
-
-  // Отслеживание клавиатуры
-  useEffect(() => {
-    const showSub = Keyboard.addListener(
-      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
-      () => setKeyboardOpen(true)
-    );
-    const hideSub = Keyboard.addListener(
-      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
-      () => setKeyboardOpen(false)
-    );
-    return () => { showSub.remove(); hideSub.remove(); };
   }, []);
 
   // Автоскролл вниз при новых сообщениях
@@ -193,9 +179,9 @@ export default function CommunityScreen() {
 
         for (const recipientId of otherUserIds) {
           batchSend(recipientId, {
-            title: 'Чат сообщества',
+            title: 'Пожужжим',
             body: `${senderName}: ${preview}`,
-            data: { screen: 'community' },
+            data: { screen: 'slet-chat' },
           }, 'community');
         }
       }
@@ -228,12 +214,45 @@ export default function CommunityScreen() {
     setInputText('');
   };
 
+  // Назад в «Слёт»; при прямом открытии экрана — фолбэк на хаб
+  const handleBack = () => {
+    if (router.canGoBack()) {
+      router.back();
+    } else {
+      router.replace('/slet');
+    }
+  };
+
   const styles = createStyles(colors);
+
+  const renderHeader = () => (
+    <View
+      style={[
+        styles.header,
+        {
+          backgroundColor: colors.surface,
+          borderBottomColor: colors.border,
+          paddingTop: insets.top + 10,
+        },
+      ]}
+    >
+      <TouchableOpacity onPress={handleBack} style={styles.backButton}>
+        <FontAwesome name="arrow-left" size={18} color={colors.primary} />
+      </TouchableOpacity>
+      <View style={styles.headerTitleWrap}>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>Пожужжим</Text>
+        <Text style={[styles.headerSubtitle, { color: colors.textMuted }]}>Чат сообщества</Text>
+      </View>
+    </View>
+  );
 
   if (loading) {
     return (
-      <View style={[styles.container, styles.centered]}>
-        <ActivityIndicator size="large" color={colors.primary} />
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
+        {renderHeader()}
+        <View style={styles.centered}>
+          <ActivityIndicator size="large" color={colors.primary} />
+        </View>
       </View>
     );
   }
@@ -241,16 +260,18 @@ export default function CommunityScreen() {
   return (
     <KeyboardAvoidingView
       style={[styles.container, { backgroundColor: colors.background }]}
-      behavior="padding"
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       keyboardVerticalOffset={0}
     >
+      {renderHeader()}
+
       {/* Сообщения */}
       {messages.length === 0 ? (
         <View style={styles.emptyContainer}>
-          <FontAwesome name="users" size={48} color={colors.primaryAlpha20} />
-          <Text style={[styles.emptyTitle, { color: colors.text }]}>Чат сообщества</Text>
+          <FontAwesome name="comments" size={48} color={colors.primaryAlpha20} />
+          <Text style={[styles.emptyTitle, { color: colors.text }]}>Пожужжим</Text>
           <Text style={[styles.emptyText, { color: colors.textMuted }]}>
-            Напишите первое сообщение и начните общение
+            Начните разговор первым — здесь можно поговорить обо всём, что откликается
           </Text>
         </View>
       ) : (
@@ -346,8 +367,31 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     flex: 1,
   },
   centered: {
+    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingBottom: 12,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+  },
+  backButton: {
+    marginRight: 12,
+    padding: 4,
+  },
+  headerTitleWrap: {
+    flex: 1,
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+  },
+  headerSubtitle: {
+    fontSize: 12,
+    marginTop: 2,
   },
   messagesList: {
     paddingVertical: 12,
@@ -357,6 +401,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     gap: 8,
+    paddingHorizontal: 32,
   },
   emptyTitle: {
     fontSize: 22,
@@ -364,6 +409,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   emptyText: {
     fontSize: 14,
+    textAlign: 'center',
   },
   inputContainer: {
     paddingHorizontal: 12,

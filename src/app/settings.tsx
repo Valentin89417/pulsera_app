@@ -315,8 +315,8 @@ export default function SettingsScreen() {
 
             <View style={[styles.field, { borderBottomColor: colors.border }]}>
               <View style={styles.fieldLeft}>
-                <FontAwesome name="users" size={18} color={colors.primary} style={styles.fieldIcon} />
-                <Text style={[styles.fieldLabel, { color: colors.text }]}>Сообщества</Text>
+                <FontAwesome name="comments" size={18} color={colors.primary} style={styles.fieldIcon} />
+                <Text style={[styles.fieldLabel, { color: colors.text }]}>Пожужжим</Text>
               </View>
               <Switch
                 value={notifCommunity}
