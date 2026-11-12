@@ -133,7 +133,7 @@
 - [x] **Вкладка** — «Сообщество» → «Слёт», иконка `fire`
 - [x] **Хаб** — `src/app/(tabs)/slet.tsx`: три карточки («Тихий вопрос», «Обмен силой», «Пожужжим»), у новых разделов бейдж «скоро»
 - [x] **Чат** — перенесён в `src/app/slet/chat.tsx`, добавлен хедер с возвратом в «Слёт», заголовок «Пожужжим»
-- [x] **Заглушки** — `src/app/slet/quiet-question.tsx`, `src/app/slet/power-exchange.tsx`, общий компонент `src/components/SectionPlaceholder.tsx`
+- [x] **Заглушки** — `src/app/slet/quiet-question.tsx` (позже заменён рабочей лентой в `src/app/slet/quiet-question/`), `src/app/slet/power-exchange.tsx`, общий компонент `src/components/SectionPlaceholder.tsx`
 - [x] **Уведомления** — ключ активного экрана `slet-chat`, push-заголовок «Пожужжим», подпись в настройках
 - [x] **Тексты** — «Сообщество» заменено на «Слёт»/«Пожужжим» в навигации, настройках и статусе аккаунта
 - [x] **Проверки** — `npx tsc --noEmit`; экспорт Android/Web
@@ -279,42 +279,56 @@
 
 ---
 
-### Тихий вопрос (план)
-**Статус:** Запланировано
+### Тихий вопрос ✅
+**Статус:** Завершено
+**Дата:** 04.11.2026
 
-**Суть:** пользователь анонимно задаёт вопрос сообществу. При создании к вопросу привязывается случайная МАК-карта из выбранной колоды. Вопрос висит в общей ленте 7 дней, затем уходит в архив: автору — в профиль, администратору — в админ-панель.
+**Суть:** пользователь анонимно задаёт вопрос сообществу. Карта не выбирается: он пишет вопрос, выбирает колоду по теме и публикует — сервер в этот момент случайно привязывает карту. Вопрос живёт в общей ленте 7 дней, затем уходит в архив: автору — в профиль, администратору — в админ-панель.
 
 **Модель данных:**
 - `mak_decks` — колоды: `id`, `title`, `description`, `cover_url`, `is_active`, `created_at`
 - `mak_cards` — карты: `id`, `deck_id`, `image_url`, `title`, `sort_order`, `created_at`
 - `quiet_questions` — вопросы: `id`, `user_id`, `deck_id`, `card_id`, `card_image_url` (снимок), `question`, `created_at`, `expires_at`, `is_hidden`
 - `quiet_answers` — ответы: `id`, `question_id`, `user_id`, `body`, `created_at`, `updated_at`, `is_hidden`; `UNIQUE (question_id, user_id)`
-- `expires_at = created_at + interval '7 days'`; архив вычисляется по `expires_at`, без cron
-- Представления `quiet_questions_feed` (активные + `answers_count`, без `user_id`) и `quiet_answers_public` (без `user_id`)
+- `expires_at = created_at + interval '7 days'` (триггер); архив вычисляется по `expires_at`, без cron
+- Представления: `quiet_questions_feed` (активные + `answers_count`, без `user_id`), `mak_decks_available` (активные колоды с картами)
+- RPC `create_quiet_question(p_deck_id, p_question)` — `SECURITY DEFINER`: проверка текста и колоды, случайная карта, вставка вопроса со снимком картинки
 
-**RLS:**
-- Колоды/карты: чтение — авторизованные, запись — админ
-- Вопросы: INSERT — свой; SELECT — активные/свои/админ; UPDATE/DELETE — админ
-- Ответы: INSERT — свой на активный вопрос; SELECT — активные всем, архивные только автору вопроса и админу; UPDATE — свой, пока вопрос активен; DELETE — админ
+**Решения:**
+- Карту пользователь не видит до публикации и не может выбрать: `mak_cards` закрыта RLS даже на чтение, розыгрыш идёт в RPC
+- Перевытянуть карту нельзя; колода фиксируется в момент публикации
+- 7 дней в ленте, затем архив (без cron)
+- Один ответ на человека; автор вопроса тоже может ответить
+- Правка ответа — 2 часа от создания вопроса (единое окно)
+- Удаление вопроса автором — физическое, с каскадом ответов: в первые 2 часа или из архива
+- Удаление ответа пользователем не предусмотрено — только админ
+- Пуш о новых ответах не делали (вне MVP)
 
 **API:**
-- `getMakDecks()`, `drawMakCard(deckId)`, `createQuietQuestion({ deckId, cardId, question })`
-- `getQuietQuestions()`, `getQuietQuestion(id)`
-- `createQuietAnswer(questionId, body)`, `updateQuietAnswer(answerId, body)`
-- `getMyArchivedQuestions()`, `getMyArchivedQuestion(id)`
-- админ: `getAdminArchivedQuestions()`, `hideQuietQuestion(id)`, `createMakDeck`, `addMakCards`, `deleteMakCard`
+- `getAvailableMakDecks()`, `createQuietQuestion(deckId, question)`
+- `getQuietQuestions()`, `getQuietQuestion(id, userId)`
+- `getQuietAnswers(questionId, userId)`, `createQuietAnswer(...)`, `updateQuietAnswer(...)`
+- `deleteQuietQuestion(id)`, `getMyArchivedQuestions(userId)`
+- админ: `getAdminQuietArchive()`, `setQuietQuestionHidden()`, `getAllMakDecks()`, `createMakDeck()`, `updateMakDeck()`, `deleteMakDeck()`, `getAllMakCards()`, `addMakCards()`, `deleteMakCard()`
 
 **Экраны:**
-- `/slet/quiet-question` — лента: фото карты, вопрос, число ответов, остаток дней
-- `/slet/quiet-question/new` — выбор колоды, случайная карта, анонимная публикация
-- `/slet/quiet-question/[id]` — карта, вопрос, ответы, 1 анонимный ответ, редактирование 7 дней
-- Профиль → «Архив вопросов» — завершённые вопросы автора с ответами
+- `/slet/quiet-question` — лента: фото карты, вопрос, число ответов, остаток дней, pull-to-refresh
+- `/slet/quiet-question/new` — текст вопроса + выбор колоды, без превью карты
+- `/slet/quiet-question/[id]` — карта, вопрос, ответы, композер, правка в окне 2 часов, удаление
+- Профиль → «Архив вопросов» (`/my-questions`) — завершённые вопросы автора с удалением
 
 **Админка:**
-- «Архив вопросов» — все завершённые вопросы, авторы, ответы, скрытие/раскрытие
-- «Колоды МАК» — создание колод, загрузка карт мультивыбором, удаление, включение/выключение
+- «Колоды МАК» (`/admin/mak-decks`) — колоды, мультизагрузка карт, вкл/выкл, удаление
+- «Архив вопросов» (`/admin/quiet-archive`) — все завершённые вопросы, авторы, ответы, скрытие
 
-**Открытые детали:** можно ли автору отвечать на свой вопрос; удаление своего ответа; push о новом ответе.
+**Файлы:**
+- `supabase/migrations/018_quiet_question.sql`, `019_quiet_question_views.sql`, `020_quiet_question_rls.sql`
+- `src/types/quiet.ts`, `src/utils/quietQuestion.ts`
+- `src/components/QuietQuestionCard.tsx`, `src/components/QuietAnswerItem.tsx`
+- `src/app/slet/quiet-question/index.tsx`, `new.tsx`, `[id].tsx`
+- `src/app/my-questions.tsx`, `src/app/admin/quiet-archive.tsx`, `src/app/admin/mak-decks.tsx`
+
+**Проверки:** `npx tsc --noEmit`; `npx expo export --platform web` и `--platform android`
 
 ---
 
@@ -655,12 +669,11 @@
 ---
 
 ## Следующие шаги
-1. **Тихий вопрос** — анонимные вопросы с МАК-картой, 7 дней в ленте, ответы и архив (см. план выше)
-2. **Обмен силой** — лента поддержки с реакциями (см. план выше)
-3. **Поддержка** — отдельный чат поддержки (несколько админов)
-4. **Профиль пользователя (расширенный)**
-5. **Собрать новый APK** — `eas build --platform android --profile preview`**
-6. **Проверить Push-уведомления при создании APK** — в Expo Go не работают; проверить в собранном APK: разрешение, Expo Push Token, сохранение в `push_tokens`, приход push в foreground/background и переход по тапу
+1. **Обмен силой** — лента поддержки с реакциями (см. план выше)
+2. **Поддержка** — отдельный чат поддержки (несколько админов)
+3. **Профиль пользователя (расширенный)**
+4. **Собрать новый APK** — `eas build --platform android --profile preview`**
+5. **Проверить Push-уведомления при создании APK** — в Expo Go не работают; проверить в собранном APK: разрешение, Expo Push Token, сохранение в `push_tokens`, приход push в foreground/background и переход по тапу
 
 ---
 

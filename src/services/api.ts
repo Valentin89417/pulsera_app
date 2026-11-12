@@ -9,6 +9,18 @@ import {
   DailyCardResponse,
   DailyCardResponseInsert,
 } from '../types/content';
+import {
+  MakDeck,
+  MakDeckUpdate,
+  MakCard,
+  MakCardInput,
+  AvailableMakDeck,
+  QuietQuestionFeedItem,
+  QuietQuestionView,
+  QuietAnswerView,
+  AdminQuietQuestion,
+  CreateQuietQuestionResult,
+} from '../types/quiet';
 import { deleteContentFiles } from '../utils/upload';
 import { removeDownload } from '../utils/offlineCache';
 
@@ -1789,5 +1801,501 @@ export const getUserDiaryEntries = async (
   } catch (error) {
     console.error('Неожиданная ошибка при получении дневника:', error);
     return [];
+  }
+};
+
+// ============================================
+// ТИХИЙ ВОПРОС («Слёт»)
+// ============================================
+
+// Доступные колоды: активные и только те, где уже есть карты
+export const getAvailableMakDecks = async (): Promise<AvailableMakDeck[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('mak_decks_available')
+      .select('*')
+      .order('title', { ascending: true });
+
+    if (error) {
+      console.error('Ошибка получения колод МАК:', error.message);
+      return [];
+    }
+
+    return data || [];
+  } catch (error) {
+    console.error('Неожиданная ошибка при получении колод МАК:', error);
+    return [];
+  }
+};
+
+// Публикация вопроса: карту выбирает сервер, клиент её не видит заранее
+export const createQuietQuestion = async (
+  deckId: string,
+  question: string
+): Promise<CreateQuietQuestionResult> => {
+  try {
+    const { data, error } = await supabase.rpc('create_quiet_question', {
+      p_deck_id: deckId,
+      p_question: question,
+    });
+
+    if (error) {
+      console.error('Ошибка публикации вопроса:', error.message);
+      return { id: null, error: error.message };
+    }
+
+    return { id: data ?? null, error: null };
+  } catch (error) {
+    console.error('Неожиданная ошибка при публикации вопроса:', error);
+    return { id: null, error: 'Не удалось опубликовать вопрос' };
+  }
+};
+
+// Лента активных вопросов
+export const getQuietQuestions = async (limit = 50): Promise<QuietQuestionFeedItem[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('quiet_questions_feed')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(limit);
+
+    if (error) {
+      console.error('Ошибка получения вопросов:', error.message);
+      return [];
+    }
+
+    return data || [];
+  } catch (error) {
+    console.error('Неожиданная ошибка при получении вопросов:', error);
+    return [];
+  }
+};
+
+// Детальная вопроса: без user_id, с признаком «свой»
+export const getQuietQuestion = async (
+  questionId: string,
+  userId: string
+): Promise<QuietQuestionView | null> => {
+  try {
+    const { data, error } = await supabase
+      .from('quiet_questions')
+      .select('id, card_image_url, question, created_at, expires_at')
+      .eq('id', questionId)
+      .maybeSingle();
+
+    if (error) {
+      console.error('Ошибка получения вопроса:', error.message);
+      return null;
+    }
+
+    if (!data) return null;
+
+    // Отдельный запрос: RLS вернёт строку только если вопрос принадлежит пользователю
+    const { data: own } = await supabase
+      .from('quiet_questions')
+      .select('id')
+      .eq('id', questionId)
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    return { ...data, is_own: !!own };
+  } catch (error) {
+    console.error('Неожиданная ошибка при получении вопроса:', error);
+    return null;
+  }
+};
+
+// Ответы на вопрос: без user_id, свой помечается отдельно
+export const getQuietAnswers = async (
+  questionId: string,
+  userId: string
+): Promise<QuietAnswerView[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('quiet_answers')
+      .select('id, body, created_at, updated_at')
+      .eq('question_id', questionId)
+      .order('created_at', { ascending: true });
+
+    if (error) {
+      console.error('Ошибка получения ответов:', error.message);
+      return [];
+    }
+
+    if (!data || data.length === 0) return [];
+
+    const { data: own } = await supabase
+      .from('quiet_answers')
+      .select('id')
+      .eq('question_id', questionId)
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    const ownId = own?.id ?? null;
+
+    return data.map((answer) => ({ ...answer, is_own: answer.id === ownId }));
+  } catch (error) {
+    console.error('Неожиданная ошибка при получении ответов:', error);
+    return [];
+  }
+};
+
+// Общее число ответов на вопрос (для админки)
+export const createQuietAnswer = async (
+  questionId: string,
+  userId: string,
+  body: string
+): Promise<{ ok: boolean; error: string | null }> => {
+  try {
+    const { error } = await supabase
+      .from('quiet_answers')
+      .insert({ question_id: questionId, user_id: userId, body });
+
+    if (error) {
+      console.error('Ошибка отправки ответа:', error.message);
+      // Нарушение уникальности — пользователь уже отвечал
+      if (error.code === '23505') {
+        return { ok: false, error: 'Вы уже ответили на этот вопрос' };
+      }
+      return { ok: false, error: 'Не удалось отправить ответ' };
+    }
+
+    return { ok: true, error: null };
+  } catch (error) {
+    console.error('Неожиданная ошибка при отправке ответа:', error);
+    return { ok: false, error: 'Не удалось отправить ответ' };
+  }
+};
+
+// Правка своего ответа (RLS разрешает только 2 часа от создания вопроса)
+export const updateQuietAnswer = async (answerId: string, body: string): Promise<boolean> => {
+  try {
+    const { error } = await supabase
+      .from('quiet_answers')
+      .update({ body })
+      .eq('id', answerId);
+
+    if (error) {
+      console.error('Ошибка обновления ответа:', error.message);
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Неожиданная ошибка при обновлении ответа:', error);
+    return false;
+  }
+};
+
+// Удаление вопроса автором (в первые 2 часа или из архива)
+export const deleteQuietQuestion = async (questionId: string): Promise<boolean> => {
+  try {
+    const { error } = await supabase
+      .from('quiet_questions')
+      .delete()
+      .eq('id', questionId);
+
+    if (error) {
+      console.error('Ошибка удаления вопроса:', error.message);
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Неожиданная ошибка при удалении вопроса:', error);
+    return false;
+  }
+};
+
+// Архив автора: вопросы, у которых истёк срок
+export const getMyArchivedQuestions = async (userId: string): Promise<QuietQuestionView[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('quiet_questions')
+      .select('id, card_image_url, question, created_at, expires_at')
+      .eq('user_id', userId)
+      .lte('expires_at', new Date().toISOString())
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Ошибка получения архива вопросов:', error.message);
+      return [];
+    }
+
+    return (data || []).map((item) => ({ ...item, is_own: true }));
+  } catch (error) {
+    console.error('Неожиданная ошибка при получении архива вопросов:', error);
+    return [];
+  }
+};
+
+// Архив для админки: все завершённые вопросы с авторами и ответами
+export const getAdminQuietArchive = async (): Promise<AdminQuietQuestion[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('quiet_questions')
+      .select('*')
+      .lte('expires_at', new Date().toISOString())
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Ошибка получения архива вопросов:', error.message);
+      return [];
+    }
+
+    if (!data || data.length === 0) return [];
+
+    const questionIds = data.map((q) => q.id);
+    const userIds = [...new Set(data.map((q) => q.user_id))];
+
+    // Два запроса: user_id ссылается на auth.users, связи с profiles нет
+    const [answersResult, profilesResult] = await Promise.all([
+      supabase
+        .from('quiet_answers')
+        .select('id, question_id, body, created_at, is_hidden')
+        .in('question_id', questionIds)
+        .order('created_at', { ascending: true }),
+      supabase
+        .from('profiles')
+        .select('id, display_name')
+        .in('id', userIds),
+    ]);
+
+    const profileMap = new Map(
+      (profilesResult.data || []).map((p) => [p.id, p.display_name])
+    );
+
+    const answersMap = new Map<string, AdminQuietQuestion['answers']>();
+    for (const answer of answersResult.data || []) {
+      const list = answersMap.get(answer.question_id) || [];
+      list.push({
+        id: answer.id,
+        body: answer.body,
+        created_at: answer.created_at,
+        is_hidden: answer.is_hidden,
+      });
+      answersMap.set(answer.question_id, list);
+    }
+
+    return data.map((q) => ({
+      id: q.id,
+      user_id: q.user_id,
+      author_name: profileMap.get(q.user_id) ?? null,
+      card_image_url: q.card_image_url,
+      question: q.question,
+      created_at: q.created_at,
+      expires_at: q.expires_at,
+      is_hidden: q.is_hidden,
+      answers: answersMap.get(q.id) || [],
+    }));
+  } catch (error) {
+    console.error('Неожиданная ошибка при получении архива вопросов:', error);
+    return [];
+  }
+};
+
+// Скрыть/раскрыть вопрос (админ)
+export const setQuietQuestionHidden = async (
+  questionId: string,
+  hidden: boolean
+): Promise<boolean> => {
+  try {
+    const { error } = await supabase
+      .from('quiet_questions')
+      .update({ is_hidden: hidden })
+      .eq('id', questionId);
+
+    if (error) {
+      console.error('Ошибка изменения видимости вопроса:', error.message);
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Неожиданная ошибка при изменении видимости вопроса:', error);
+    return false;
+  }
+};
+
+// ============================================
+// КОЛОДЫ МАК (админка)
+// ============================================
+
+// Все колоды, включая выключенные и пустые
+export const getAllMakDecks = async (): Promise<MakDeck[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('mak_decks')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Ошибка получения колод:', error.message);
+      return [];
+    }
+
+    return data || [];
+  } catch (error) {
+    console.error('Неожиданная ошибка при получении колод:', error);
+    return [];
+  }
+};
+
+export const createMakDeck = async (deck: {
+  title: string;
+  description?: string | null;
+  cover_url?: string | null;
+}): Promise<MakDeck | null> => {
+  try {
+    const { data, error } = await supabase
+      .from('mak_decks')
+      .insert(deck)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Ошибка создания колоды:', error.message);
+      return null;
+    }
+
+    return data;
+  } catch (error) {
+    console.error('Неожиданная ошибка при создании колоды:', error);
+    return null;
+  }
+};
+
+export const updateMakDeck = async (
+  deckId: string,
+  updates: MakDeckUpdate
+): Promise<boolean> => {
+  try {
+    const { error } = await supabase
+      .from('mak_decks')
+      .update(updates)
+      .eq('id', deckId);
+
+    if (error) {
+      console.error('Ошибка обновления колоды:', error.message);
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Неожиданная ошибка при обновлении колоды:', error);
+    return false;
+  }
+};
+
+export const deleteMakDeck = async (deckId: string): Promise<boolean> => {
+  try {
+    const { error } = await supabase.from('mak_decks').delete().eq('id', deckId);
+
+    if (error) {
+      console.error('Ошибка удаления колоды:', error.message);
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Неожиданная ошибка при удалении колоды:', error);
+    return false;
+  }
+};
+
+// Карты колоды (только админ)
+export const getMakCards = async (deckId: string): Promise<MakCard[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('mak_cards')
+      .select('*')
+      .eq('deck_id', deckId)
+      .order('sort_order', { ascending: true });
+
+    if (error) {
+      console.error('Ошибка получения карт колоды:', error.message);
+      return [];
+    }
+
+    return data || [];
+  } catch (error) {
+    console.error('Неожиданная ошибка при получении карт колоды:', error);
+    return [];
+  }
+};
+
+// Все карты всех колод — для счётчиков в админке
+export const getAllMakCards = async (): Promise<MakCard[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('mak_cards')
+      .select('*')
+      .order('sort_order', { ascending: true });
+
+    if (error) {
+      console.error('Ошибка получения карт:', error.message);
+      return [];
+    }
+
+    return data || [];
+  } catch (error) {
+    console.error('Неожиданная ошибка при получении карт:', error);
+    return [];
+  }
+};
+
+// Массовое добавление карт в колоду
+export const addMakCards = async (
+  deckId: string,
+  cards: MakCardInput[]
+): Promise<number> => {
+  try {
+    if (cards.length === 0) return 0;
+
+    const { data: last } = await supabase
+      .from('mak_cards')
+      .select('sort_order')
+      .eq('deck_id', deckId)
+      .order('sort_order', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    const baseOrder = (last?.sort_order ?? 0) + 1;
+
+    const rows = cards.map((card, index) => ({
+      deck_id: deckId,
+      image_url: card.image_url,
+      title: card.title ?? null,
+      sort_order: baseOrder + index,
+    }));
+
+    const { data, error } = await supabase.from('mak_cards').insert(rows).select('id');
+
+    if (error) {
+      console.error('Ошибка добавления карт:', error.message);
+      return 0;
+    }
+
+    return data?.length ?? 0;
+  } catch (error) {
+    console.error('Неожиданная ошибка при добавлении карт:', error);
+    return 0;
+  }
+};
+
+export const deleteMakCard = async (cardId: string): Promise<boolean> => {
+  try {
+    const { error } = await supabase.from('mak_cards').delete().eq('id', cardId);
+
+    if (error) {
+      console.error('Ошибка удаления карты:', error.message);
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Неожиданная ошибка при удалении карты:', error);
+    return false;
   }
 };

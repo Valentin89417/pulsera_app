@@ -332,3 +332,74 @@ ALTER TABLE profiles ADD COLUMN phone text;
 -- Добавить колонку birthday в profiles
 ALTER TABLE profiles ADD COLUMN birthday date;
 ```
+
+---
+
+## Тихий вопрос («Слёт»)
+
+### mak_decks
+| Колонка | Тип | Описание |
+|---------|-----|----------|
+| id | uuid (PK) | Уникальный ID |
+| title | text | Название колоды |
+| description | text | Описание темы |
+| cover_url | text | Обложка (WordPress Media Library) |
+| is_active | boolean | Доступна ли для выбора |
+| created_at | timestamptz | Дата |
+
+### mak_cards
+| Колонка | Тип | Описание |
+|---------|-----|----------|
+| id | uuid (PK) | Уникальный ID |
+| deck_id | uuid (FK → mak_decks) | Колода (`ON DELETE CASCADE`) |
+| image_url | text | Изображение карты (WordPress) |
+| title | text | Подпись (необязательно) |
+| sort_order | integer | Порядок в админке |
+| created_at | timestamptz | Дата |
+
+### quiet_questions
+| Колонка | Тип | Описание |
+|---------|-----|----------|
+| id | uuid (PK) | Уникальный ID |
+| user_id | uuid (FK → auth.users) | Автор (не отдаётся в публичные выборки) |
+| deck_id | uuid (FK → mak_decks) | Выбранная колода (`ON DELETE SET NULL`) |
+| card_id | uuid (FK → mak_cards) | Выпавшая карта (`ON DELETE SET NULL`) |
+| card_image_url | text | Снимок картинки на момент публикации |
+| question | text | Вопрос (1–500 символов) |
+| created_at | timestamptz | Дата публикации |
+| expires_at | timestamptz | `created_at + 7 дней` (триггер) |
+| is_hidden | boolean | Скрыт админом |
+
+### quiet_answers
+| Колонка | Тип | Описание |
+|---------|-----|----------|
+| id | uuid (PK) | Уникальный ID |
+| question_id | uuid (FK → quiet_questions) | Вопрос (`ON DELETE CASCADE`) |
+| user_id | uuid (FK → auth.users) | Автор ответа (не отдаётся в публичные выборки) |
+| body | text | Текст ответа (1–1000 символов) |
+| created_at | timestamptz | Дата |
+| updated_at | timestamptz | Обновляется триггером |
+| is_hidden | boolean | Скрыт админом |
+
+Ограничение: `UNIQUE (question_id, user_id)` — один ответ на человека.
+
+### Представления
+- `quiet_questions_feed` — активные вопросы (`now() < expires_at`, не скрытые) + `answers_count`, без `user_id`.
+- `mak_decks_available` — активные колоды, в которых есть хотя бы одна карта, + `cards_count`.
+
+### RPC
+- `create_quiet_question(p_deck_id uuid, p_question text) → uuid` — `SECURITY DEFINER`: проверяет авторизацию, текст и активность колоды, случайно выбирает карту (`ORDER BY random()`), пишет вопрос со снимком картинки. Клиент не имеет доступа к `mak_cards`, поэтому выбрать карту нельзя.
+
+### RLS
+| Таблица | SELECT | INSERT | UPDATE | DELETE |
+|---------|--------|--------|--------|--------|
+| mak_decks | авторизованные (активные) | admin | admin | admin |
+| mak_cards | только admin | admin | admin | admin |
+| quiet_questions | активные — всем; свои — автору; архив — автору и admin | нет (только через RPC) | admin | автор: `now() < created_at + 2h` или `now() >= expires_at`; admin — всегда |
+| quiet_answers | активные — всем; свой — всегда; архивные — автору вопроса и admin | свой + вопрос активен | свой, пока `now() < q.created_at + 2h` | admin |
+
+### Миграции
+- `018_quiet_question.sql` — таблицы, триггеры, RPC.
+- `019_quiet_question_views.sql` — представления.
+- `020_quiet_question_rls.sql` — политики.
+

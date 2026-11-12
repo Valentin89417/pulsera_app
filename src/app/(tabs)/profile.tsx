@@ -133,6 +133,15 @@ export default function ProfileScreen() {
 
         <TouchableOpacity
           style={[styles.menuItem, { borderBottomColor: colors.border }]}
+          onPress={() => router.push('/my-questions')}
+        >
+          <FontAwesome name="archive" size={20} color={colors.primary} style={styles.menuIcon} />
+          <Text style={[styles.menuText, { color: colors.text }]}>Архив вопросов</Text>
+          <Text style={[styles.menuArrow, { color: colors.textMuted }]}>›</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.menuItem, { borderBottomColor: colors.border }]}
           onPress={() => router.push('/chat')}
         >
           <FontAwesome name="comment-o" size={20} color={colors.primary} style={styles.menuIcon} />

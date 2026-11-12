@@ -253,6 +253,30 @@ export default function AdminScreen() {
 
         <TouchableOpacity
           style={styles.menuItem}
+          onPress={() => router.push('/admin/mak-decks')}
+        >
+          <FontAwesome name="clone" size={22} color={colors.primary} style={styles.menuIcon} />
+          <View style={styles.menuContent}>
+            <Text style={styles.menuText}>Колоды МАК</Text>
+            <Text style={styles.menuHint}>Колоды и карты для «Тихого вопроса»</Text>
+          </View>
+          <Text style={styles.menuArrow}>›</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.menuItem}
+          onPress={() => router.push('/admin/quiet-archive')}
+        >
+          <FontAwesome name="archive" size={22} color={colors.primary} style={styles.menuIcon} />
+          <View style={styles.menuContent}>
+            <Text style={styles.menuText}>Архив вопросов</Text>
+            <Text style={styles.menuHint}>Завершённые «Тихие вопросы» и ответы</Text>
+          </View>
+          <Text style={styles.menuArrow}>›</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.menuItem}
           onPress={() => router.push('/admin/comments')}
         >
           <FontAwesome name="comment-o" size={22} color={colors.primary} style={styles.menuIcon} />

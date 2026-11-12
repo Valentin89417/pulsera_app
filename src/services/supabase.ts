@@ -388,9 +388,151 @@ export type Database = {
           created_at?: string;
         };
       };
+      mak_decks: {
+        Row: {
+          id: string;
+          title: string;
+          description: string | null;
+          cover_url: string | null;
+          is_active: boolean;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          title: string;
+          description?: string | null;
+          cover_url?: string | null;
+          is_active?: boolean;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          title?: string;
+          description?: string | null;
+          cover_url?: string | null;
+          is_active?: boolean;
+          created_at?: string;
+        };
+      };
+      mak_cards: {
+        Row: {
+          id: string;
+          deck_id: string;
+          image_url: string;
+          title: string | null;
+          sort_order: number;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          deck_id: string;
+          image_url: string;
+          title?: string | null;
+          sort_order?: number;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          deck_id?: string;
+          image_url?: string;
+          title?: string | null;
+          sort_order?: number;
+          created_at?: string;
+        };
+      };
+      quiet_questions: {
+        Row: {
+          id: string;
+          user_id: string;
+          deck_id: string | null;
+          card_id: string | null;
+          card_image_url: string;
+          question: string;
+          created_at: string;
+          expires_at: string;
+          is_hidden: boolean;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          deck_id?: string | null;
+          card_id?: string | null;
+          card_image_url: string;
+          question: string;
+          created_at?: string;
+          expires_at?: string;
+          is_hidden?: boolean;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          deck_id?: string | null;
+          card_id?: string | null;
+          card_image_url?: string;
+          question?: string;
+          created_at?: string;
+          expires_at?: string;
+          is_hidden?: boolean;
+        };
+      };
+      quiet_answers: {
+        Row: {
+          id: string;
+          question_id: string;
+          user_id: string;
+          body: string;
+          created_at: string;
+          updated_at: string;
+          is_hidden: boolean;
+        };
+        Insert: {
+          id?: string;
+          question_id: string;
+          user_id: string;
+          body: string;
+          created_at?: string;
+          updated_at?: string;
+          is_hidden?: boolean;
+        };
+        Update: {
+          id?: string;
+          question_id?: string;
+          user_id?: string;
+          body?: string;
+          created_at?: string;
+          updated_at?: string;
+          is_hidden?: boolean;
+        };
+      };
     };
-    Views: Record<string, never>;
-    Functions: Record<string, never>;
+    Views: {
+      quiet_questions_feed: {
+        Row: {
+          id: string;
+          card_image_url: string;
+          question: string;
+          created_at: string;
+          expires_at: string;
+          answers_count: number;
+        };
+      };
+      mak_decks_available: {
+        Row: {
+          id: string;
+          title: string;
+          description: string | null;
+          cover_url: string | null;
+          created_at: string;
+          cards_count: number;
+        };
+      };
+    };
+    Functions: {
+      create_quiet_question: {
+        Args: { p_deck_id: string; p_question: string };
+        Returns: string;
+      };
+    };
     Enums: {
       subscription_tier: 'free' | 'path' | 'awakening';
       content_type: 'article' | 'video' | 'audio' | 'course';

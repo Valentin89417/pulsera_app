@@ -25,7 +25,6 @@ const SECTIONS: SletSection[] = [
     description: 'Задать вопрос, который давно живёт внутри',
     icon: 'question-circle',
     route: '/slet/quiet-question',
-    soon: true,
   },
   {
     key: 'power-exchange',
