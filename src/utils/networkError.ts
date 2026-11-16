@@ -4,12 +4,15 @@
 const NETWORK_MARKERS = [
   'fetch failed',
   'Network request failed',
+  'failed to connect',
   'UnknownHostException',
   'Unable to resolve host',
   'timeout',
+  'SocketTimeout',
   'ETIMEDOUT',
   'ECONNREFUSED',
   'ECONNRESET',
+  'ENETUNREACH',
   'ERR_NETWORK',
   'ERR_INTERNET_DISCONNECTED',
 ];

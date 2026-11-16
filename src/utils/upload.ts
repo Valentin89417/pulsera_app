@@ -10,6 +10,7 @@ import {
   makeDirectoryAsync,
 } from 'expo-file-system/legacy';
 import { WP_API_BASE, CONFIG } from '../config';
+import { isNetworkError } from './networkError';
 
 // Типы загружаемых файлов
 export type UploadFileType = 'audio' | 'video' | 'image';
@@ -189,6 +190,41 @@ export const pickImageFiles = async (): Promise<DocumentPicker.DocumentPickerAss
   }
 };
 
+// Таймаут быстрой проверки сервера перед загрузкой
+const SERVER_CHECK_TIMEOUT_MS = 10000;
+
+// Домен WordPress без протокола — для сообщений об ошибках
+const WP_HOST = CONFIG.WP_URL.replace(/^https?:\/\//, '').replace(/\/+$/, '');
+
+/**
+ * Быстрая проверка доступности WordPress.
+ * Если сервер лежит, OkHttp висит на TCP-подключении 60 секунд и отдаёт
+ * сырую ошибку «failed to connect to ... after 60000ms». Здесь ловим это
+ * за 10 секунд и показываем понятный текст. На вебе пропускаем — CORS
+ * может дать ложный отказ.
+ */
+export const checkWpServerReachable = async (): Promise<boolean> => {
+  if (Platform.OS === 'web') return true;
+  if (!CONFIG.WP_URL) return true;
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), SERVER_CHECK_TIMEOUT_MS);
+
+  try {
+    // Любой HTTP-ответ (даже 401/403) значит, что сервер на связи
+    await fetch(`${CONFIG.WP_URL}/wp-json/`, {
+      method: 'GET',
+      signal: controller.signal,
+      headers: { 'Authorization': getAuthHeader() },
+    });
+    return true;
+  } catch {
+    return false;
+  } finally {
+    clearTimeout(timer);
+  }
+};
+
 // Загрузить файл в WordPress Media Library
 export const uploadFile = async (
   file: DocumentPicker.DocumentPickerAsset,
@@ -198,6 +234,14 @@ export const uploadFile = async (
   try {
     if (!CONFIG.WP_URL || !CONFIG.WP_USER || !CONFIG.WP_APP_PASSWORD) {
       throw new Error('WordPress не настроен. Проверьте EXPO_PUBLIC_WP_URL, EXPO_PUBLIC_WP_USER и EXPO_PUBLIC_WP_APP_PASSWORD в .env');
+    }
+
+    // Если сервер лежит — не тратим 60 секунд на попытку подключения
+    const serverOk = await checkWpServerReachable();
+    if (!serverOk) {
+      throw new Error(
+        `Сервер ${WP_HOST} не отвечает. Проверьте интернет и повторите загрузку позже.`
+      );
     }
 
     onProgress?.(0);
@@ -282,8 +326,11 @@ export const uploadFile = async (
     };
   } catch (error) {
     console.error('Ошибка загрузки файла:', error);
-    if (error instanceof TypeError || String(error).includes('Network request failed')) {
-      throw new Error('Нет соединения с сервером. Проверьте интернет и повторите.');
+    const message = error instanceof Error ? error.message : String(error);
+    if (error instanceof TypeError || isNetworkError(message)) {
+      throw new Error(
+        `Не удалось подключиться к ${WP_HOST}. Проверьте интернет и повторите загрузку.`
+      );
     }
     throw error;
   }
