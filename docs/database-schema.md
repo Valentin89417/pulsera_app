@@ -6,7 +6,7 @@
 |------|----------|
 | `001_initial_schema.sql` | Начальная схема + RLS + триггер |
 | `002_add_roles.sql` | Роли (admin/user), RLS для контента |
-| `003_setup_storage.sql` | Storage bucket для файлов |
+| `003_create_storage_bucket.sql` | Storage bucket `content` (сейчас не используется — файлы в WordPress) |
 | `004_enable_comments_realtime.sql` | Realtime для комментариев |
 | `005_add_comment_delete_policy.sql` | RLS удаления/редактирования комментариев |
 | `006_chat_upgrade.sql` | Чат: sender, admin RLS, Realtime |
@@ -14,6 +14,18 @@
 | `008_chat_edit_delete.sql` | Чат: edited колонка, RLS для редактирования/удаления |
 | `009_add_phone_to_profiles.sql` | Добавление колонки phone в profiles |
 | `010_add_birthday_to_profiles.sql` | Добавление колонки birthday в profiles |
+| `011_community_messages.sql` | Чат «Пожужжим» + RLS + Realtime |
+| `012_push_tokens.sql` | Push-токены устройств |
+| `013_notification_preferences.sql` | Настройки уведомлений и `last_community_active` |
+| `014_subscription_expires_at.sql` | Дата окончания доступа в profiles |
+| `015_afisha_banners.sql` | Баннеры афиши |
+| `016_app_settings.sql` | Настройки приложения (key-value: URL календаря) |
+| `017_daily_cards.sql` | «Слово стаи»: карточки и ответы |
+| `018_quiet_question.sql` | «Тихий вопрос»: mak_decks, mak_cards, quiet_questions, quiet_answers, RPC |
+| `019_quiet_question_views.sql` | `quiet_questions_feed`, `mak_decks_available` |
+| `020_quiet_question_rls.sql` | RLS «Тихого вопроса» |
+
+Все миграции 001–020 применены в Supabase.
 
 ---
 
@@ -29,6 +41,12 @@
 | birthday | date | Дата рождения (added in 010) |
 | role | text | `user` / `admin` (added in 002) |
 | subscription_tier | text | `free` / `path` / `awakening` |
+| subscription_expires_at | timestamptz | Дата окончания доступа (added in 014) |
+| notif_chat | boolean | Push о сообщениях в чате с автором (013) |
+| notif_community | boolean | Push о «Пожужжиме» (013) |
+| notif_articles | boolean | Push о новых статьях (013) |
+| notif_comments | boolean | Push о комментариях (013) |
+| last_community_active | timestamptz | Последняя активность в «Пожужжиме» — чтобы не пушить тем, кто на экране (013) |
 | created_at | timestamptz | Дата создания |
 
 ### content
@@ -118,6 +136,72 @@
 | status | text | `active` / `expired` / `cancelled` |
 | expires_at | timestamptz | Дата окончания |
 
+### community_messages («Пожужжим», 011)
+| Колонка | Тип | Описание |
+|---------|-----|----------|
+| id | uuid (PK) | Уникальный ID |
+| user_id | uuid (FK → auth.users) | Автор сообщения |
+| message | text | Текст |
+| edited | boolean | Отредактировано ли |
+| created_at | timestamptz | Дата |
+
+Историческое имя таблицы: раздел раньше назывался «Сообщество», в коде так и осталось.
+
+### push_tokens (012)
+| Колонка | Тип | Описание |
+|---------|-----|----------|
+| id | uuid (PK) | Уникальный ID |
+| user_id | uuid (FK → auth.users) | Владелец токена |
+| token | text | Expo push token |
+| platform | text | `android` / `ios` |
+| created_at | timestamptz | Дата |
+
+`UNIQUE (user_id, token)` — один и тот же токен не дублируется.
+
+### afisha_banners (015)
+| Колонка | Тип | Описание |
+|---------|-----|----------|
+| id | uuid (PK) | Уникальный ID |
+| image_url | text | Картинка баннера (WordPress) |
+| image_filename | text | Имя файла для удаления из WP |
+| title | text | Подпись поверх баннера |
+| link_url | text | Внутренняя или внешняя ссылка |
+| sort_order | integer | Порядок в слайдере |
+| is_active | boolean | Показывать ли |
+| created_at | timestamptz | Дата |
+
+### app_settings (016)
+| Колонка | Тип | Описание |
+|---------|-----|----------|
+| key | text (PK) | Ключ настройки (например `calendar_ical_url`) |
+| value | text | Значение |
+| updated_at | timestamptz | Дата обновления |
+
+### daily_cards («Слово стаи», 017)
+| Колонка | Тип | Описание |
+|---------|-----|----------|
+| id | uuid (PK) | Уникальный ID |
+| title | text | Заголовок карточки |
+| image_url | text | Фото дня |
+| image_filename | text | Имя файла для удаления из WP |
+| photo_question | text | Вопрос к фото |
+| summary_questions | jsonb | Массив вопросов для подведения итогов |
+| audio_url | text | Аудио (необязательно) |
+| audio_filename | text | Имя аудиофайла |
+| card_date | date | Дата карточки |
+| created_at | timestamptz | Дата |
+
+### daily_card_responses (017)
+| Колонка | Тип | Описание |
+|---------|-----|----------|
+| id | uuid (PK) | Уникальный ID |
+| user_id | uuid (FK → auth.users) | Автор ответа |
+| card_id | uuid (FK → daily_cards) | Карточка (`ON DELETE CASCADE`) |
+| response_type | text | `photo` / `summary` |
+| question_index | integer | Номер вопроса для `summary` |
+| answer | text | Ответ |
+| created_at | timestamptz | Дата |
+
 ---
 
 ## Row Level Security (RLS)
@@ -168,6 +252,41 @@
 |----------|----------|
 | ALL | Только своя подписка (`auth.uid() = user_id`) |
 
+### community_messages (011)
+| Операция | Политика |
+|----------|----------|
+| SELECT | Только авторизованные (`USING (true)` для роли `authenticated`) |
+| INSERT | Своё сообщение (`auth.uid() = user_id`) |
+| UPDATE | Только своё |
+| DELETE | Своё + admin |
+
+### push_tokens (012)
+| Операция | Политика |
+|----------|----------|
+| ALL | Только свои токены (`auth.uid() = user_id`) |
+
+### afisha_banners (015)
+| Операция | Политика |
+|----------|----------|
+| SELECT | Публичный |
+| INSERT / UPDATE / DELETE | Только admin |
+
+### app_settings (016)
+| Операция | Политика |
+|----------|----------|
+| ALL | Только admin |
+
+**Известная проблема:** единственная политика — admin-only `FOR ALL`, а `WeekCalendar` на главной читает `calendar_url` клиентом обычного пользователя. `getSetting()` возвращает `null`, блок «Расписание на неделю» не отображается у не-админов (у админа работает).
+
+### daily_cards / daily_card_responses (017)
+| Таблица | Операция | Политика |
+|---------|----------|----------|
+| daily_cards | SELECT | Публичный |
+| daily_cards | INSERT / UPDATE / DELETE | Только admin |
+| daily_card_responses | SELECT | Свои + admin |
+| daily_card_responses | INSERT | Свои |
+| daily_card_responses | DELETE | Свои + admin |
+
 ---
 
 ## Триггеры
@@ -213,15 +332,18 @@ ALTER PUBLICATION supabase_realtime ADD TABLE comments;
 ALTER PUBLICATION supabase_realtime ADD TABLE chat_messages;
 ```
 
+Таблица `community_messages` («Пожужжим») включена в `supabase_realtime` (011):
+```sql
+ALTER PUBLICATION supabase_realtime ADD TABLE community_messages;
+```
+
 Realtime подписка на все события (INSERT, UPDATE) для обновления статуса прочтения.
 
 ---
 
 ## Storage
 
-Bucket `content` для загрузки файлов (статьи, аудио, видео):
-- Путь: `content/{type}/{filename}`
-- Доступ: публичный для чтения, admin для записи
+Bucket `content` создан миграцией 003, но **не используется**: изображения, аудио и видео лежат в WordPress Media Library (`pulsera.ru/wp-content/uploads/...`). Supabase отвечает только за БД, авторизацию и realtime.
 
 ---
 
@@ -232,11 +354,20 @@ auth.users ──1:1──▶ profiles
 auth.users ──1:N──▶ comments
 auth.users ──1:N──▶ bookmarks
 auth.users ──1:N──▶ chat_messages
+auth.users ──1:N──▶ community_messages
+auth.users ──1:N──▶ push_tokens
 auth.users ──1:1──▶ subscriptions
 auth.users ──N:M──▶ content (через user_content_progress)
 
 content ──1:N──▶ comments (parent_id для вложенности)
 content ──1:N──▶ bookmarks
+
+mak_decks ──1:N──▶ mak_cards (ON DELETE CASCADE)
+mak_decks ──1:N──▶ quiet_questions (ON DELETE SET NULL)
+mak_cards  ──1:N──▶ quiet_questions (ON DELETE SET NULL)
+quiet_questions ──1:N──▶ quiet_answers (ON DELETE CASCADE)
+
+daily_cards ──1:N──▶ daily_card_responses (ON DELETE CASCADE)
 ```
 
 ---
