@@ -164,7 +164,8 @@ D:\pulsera_app\
         ├── 017_daily_cards.sql        # «Слово стаи»: карточки и ответы
         ├── 018_quiet_question.sql     # «Тихий вопрос»: таблицы, триггеры, RPC розыгрыша карты
         ├── 019_quiet_question_views.sql # Представления ленты и доступных колод
-        └── 020_quiet_question_rls.sql # RLS «Тихого вопроса»
+        ├── 020_quiet_question_rls.sql # RLS «Тихого вопроса»
+        └── 021_app_settings_public_read.sql # Публичное чтение ключа calendar_url
 ```
 
 ## Ключевые решения

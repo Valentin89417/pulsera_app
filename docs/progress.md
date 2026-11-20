@@ -392,6 +392,17 @@
 
 ---
 
+### Фикс: календарь не показывался не-админам ✅
+**Статус:** Завершено
+**Дата:** 16.11.2026
+
+**Проблема:** `app_settings` была закрыта единственной политикой «Admin can manage app_settings» (`FOR ALL`). `WeekCalendar` на главной читает `calendar_url` клиентом обычного пользователя, `getSetting()` возвращал `null`, блок «Расписание на неделю» не отображался никому, кроме админа. Подтверждено запросом к REST: anon-выборка из `app_settings` — `[]`, а из `afisha_banners` / `content` / `daily_cards` — данные.
+
+- [x] Миграция `021_app_settings_public_read.sql` — политика `SELECT` только для `key = 'calendar_url'` (`anon`, `authenticated`), остальные ключи остаются админскими
+- [x] Документация: `database-schema.md` (миграции, RLS `app_settings`), `architecture.md` (список миграций)
+
+---
+
 ### Обмен силой (план)
 **Статус:** Запланировано
 
@@ -410,7 +421,7 @@
 ---
 
 ## Технические заметки
-- **Миграции**: все применены (001–020) в Supabase Dashboard SQL Editor ✅
+- **Миграции**: все применены (001–021) в Supabase Dashboard SQL Editor ✅
 - **Темы**: useTheme() хук возвращает colors из Zustand store, persists в AsyncStorage
 - **Палитра**: ThemeColors тип с ~30 токенами (background, surface, primary, text, border, alpha-варианты)
 - **Иконки**: FontAwesome (`@expo/vector-icons`) — все UI-иконки заменены с эмодзи на FontAwesome

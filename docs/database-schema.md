@@ -24,8 +24,9 @@
 | `018_quiet_question.sql` | «Тихий вопрос»: mak_decks, mak_cards, quiet_questions, quiet_answers, RPC |
 | `019_quiet_question_views.sql` | `quiet_questions_feed`, `mak_decks_available` |
 | `020_quiet_question_rls.sql` | RLS «Тихого вопроса» |
+| `021_app_settings_public_read.sql` | Публичное чтение только `calendar_url` |
 
-Все миграции 001–020 применены в Supabase.
+Все миграции 001–021 применены в Supabase.
 
 ---
 
@@ -274,9 +275,10 @@
 ### app_settings (016)
 | Операция | Политика |
 |----------|----------|
-| ALL | Только admin |
+| SELECT | `calendar_url` — всем (021), остальные ключи — только admin |
+| INSERT / UPDATE / DELETE | Только admin |
 
-**Известная проблема:** единственная политика — admin-only `FOR ALL`, а `WeekCalendar` на главной читает `calendar_url` клиентом обычного пользователя. `getSetting()` возвращает `null`, блок «Расписание на неделю» не отображается у не-админов (у админа работает).
+Изначально таблица была закрыта админской политикой `FOR ALL`, поэтому `WeekCalendar` на главной не получал `calendar_url` под обычным пользователем и блок «Расписание на неделю» не отображался никому, кроме админа. Миграция 021 открыла чтение только этого ключа.
 
 ### daily_cards / daily_card_responses (017)
 | Таблица | Операция | Политика |
