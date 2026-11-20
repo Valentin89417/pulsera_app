@@ -93,6 +93,20 @@ export default function ProfileScreen() {
         )}
       </View>
 
+      {/* Админ — только для админов, выше основных настроек */}
+      {isAdmin && (
+        <View style={[styles.menuSection, { backgroundColor: colors.surface }]}>
+          <TouchableOpacity
+            style={[styles.menuItem, { borderBottomColor: colors.border }]}
+            onPress={() => router.push('/admin')}
+          >
+            <FontAwesome name="shield" size={20} color={colors.primary} style={styles.menuIcon} />
+            <Text style={[styles.menuText, { color: colors.text }]}>Админ панель</Text>
+            <Text style={[styles.menuArrow, { color: colors.textMuted }]}>›</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
       {/* Меню */}
       <View style={[styles.menuSection, { backgroundColor: colors.surface }]}>
         <TouchableOpacity
@@ -158,20 +172,6 @@ export default function ProfileScreen() {
           <Text style={[styles.menuArrow, { color: colors.textMuted }]}>›</Text>
         </TouchableOpacity>
       </View>
-
-      {/* Админ — только для админов */}
-      {isAdmin && (
-        <View style={[styles.menuSection, { backgroundColor: colors.surface }]}>
-          <TouchableOpacity
-            style={[styles.menuItem, { borderBottomColor: colors.border }]}
-            onPress={() => router.push('/admin')}
-          >
-          <FontAwesome name="shield" size={20} color={colors.primary} style={styles.menuIcon} />
-            <Text style={[styles.menuText, { color: colors.text }]}>Админ панель</Text>
-            <Text style={[styles.menuArrow, { color: colors.textMuted }]}>›</Text>
-          </TouchableOpacity>
-        </View>
-      )}
 
       {/* Кнопка выхода */}
       <TouchableOpacity style={styles.signOutButton} onPress={handleSignOut}>

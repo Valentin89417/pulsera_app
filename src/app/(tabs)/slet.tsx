@@ -26,14 +26,8 @@ const SECTIONS: SletSection[] = [
     icon: 'question-circle',
     route: '/slet/quiet-question',
   },
-  {
-    key: 'power-exchange',
-    title: 'Обмен силой',
-    description: 'Поделиться теплом и поддержать других',
-    icon: 'sun-o',
-    route: '/slet/power-exchange',
-    soon: true,
-  },
+  // «Обмен силой» скрыт до реализации сценария: экран /slet/power-exchange
+  // остался, но в списке разделов его нет
   {
     key: 'chat',
     title: 'Пожужжим',
@@ -97,7 +91,7 @@ export default function SletScreen() {
       <View style={[styles.note, { backgroundColor: colors.surface, borderColor: colors.border }]}>
         <FontAwesome name="leaf" size={18} color={colors.primary} />
         <Text style={[styles.noteText, { color: colors.textSecondary }]}>
-          Слёт — общее пространство. Здесь можно побыть в тишине, обменяться силой или просто поговорить.
+          Слёт — общее пространство. Здесь можно общаться с единомышленниками.
         </Text>
       </View>
     </ScrollView>
