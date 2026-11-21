@@ -131,7 +131,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     marginBottom: 12,
   },
   title: {
-    fontSize: 32,
+    fontSize: 28,
     fontWeight: 'bold',
     color: colors.text,
     marginBottom: 8,

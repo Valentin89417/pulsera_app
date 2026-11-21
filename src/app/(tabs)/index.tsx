@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useFocusEffect } from 'expo-router/react-navigation';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FontAwesome } from '@expo/vector-icons';
 import { getContent, getCategories } from '../../services/api';
 import { ContentItem } from '../../types';
@@ -31,12 +32,11 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     backgroundColor: colors.background,
   },
   header: {
-    paddingTop: 60,
     paddingHorizontal: 20,
     paddingBottom: 16,
   },
   headerTitle: {
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: 'bold',
     color: colors.text,
     textAlign: 'center',
@@ -204,6 +204,7 @@ export default function HomeScreen() {
   const router = useRouter();
   const { colors } = useTheme();
   const { isAdmin } = useAdmin();
+  const insets = useSafeAreaInsets();
   const styles = createStyles(colors);
 
   const [content, setContent] = useState<ContentItem[]>([]);
@@ -409,7 +410,7 @@ export default function HomeScreen() {
   return (
     <View style={styles.container} ref={containerRef}>
       {/* Заголовок */}
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
         <Text style={styles.headerTitle}>PULSERA | Стая</Text>
         <Text style={styles.headerSubtitle}>Путь к себе, среди своих.</Text>
       </View>

@@ -371,7 +371,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     marginLeft: 6,
   },
   headerTitle: {
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: 'bold',
   },
   headerCount: {

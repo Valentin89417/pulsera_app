@@ -50,7 +50,7 @@ export default function SletScreen() {
       contentContainerStyle={[styles.content, { paddingTop: insets.top + 16 }]}
     >
       <Text style={[styles.title, { color: colors.text }]}>Слёт</Text>
-      <Text style={[styles.subtitle, { color: colors.textMuted }]}>
+      <Text style={styles.subtitle}>
         Пространство, где можно побыть среди своих
       </Text>
 
@@ -107,11 +107,12 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     paddingBottom: 32,
   },
   title: {
-    fontSize: 32,
+    fontSize: 28,
     fontWeight: 'bold',
   },
   subtitle: {
     fontSize: 14,
+    color: colors.textMuted,
     marginTop: 6,
     marginBottom: 24,
   },

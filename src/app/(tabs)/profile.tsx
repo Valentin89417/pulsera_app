@@ -1,5 +1,6 @@
 import { View, Text, StyleSheet, TouchableOpacity, Alert, ScrollView, Image } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FontAwesome } from '@expo/vector-icons';
 import { useAuthStore } from '../../store/authStore';
 import { useSubscription, useAdmin } from '../../hooks/useAuth';
@@ -13,6 +14,7 @@ export default function ProfileScreen() {
   const { tier, isPremium } = useSubscription();
   const { isAdmin } = useAdmin();
   const { mode, colors } = useTheme();
+  const insets = useSafeAreaInsets();
   const styles = createStyles(colors);
 
   // Выход из аккаунта
@@ -54,7 +56,7 @@ export default function ProfileScreen() {
   return (
     <ScrollView style={[styles.container, { backgroundColor: colors.background }]} contentContainerStyle={styles.content}>
       {/* Заголовок */}
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
         <Text style={[styles.headerTitle, { color: colors.text }]}>Профиль</Text>
       </View>
 
@@ -192,7 +194,6 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     paddingBottom: 40,
   },
   header: {
-    paddingTop: 60,
     paddingHorizontal: 20,
     paddingBottom: 16,
   },

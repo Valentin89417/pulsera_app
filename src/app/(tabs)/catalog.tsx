@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useFocusEffect } from 'expo-router/react-navigation';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FontAwesome } from '@expo/vector-icons';
 import { getContent, getCategories } from '../../services/api';
 import { ContentItem, ContentType } from '../../types';
@@ -35,7 +36,6 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     backgroundColor: colors.background,
   },
   header: {
-    paddingTop: 60,
     paddingHorizontal: 20,
     paddingBottom: 12,
   },
@@ -339,6 +339,7 @@ export default function CatalogScreen() {
   const params = useLocalSearchParams<{ category?: string }>();
   const { colors } = useTheme();
   const { isAdmin } = useAdmin();
+  const insets = useSafeAreaInsets();
   const styles = createStyles(colors);
 
   const [content, setContent] = useState<ContentItem[]>([]);
@@ -533,7 +534,7 @@ export default function CatalogScreen() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
         <Text style={styles.headerTitle}>Каталог</Text>
         <Text style={styles.headerSubtitle}>Практики, медитации, курсы</Text>
       </View>
