@@ -13,13 +13,14 @@ import {
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { FontAwesome } from '@expo/vector-icons';
-import { getContentById, createContent, updateContent, getAllUserIds, getUserNotificationPrefs } from '../../services/api';
-import { sendImmediatePush } from '../../services/notifications';
+import { getContentById, createContent, updateContent } from '../../services/api';
+import { notifyNewContent } from '../../services/notifications';
 import { ContentItem, ContentType, GalleryImage } from '../../types';
 import { pickFile, pickImageFiles, uploadFile, UploadFileType } from '../../utils/upload';
 import { MarkdownEditor } from '../../components/MarkdownEditor';
 import { CategoryInput } from '../../components/CategoryInput';
 import { parseGalleryImages, toStoredGallery } from '../../utils/gallery';
+import { formatPublishInput, parsePublishInput } from '../../utils/contentPublish';
 import { useTheme } from '../../hooks/useTheme';
 import { ThemeColors } from '../../utils/themeColors';
 
@@ -35,6 +36,14 @@ const TIERS: { key: ContentItem['subscription_tier']; label: string }[] = [
   { key: 'path', label: 'Путь' },
   { key: 'awakening', label: 'Пробуждение' },
 ];
+
+// Завтрашние 09:00 — частый сценарий отложенной публикации
+const getTomorrowMorning = (): Date => {
+  const date = new Date();
+  date.setDate(date.getDate() + 1);
+  date.setHours(9, 0, 0, 0);
+  return date;
+};
 
 export default function ArticleEditScreen() {
   const router = useRouter();
@@ -61,6 +70,8 @@ export default function ArticleEditScreen() {
   const [category, setCategory] = useState('');
   const [isPremium, setIsPremium] = useState(false);
   const [subscriptionTier, setSubscriptionTier] = useState<ContentItem['subscription_tier']>('free');
+  // Дата публикации: пока в будущем — материал видит только админ
+  const [publishInput, setPublishInput] = useState(() => formatPublishInput(new Date()));
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -95,6 +106,7 @@ export default function ArticleEditScreen() {
         setCategory(article.category);
         setIsPremium(article.is_premium);
         setSubscriptionTier(article.subscription_tier);
+        setPublishInput(formatPublishInput(article.published_at));
 
         // Загрузка премиум-контента
         const cd = article.content_data as Record<string, any>;
@@ -280,6 +292,13 @@ export default function ArticleEditScreen() {
       return;
     }
 
+    // Пустое поле — публикуем сразу. Иначе разбираем «ДД.ММ.ГГГГ ЧЧ:ММ»
+    const publishedAt = publishInput.trim() ? parsePublishInput(publishInput) : new Date();
+    if (!publishedAt) {
+      Alert.alert('Ошибка', 'Проверьте дату публикации: формат ДД.ММ.ГГГГ ЧЧ:ММ');
+      return;
+    }
+
     try {
       setSaving(true);
 
@@ -339,6 +358,7 @@ export default function ArticleEditScreen() {
           content_data: contentData,
           is_premium: isPremium,
           subscription_tier: subscriptionTier,
+          published_at: publishedAt.toISOString(),
         });
 
         if (result) {
@@ -356,29 +376,17 @@ export default function ArticleEditScreen() {
           content_data: contentData,
           is_premium: isPremium,
           subscription_tier: subscriptionTier,
+          published_at: publishedAt.toISOString(),
         });
 
         if (result) {
           console.log('[SAVE] created content_data:', result.content_data);
 
-          // Отправляем push-уведомление о новой статье
-          try {
-            const allUserIds = await getAllUserIds();
-            const prefs = await getUserNotificationPrefs(allUserIds);
-            const subscribedIds = prefs
-              .filter((p) => p.notif_articles)
-              .map((p) => p.id);
-
-            if (subscribedIds.length > 0) {
-              await sendImmediatePush(
-                subscribedIds,
-                'Новая публикация',
-                `${title.trim()}`,
-                { screen: 'content', contentId: result.id }
-              );
-            }
-          } catch (pushError) {
-            console.error('Ошибка отправки push о новой статье:', pushError);
+          // Push только если материал уже опубликован: о запланированном
+          // уведомлять нельзя — пользователь не найдёт его в ленте.
+          // Для запланированного есть кнопка в «Управлении статьями».
+          if (publishedAt.getTime() <= Date.now()) {
+            await notifyNewContent(result.id, title.trim());
           }
 
           Alert.alert('Готово', 'Статья создана', [
@@ -537,6 +545,34 @@ export default function ArticleEditScreen() {
             colors={colors}
             placeholder="meditation, practice, spiritual..."
           />
+        </View>
+
+        <View style={styles.field}>
+          <Text style={styles.label}>Дата публикации</Text>
+          <TextInput
+            style={styles.input}
+            value={publishInput}
+            onChangeText={setPublishInput}
+            placeholder="ДД.ММ.ГГГГ ЧЧ:ММ"
+            placeholderTextColor={colors.placeholder}
+          />
+          <View style={[styles.chipRow, styles.publishPresets]}>
+            <TouchableOpacity
+              style={styles.chip}
+              onPress={() => setPublishInput(formatPublishInput(new Date()))}
+            >
+              <Text style={styles.chipText}>Сейчас</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.chip}
+              onPress={() => setPublishInput(formatPublishInput(getTomorrowMorning()))}
+            >
+              <Text style={styles.chipText}>Завтра 09:00</Text>
+            </TouchableOpacity>
+          </View>
+          <Text style={styles.hint}>
+            Пока дата в будущем, материал виден только в админке. Формат: ДД.ММ.ГГГГ ЧЧ:ММ
+          </Text>
         </View>
 
         <View style={styles.field}>
@@ -926,6 +962,9 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     fontSize: 12,
     color: colors.textMuted,
     marginTop: 4,
+  },
+  publishPresets: {
+    marginTop: 8,
   },
   chipRow: {
     flexDirection: 'row',

@@ -5,6 +5,7 @@ import {
   StyleSheet,
   TouchableOpacity,
   ActivityIndicator,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
@@ -18,7 +19,7 @@ import { VideoPlayer } from '../../components/VideoPlayer';
 import { BookmarkButton } from '../../components/BookmarkButton';
 import { DownloadButton } from '../../components/DownloadButton';
 import { CommentsSection } from '../../components/CommentsSection';
-import { useSubscription } from '../../hooks/useAuth';
+import { useSubscription, useAdmin } from '../../hooks/useAuth';
 import { readDownloadedArticle, getDownloadedMediaUri, getDownloadedGallery } from '../../utils/offlineCache';
 import { useDownloadStore } from '../../store/downloadStore';
 import { useTheme } from '../../hooks/useTheme';
@@ -28,6 +29,7 @@ import { processCheckboxes } from '../../utils/markdownStyles';
 import { MarkdownImage } from '../../components/MarkdownImage';
 import { PhotoCarousel } from '../../components/PhotoCarousel';
 import { GalleryScope, getVisibleGallery } from '../../utils/gallery';
+import { getPublishDate, isScheduled, formatPublishLabel } from '../../utils/contentPublish';
 
 const createStyles = (colors: ThemeColors) => StyleSheet.create({
   safeArea: {
@@ -48,9 +50,10 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingTop: 60,
+    // SafeAreaView уже отдаёт отступ статусбара — не дублируем его
+    paddingTop: Platform.select({ web: 16, default: 4 }),
     paddingHorizontal: 20,
-    paddingBottom: 12,
+    paddingBottom: 8,
   },
   backButton: {
     flexDirection: 'row',
@@ -124,6 +127,22 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     fontSize: 13,
     color: colors.textMuted,
     marginBottom: 20,
+  },
+  scheduledBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: colors.gold + '22',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    marginBottom: 16,
+  },
+  scheduledBannerText: {
+    flex: 1,
+    fontSize: 12,
+    color: colors.gold,
+    fontWeight: '600',
   },
   divider: {
     height: 1,
@@ -224,6 +243,7 @@ export default function ContentDetailScreen() {
     scope: GalleryScope;
   } | null>(null);
   const { hasAccess } = useSubscription();
+  const { isAdmin } = useAdmin();
   // Подписка на скачанное: обновляем локальный медиа-файл после скачивания прямо на экране
   const downloadedIds = useDownloadStore((s) => s.downloadedIds);
   const { colors } = useTheme();
@@ -454,7 +474,16 @@ export default function ContentDetailScreen() {
             <Text style={styles.description}>{content.description}</Text>
           )}
 
-          <Text style={styles.date}>{formatDate(content.created_at)}</Text>
+          {isAdmin && isScheduled(content) && (
+            <View style={styles.scheduledBanner}>
+              <FontAwesome name="clock-o" size={14} color={colors.gold} />
+              <Text style={styles.scheduledBannerText}>
+                Запланировано на {formatPublishLabel(content.published_at)} — материал видят только админы
+              </Text>
+            </View>
+          )}
+
+          <Text style={styles.date}>{formatDate(getPublishDate(content))}</Text>
 
           <View style={styles.divider} />
 

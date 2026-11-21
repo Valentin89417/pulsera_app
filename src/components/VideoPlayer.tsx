@@ -32,8 +32,8 @@ interface SizeDetection {
 const DEFAULT_ASPECT_RATIO = 16 / 9;
 // Таймаут ожидания метаданных: дольше не держим пользователя на «колёсике»
 const METADATA_TIMEOUT_MS = 8000;
-// Горизонтальные отступы карточки контента (20 + 20)
-const HORIZONTAL_PADDING = 40;
+// Горизонтальные отступы контента статьи — видео выходит за них на всю ширину экрана
+const CONTENT_PADDING = 20;
 // Максимальная высота кадра — 70% экрана (для вертикальных видео)
 const MAX_FRAME_HEIGHT_RATIO = 0.7;
 
@@ -44,13 +44,13 @@ const animateFrame = () => {
   }
 };
 
-// Размер кадра: ширина — во всю карточку, высота по пропорции файла (не выше 70% экрана)
+// Размер кадра: ширина — во весь экран, высота по пропорции файла (не выше 70% экрана)
 const getFrameSize = (
   screenWidth: number,
   screenHeight: number,
   videoSize: FrameSize | null
 ): FrameSize => {
-  const width = screenWidth - HORIZONTAL_PADDING;
+  const width = screenWidth;
   if (!videoSize || !videoSize.width || !videoSize.height) {
     return { width, height: width / DEFAULT_ASPECT_RATIO };
   }
@@ -112,7 +112,7 @@ function WebVideoPlayer({ uri, title }: VideoPlayerProps) {
 
   return (
     <View style={styles.wrapper}>
-      <View style={[styles.container, frame]}>
+      <View style={[styles.container, styles.bleed, frame]}>
         <div
           // key — чтобы при смене источника создался новый <video>
           key={uri}
@@ -199,7 +199,7 @@ function NativeVideoPlayer({ uri, title }: VideoPlayerProps) {
 
   return (
     <View style={styles.wrapper}>
-      <View style={[styles.container, frame]}>
+      <View style={[styles.container, styles.bleed, frame]}>
         <VideoView
           player={player}
           style={styles.video}
@@ -232,8 +232,11 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   container: {
     backgroundColor: '#000',
-    borderRadius: 16,
     overflow: 'hidden',
+  },
+  bleed: {
+    // Выходим за горизонтальные отступы статьи — видео на всю ширину экрана
+    marginHorizontal: -CONTENT_PADDING,
   },
   video: {
     width: '100%',

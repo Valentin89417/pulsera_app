@@ -132,7 +132,9 @@ export const getContent = async (options?: {
       query = query.range(options.offset, options.offset + (options.limit || 10) - 1);
     }
 
-    const { data, error } = await query.order('created_at', { ascending: false });
+    // Свежие публикации сверху; у админа запланированные материалы
+    // (published_at в будущем) оказываются в начале ленты
+    const { data, error } = await query.order('published_at', { ascending: false });
 
     if (error) {
       console.error('Ошибка получения контента:', error.message);
@@ -225,6 +227,7 @@ export const createContent = async (data: {
   content_data?: Record<string, unknown>;
   is_premium?: boolean;
   subscription_tier?: Content['subscription_tier'];
+  published_at?: string;
 }): Promise<Content | null> => {
   try {
     const { data: newContent, error } = await supabase
@@ -248,7 +251,7 @@ export const createContent = async (data: {
 // Обновить контент
 export const updateContent = async (
   contentId: string,
-  updates: Partial<Pick<Content, 'title' | 'description' | 'type' | 'category' | 'content_data' | 'is_premium' | 'subscription_tier'>>
+  updates: Partial<Pick<Content, 'title' | 'description' | 'type' | 'category' | 'content_data' | 'is_premium' | 'subscription_tier' | 'published_at'>>
 ): Promise<Content | null> => {
   try {
     const { data, error } = await supabase

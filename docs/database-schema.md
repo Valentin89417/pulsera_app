@@ -25,8 +25,9 @@
 | `019_quiet_question_views.sql` | `quiet_questions_feed`, `mak_decks_available` |
 | `020_quiet_question_rls.sql` | RLS «Тихого вопроса» |
 | `021_app_settings_public_read.sql` | Публичное чтение только `calendar_url` |
+| `022_content_published_at.sql` | Отложенная публикация: `content.published_at` + новая политика SELECT |
 
-Все миграции 001–021 применены в Supabase.
+Все миграции 001–021 применены в Supabase. `022_content_published_at.sql` создана, но требует применения (SQL Editor).
 
 ---
 
@@ -61,7 +62,10 @@
 | content_data | jsonb | Данные контента |
 | is_premium | boolean | Платный ли контент |
 | subscription_tier | text | Минимальный тариф: `free` / `path` / `awakening` |
-| created_at | timestamptz | Дата публикации |
+| published_at | timestamptz | Дата публикации (022). Пока в будущем — материал видит только admin |
+| created_at | timestamptz | Дата создания |
+
+**Отложенная публикация:** `published_at` задаётся в форме статьи (`ДД.ММ.ГГГГ ЧЧ:ММ`, хранится в UTC). У записей, созданных до миграции 022, `published_at = created_at`. Сортировка ленты — по `published_at DESC`.
 
 **content_data JSONB:**
 ```json
@@ -217,10 +221,12 @@
 ### content
 | Операция | Политика |
 |----------|----------|
-| SELECT | Публичный (все видят) |
+| SELECT | `published_at <= now()` — всем; запланированные — только admin (022) |
 | INSERT | Только admin |
 | UPDATE | Только admin |
 | DELETE | Только admin |
+
+Изначально чтение было открыто всем (`USING (true)`). Миграция 022 заменила политику на `"Контент доступен после публикации"`: пока `published_at` в будущем, запись возвращается только админу — фильтрация в БД, а не в клиенте.
 
 ### user_content_progress
 | Операция | Политика |

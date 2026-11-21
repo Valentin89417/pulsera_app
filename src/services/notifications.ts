@@ -1,5 +1,6 @@
 import { Platform } from 'react-native';
 import { supabase } from './supabase';
+import { getAllUserIds, getUserNotificationPrefs } from './api';
 import { useChatStore } from '../store/chatStore';
 import { NotificationType } from '../types/user';
 
@@ -363,4 +364,28 @@ export const sendImmediatePush = async (
 
   const tokenList = tokens.map((t) => t.token);
   await sendPushNotification(tokenList, title, body, data);
+};
+
+// ============================================
+// НОВАЯ ПУБЛИКАЦИЯ
+// ============================================
+
+// Разослать push о публикации: всем, кто не отключил уведомления о статьях.
+// Вызывается при создании уже опубликованного материала и по кнопке
+// «Опубликовать и отправить push» для запланированных.
+export const notifyNewContent = async (contentId: string, title: string): Promise<void> => {
+  try {
+    const allUserIds = await getAllUserIds();
+    const prefs = await getUserNotificationPrefs(allUserIds);
+    const subscribedIds = prefs.filter((p) => p.notif_articles).map((p) => p.id);
+
+    if (subscribedIds.length === 0) return;
+
+    await sendImmediatePush(subscribedIds, 'Новая публикация', title, {
+      screen: 'content',
+      contentId,
+    });
+  } catch (error) {
+    console.error('Ошибка отправки push о новой публикации:', error);
+  }
 };

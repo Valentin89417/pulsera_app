@@ -11,8 +11,10 @@ import {
 import { useRouter } from 'expo-router';
 import { useFocusEffect } from 'expo-router/react-navigation';
 import { FontAwesome } from '@expo/vector-icons';
-import { getContent, deleteContent } from '../../services/api';
+import { getContent, deleteContent, updateContent } from '../../services/api';
+import { notifyNewContent } from '../../services/notifications';
 import { ContentItem } from '../../types';
+import { isScheduled, formatPublishLabel } from '../../utils/contentPublish';
 import { useTheme } from '../../hooks/useTheme';
 import { ThemeColors } from '../../utils/themeColors';
 
@@ -23,6 +25,8 @@ export default function ArticlesScreen() {
 
   const [articles, setArticles] = useState<ContentItem[]>([]);
   const [loading, setLoading] = useState(true);
+  // id статьи, которая сейчас удаляется: показываем спиннер вместо кнопок
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const loadArticles = async () => {
     try {
@@ -43,6 +47,9 @@ export default function ArticlesScreen() {
   );
 
   const handleDelete = (item: ContentItem) => {
+    // Пока идёт удаление, новые подтверждения не открываем
+    if (deletingId) return;
+
     Alert.alert(
       'Удаление',
       `Удалить "${item.title}"?`,
@@ -52,10 +59,49 @@ export default function ArticlesScreen() {
           text: 'Удалить',
           style: 'destructive',
           onPress: async () => {
-            const success = await deleteContent(item.id);
-            if (success) {
-              setArticles(articles.filter(a => a.id !== item.id));
+            // Удаление стирает все файлы статьи из WordPress Media Library —
+            // это может занять время, поэтому показываем спиннер вместо кнопок
+            setDeletingId(item.id);
+            try {
+              const success = await deleteContent(item.id);
+              if (success) {
+                setArticles((prev) => prev.filter((a) => a.id !== item.id));
+              } else {
+                Alert.alert('Ошибка', 'Не удалось удалить статью. Попробуйте ещё раз.');
+              }
+            } catch (error) {
+              console.error('Ошибка удаления статьи:', error);
+              Alert.alert('Ошибка', 'Не удалось удалить статью. Попробуйте ещё раз.');
+            } finally {
+              setDeletingId(null);
             }
+          },
+        },
+      ]
+    );
+  };
+
+  // Публикация запланированного материала: дата → «сейчас» + push подписчикам
+  const handlePublishNow = (item: ContentItem) => {
+    Alert.alert(
+      'Опубликовать сейчас',
+      `«${item.title}» станет виден всем, подписчики получат push-уведомление.`,
+      [
+        { text: 'Отмена', style: 'cancel' },
+        {
+          text: 'Опубликовать',
+          onPress: async () => {
+            const updated = await updateContent(item.id, {
+              published_at: new Date().toISOString(),
+            });
+
+            if (!updated) {
+              Alert.alert('Ошибка', 'Не удалось изменить дату публикации');
+              return;
+            }
+
+            await notifyNewContent(item.id, item.title);
+            await loadArticles();
           },
         },
       ]
@@ -93,20 +139,48 @@ export default function ArticlesScreen() {
         <Text style={styles.articleMeta}>
           {item.category} · {item.is_premium ? 'Премиум' : 'Бесплатно'}
         </Text>
+        {isScheduled(item) && (
+          <View style={styles.scheduledRow}>
+            <FontAwesome name="clock-o" size={11} color={colors.primary} />
+            <Text style={styles.scheduledText}>
+              Запланировано · {formatPublishLabel(item.published_at)}
+            </Text>
+          </View>
+        )}
       </View>
       <View style={styles.articleActions}>
-        <TouchableOpacity
-          style={styles.editButton}
-          onPress={() => router.push({ pathname: '/admin/article-edit', params: { id: item.id } })}
-        >
-          <FontAwesome name="pencil" size={18} color={colors.cardIconColor} />
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.deleteButton}
-          onPress={() => handleDelete(item)}
-        >
-          <FontAwesome name="trash-o" size={18} color={colors.error} />
-        </TouchableOpacity>
+        {deletingId === item.id ? (
+          // Удаление идёт — вместо кнопок показываем спиннер
+          <View style={styles.deletingBox}>
+            <ActivityIndicator size="small" color={colors.primary} />
+          </View>
+        ) : (
+          <>
+            {isScheduled(item) && (
+              <TouchableOpacity
+                style={[styles.publishButton, deletingId !== null && styles.actionDisabled]}
+                onPress={() => handlePublishNow(item)}
+                disabled={deletingId !== null}
+              >
+                <FontAwesome name="bullhorn" size={18} color={colors.primary} />
+              </TouchableOpacity>
+            )}
+            <TouchableOpacity
+              style={[styles.editButton, deletingId !== null && styles.actionDisabled]}
+              onPress={() => router.push({ pathname: '/admin/article-edit', params: { id: item.id } })}
+              disabled={deletingId !== null}
+            >
+              <FontAwesome name="pencil" size={18} color={colors.cardIconColor} />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.deleteButton, deletingId !== null && styles.actionDisabled]}
+              onPress={() => handleDelete(item)}
+              disabled={deletingId !== null}
+            >
+              <FontAwesome name="trash-o" size={18} color={colors.error} />
+            </TouchableOpacity>
+          </>
+        )}
       </View>
     </View>
   );
@@ -231,9 +305,38 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     fontSize: 12,
     color: colors.textMuted,
   },
+  scheduledRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 4,
+  },
+  scheduledText: {
+    fontSize: 12,
+    color: colors.primary,
+    fontWeight: '600',
+  },
+  publishButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 8,
+    backgroundColor: colors.primaryAlpha13,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   articleActions: {
     flexDirection: 'row',
     gap: 8,
+  },
+  // Место под спиннер: сохраняем ширину двух кнопок, чтобы карточка не дёргалась
+  deletingBox: {
+    minWidth: 88,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  actionDisabled: {
+    opacity: 0.4,
   },
   editButton: {
     width: 40,

@@ -86,6 +86,7 @@ export type Database = {
           content_data: Record<string, unknown>;
           is_premium: boolean;
           subscription_tier: 'free' | 'path' | 'awakening';
+          published_at: string;
           created_at: string;
         };
         Insert: {
@@ -97,6 +98,7 @@ export type Database = {
           content_data?: Record<string, unknown>;
           is_premium?: boolean;
           subscription_tier?: 'free' | 'path' | 'awakening';
+          published_at?: string;
           created_at?: string;
         };
         Update: {
@@ -108,6 +110,7 @@ export type Database = {
           content_data?: Record<string, unknown>;
           is_premium?: boolean;
           subscription_tier?: 'free' | 'path' | 'awakening';
+          published_at?: string;
           created_at?: string;
         };
       };

@@ -36,6 +36,11 @@
 ### Realtime
 Каналы `postgres_changes` на `comments`, `chat_messages`, `community_messages`.
 
+### Отложенная публикация
+`getContent` сортирует по `published_at DESC`. Материалы с `published_at` в будущем PostgREST
+не возвращает обычному пользователю — это RLS-политика (022), отдельного параметра в API нет.
+`createContent` / `updateContent` принимают `published_at` (ISO-строка UTC).
+
 ## 2. WordPress REST API (файлы)
 
 - База: `EXPO_PUBLIC_WP_URL` + `/wp-json/wp/v2`, авторизация Basic Auth (Application Passwords).
@@ -51,6 +56,9 @@
 - `POST https://exp.host/--/api/v2/push/send` — отправка уведомлений с клиента
   (`src/services/notifications.ts`).
 - Батчинг: буфер на пользователя, отправка через 30 с для чатов; для статей — сразу.
+- `notifyNewContent(contentId, title)` — рассылка «Новая публикация» тем, у кого включён
+  `notif_articles`. Вызывается при создании уже опубликованного материала и по кнопке
+  «Опубликовать и отправить push» для запланированных; для будущих дат не вызывается.
 - Push пропускается, если получатель на активном экране чата (ключ `slet-chat`).
 
 ## 4. Соглашения

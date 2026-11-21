@@ -17,7 +17,9 @@ import { ContentItem, ContentType } from '../../types';
 import { DownloadButton } from '../../components/DownloadButton';
 import { BookmarkButton } from '../../components/BookmarkButton';
 import { useTheme } from '../../hooks/useTheme';
+import { useAdmin } from '../../hooks/useAuth';
 import { ThemeColors } from '../../utils/themeColors';
+import { getPublishDate, isScheduled } from '../../utils/contentPublish';
 
 const FILTERS: { key: ContentType | 'all'; label: string; icon: string }[] = [
   { key: 'all', label: 'Все', icon: 'magic' },
@@ -175,15 +177,19 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+    flexShrink: 1,
   },
   cardFooterRight: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+    flexShrink: 0,
+    marginLeft: 8,
   },
   cardCategory: {
     fontSize: 12,
     color: colors.textMuted,
+    flexShrink: 1,
   },
   premiumBadge: {
     backgroundColor: colors.primaryAlpha13,
@@ -193,6 +199,17 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   premiumText: {
     color: colors.primary,
+    fontSize: 10,
+    fontWeight: '600',
+  },
+  scheduledBadge: {
+    backgroundColor: colors.gold + '22',
+    borderRadius: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  scheduledText: {
+    color: colors.gold,
     fontSize: 10,
     fontWeight: '600',
   },
@@ -258,15 +275,19 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+    flexShrink: 1,
   },
   cardMetaRight: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
+    flexShrink: 0,
+    marginLeft: 8,
   },
   cardCategoryOld: {
     fontSize: 12,
     color: colors.textMuted,
+    flexShrink: 1,
   },
   premiumBadgeOld: {
     backgroundColor: colors.primaryAlpha13,
@@ -317,6 +338,7 @@ export default function CatalogScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ category?: string }>();
   const { colors } = useTheme();
+  const { isAdmin } = useAdmin();
   const styles = createStyles(colors);
 
   const [content, setContent] = useState<ContentItem[]>([]);
@@ -413,17 +435,22 @@ export default function CatalogScreen() {
             )}
             <View style={styles.cardFooter}>
               <View style={styles.cardFooterLeft}>
-                <Text style={styles.cardCategory}>{item.category}</Text>
+                <Text style={styles.cardCategory} numberOfLines={1}>{item.category}</Text>
                 {item.is_premium && (
                   <View style={styles.premiumBadge}>
                     <Text style={styles.premiumText}>Премиум</Text>
+                  </View>
+                )}
+                {isAdmin && isScheduled(item) && (
+                  <View style={styles.scheduledBadge}>
+                    <Text style={styles.scheduledText} numberOfLines={1}>Запланировано</Text>
                   </View>
                 )}
               </View>
               <View style={styles.cardFooterRight}>
                 <FontAwesome name="calendar" size={11} color={colors.textMuted} />
                 <Text style={styles.cardDate}>
-                  {new Date(item.created_at).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })}
+                  {new Date(getPublishDate(item)).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })}
                 </Text>
               </View>
             </View>
@@ -456,17 +483,22 @@ export default function CatalogScreen() {
           </View>
           <View style={styles.cardMeta}>
             <View style={styles.cardMetaLeft}>
-              <Text style={styles.cardCategoryOld}>{item.category}</Text>
+              <Text style={styles.cardCategoryOld} numberOfLines={1}>{item.category}</Text>
               {item.is_premium && (
                 <View style={styles.premiumBadgeOld}>
                   <Text style={styles.premiumTextOld}>Премиум</Text>
+                </View>
+              )}
+              {isAdmin && isScheduled(item) && (
+                <View style={styles.scheduledBadge}>
+                  <Text style={styles.scheduledText} numberOfLines={1}>Запланировано</Text>
                 </View>
               )}
             </View>
             <View style={styles.cardMetaRight}>
               <FontAwesome name="calendar" size={11} color={colors.textMuted} />
               <Text style={styles.cardDate}>
-                {new Date(item.created_at).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })}
+                {new Date(getPublishDate(item)).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })}
               </Text>
             </View>
           </View>

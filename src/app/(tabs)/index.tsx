@@ -21,7 +21,9 @@ import { AfishaSlider } from '../../components/AfishaSlider';
 import { WeekCalendar } from '../../components/WeekCalendar';
 import { DailyCard } from '../../components/DailyCard';
 import { useTheme } from '../../hooks/useTheme';
+import { useAdmin } from '../../hooks/useAuth';
 import { ThemeColors } from '../../utils/themeColors';
+import { isScheduled } from '../../utils/contentPublish';
 
 const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
@@ -68,6 +70,15 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     alignItems: 'center',
     marginBottom: 8,
   },
+  cardBadges: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    flexShrink: 1,
+    flexWrap: 'wrap',
+    justifyContent: 'flex-end',
+    marginLeft: 8,
+  },
   cardType: {
     fontSize: 24,
   },
@@ -79,6 +90,17 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   premiumText: {
     color: colors.primary,
+    fontSize: 10,
+    fontWeight: '600',
+  },
+  scheduledBadge: {
+    backgroundColor: colors.gold + '22',
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  scheduledText: {
+    color: colors.gold,
     fontSize: 10,
     fontWeight: '600',
   },
@@ -99,10 +121,12 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    gap: 8,
   },
   cardCategory: {
     fontSize: 12,
     color: colors.textMuted,
+    flexShrink: 1,
   },
   cardActions: {
     flexDirection: 'row',
@@ -179,6 +203,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
 export default function HomeScreen() {
   const router = useRouter();
   const { colors } = useTheme();
+  const { isAdmin } = useAdmin();
   const styles = createStyles(colors);
 
   const [content, setContent] = useState<ContentItem[]>([]);
@@ -300,11 +325,18 @@ export default function HomeScreen() {
     >
       <View style={styles.cardHeader}>
         <FontAwesome name={getTypeIcon(item.type) as any} size={24} color={colors.primary} />
-        {item.is_premium && (
-          <View style={styles.premiumBadge}>
-            <Text style={styles.premiumText}>Премиум</Text>
-          </View>
-        )}
+        <View style={styles.cardBadges}>
+          {isAdmin && isScheduled(item) && (
+            <View style={styles.scheduledBadge}>
+              <Text style={styles.scheduledText} numberOfLines={1}>Запланировано</Text>
+            </View>
+          )}
+          {item.is_premium && (
+            <View style={styles.premiumBadge}>
+              <Text style={styles.premiumText}>Премиум</Text>
+            </View>
+          )}
+        </View>
       </View>
       <Text style={styles.cardTitle} numberOfLines={2}>{item.title}</Text>
       {item.description && (
